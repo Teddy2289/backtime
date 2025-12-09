@@ -24,8 +24,8 @@ class AppServiceProvider extends ServiceProvider
         // Configuration MySQL pour éviter les erreurs de longueur de clé
         Schema::defaultStringLength(191);
 
-        // Configuration pour UUIDs
-        Schema::defaultMorphKeyType('uuid');
+        // RETIRÉ: Schema::defaultMorphKeyType('uuid');
+        // On utilise des IDs auto-incrémentés
 
         // Configuration Spatie Permission
         $this->configurePermissions();

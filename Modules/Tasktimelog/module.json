@@ -1,0 +1,16 @@
+{
+    "name": "Tasktimelog",
+    "alias": "tasktimelog",
+    "description": "Tasktimelog management module",
+    "version": "1.0.0",
+    "keywords": ["tasktimelog", "ddd", "module"],
+    "priority": 1000,
+    "providers": [
+        "Modules\\Tasktimelog\\Providers\\TasktimelogServiceProvider"
+    ],
+    "aliases": {},
+    "files": [
+        "Providers/TasktimelogServiceProvider.php"
+    ],
+    "requires": []
+}

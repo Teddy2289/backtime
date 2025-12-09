@@ -1,0 +1,16 @@
+{
+    "name": "Projectsteams",
+    "alias": "projectsteams",
+    "description": "Projectsteams management module",
+    "version": "1.0.0",
+    "keywords": ["projectsteams", "ddd", "module"],
+    "priority": 1000,
+    "providers": [
+        "Modules\\Projectsteams\\Providers\\ProjectsteamsServiceProvider"
+    ],
+    "aliases": {},
+    "files": [
+        "Providers/ProjectsteamsServiceProvider.php"
+    ],
+    "requires": []
+}

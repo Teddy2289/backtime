@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 use App\Http\Requests\UpdateProfileRequest;
+
 class AuthController extends Controller
 {
     use ApiResponser;
@@ -189,10 +190,10 @@ class AuthController extends Controller
     public function updateProfile(UpdateProfileRequest  $request)
     {
         DB::beginTransaction();
-        
+
         try {
             $user = auth()->user();
-            
+
             if (!$user) {
                 return $this->unauthorizedResponse();
             }
@@ -213,7 +214,7 @@ class AuthController extends Controller
                 if (!Hash::check($request->current_password, $user->password)) {
                     return $this->errorResponse('Current password is incorrect', null, 422);
                 }
-                
+
                 $user->password = Hash::make($request->password);
             }
 
@@ -221,13 +222,13 @@ class AuthController extends Controller
             if ($request->has('name')) {
                 $user->name = $request->name;
             }
-            
+
             if ($request->has('email')) {
                 $user->email = $request->email;
             }
 
             $user->save();
-            
+
             DB::commit();
 
             return $this->successResponse(
@@ -237,7 +238,7 @@ class AuthController extends Controller
 
         } catch (Throwable $e) {
             DB::rollBack();
-            
+
             return $this->errorResponse(
                 'Failed to update profile',
                 config('app.debug') ? $e->getMessage() : null,
@@ -253,13 +254,13 @@ class AuthController extends Controller
     {
         try {
             $user = auth()->user();
-            
+
             if (!$user) {
                 return $this->unauthorizedResponse();
             }
 
             $validator = Validator::make($request->all(), [
-                'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:10102400',
+                'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:10240', // Corrigé: 10240 au lieu de 10102400
             ]);
 
             if ($validator->fails()) {
@@ -277,10 +278,10 @@ class AuthController extends Controller
             // Upload le nouvel avatar
             $avatar = $request->file('avatar');
             $filename = 'avatar_' . $user->id . '_' . time() . '.' . $avatar->getClientOriginalExtension();
-            
+
             // Stocker dans storage/app/public/avatars
             $path = $avatar->storeAs('avatars', $filename, 'public');
-            
+
             // Mettre à jour l'utilisateur
             $user->avatar = $filename;
             $user->save();
@@ -309,7 +310,7 @@ class AuthController extends Controller
     {
         try {
             $user = auth()->user();
-            
+
             if (!$user) {
                 return $this->unauthorizedResponse();
             }
@@ -349,7 +350,7 @@ class AuthController extends Controller
     {
         try {
             $user = auth()->user();
-            
+
             if (!$user) {
                 return $this->unauthorizedResponse();
             }
@@ -357,11 +358,15 @@ class AuthController extends Controller
             // Charger les relations si nécessaire
             $user->load(['roles', 'permissions']);
 
+            // Convertir le rôle en string pour éviter les problèmes de sérialisation
+            $role = $user->role;
+
             $profileData = [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->role,
+                'role' => $role instanceof UserRole ? $role->value : $role,
+                'role_label' => $role instanceof UserRole ? $role->label() : null,
                 'avatar' => $user->avatar,
                 'avatar_url' => $user->avatar_url,
                 'initials' => $user->initials,

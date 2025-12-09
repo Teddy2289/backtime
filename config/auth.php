@@ -12,10 +12,9 @@ return [
     | as required, but they're a perfect start for most applications.
     |
     */
-
     'defaults' => [
-        'guard' => env('AUTH_GUARD', 'api'),
-        'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
+        'guard' => 'api',
+        'passwords' => 'users',
     ],
 
     /*

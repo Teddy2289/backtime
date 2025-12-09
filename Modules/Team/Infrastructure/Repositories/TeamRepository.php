@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 
 class TeamRepository implements TeamRepositoryInterface
 {
-    public function find(string $id): ?Team
+    public function find(int $id): ?Team
     {
         return Team::with(['owner', 'members', 'projects'])->find($id);
     }
@@ -20,52 +20,52 @@ class TeamRepository implements TeamRepositoryInterface
         return Team::create($data);
     }
 
-    public function update(string $id, array $data): ?Team
+    public function update(int $id, array $data): ?Team
     {
         $team = $this->find($id);
-        
+
         if (!$team) {
             return null;
         }
-        
+
         $team->update($data);
         return $team->fresh(['owner', 'members']);
     }
 
-    public function delete(string $id): bool
+    public function delete(int $id): bool
     {
         $team = $this->find($id);
-        
+
         if (!$team) {
             return false;
         }
-        
+
         return $team->delete();
     }
 
     public function paginate(int $perPage = 15, array $filters = []): LengthAwarePaginator
     {
         $query = Team::with(['owner']);
-        
+
         if (isset($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('name', 'like', '%' . $filters['search'] . '%')
-                  ->orWhere('description', 'like', '%' . $filters['search'] . '%');
+                    ->orWhere('description', 'like', '%' . $filters['search'] . '%');
             });
         }
-        
+
         if (isset($filters['owner_id'])) {
             $query->where('owner_id', $filters['owner_id']);
         }
-        
+
         if (isset($filters['is_public'])) {
             $query->where('is_public', $filters['is_public']);
         }
-        
+
         return $query->orderBy('created_at', 'desc')->paginate($perPage);
     }
 
-    public function findByOwner(string $ownerId): Collection
+    public function findByOwner(int $ownerId): Collection
     {
         return Team::with(['owner', 'members'])
             ->where('owner_id', $ownerId)
@@ -73,18 +73,18 @@ class TeamRepository implements TeamRepositoryInterface
             ->get();
     }
 
-    public function addMember(string $teamId, string $userId): bool
+    public function addMember(int $teamId, int $userId): bool
     {
         // Check if already a member
         $exists = DB::table('team_members')
             ->where('team_id', $teamId)
             ->where('user_id', $userId)
             ->exists();
-        
+
         if ($exists) {
             return true;
         }
-        
+
         try {
             DB::table('team_members')->insert([
                 'team_id' => $teamId,
@@ -98,7 +98,7 @@ class TeamRepository implements TeamRepositoryInterface
         }
     }
 
-    public function removeMember(string $teamId, string $userId): bool
+    public function removeMember(int $teamId, int $userId): bool
     {
         return DB::table('team_members')
             ->where('team_id', $teamId)
@@ -106,21 +106,21 @@ class TeamRepository implements TeamRepositoryInterface
             ->delete() > 0;
     }
 
-public function getMembers(string $teamId): Collection
-{
-    return DB::table('team_members')
-        ->join('users', 'team_members.user_id', '=', 'users.id')
-        ->where('team_members.team_id', $teamId)
-        ->select('users.*', 'team_members.created_at as joined_at')
-        ->get()
-        ->map(function ($item) {
-            $item->user_id = $item->id; 
-            return $item;
-        });
-}
+    public function getMembers(int $teamId): Collection
+    {
+        return DB::table('team_members')
+            ->join('users', 'team_members.user_id', '=', 'users.id')
+            ->where('team_members.team_id', $teamId)
+            ->select('users.*', 'team_members.created_at as joined_at')
+            ->get()
+            ->map(function ($item) {
+                $item->user_id = $item->id;
+                return $item;
+            });
+    }
 
     // IMPLÉMENTATION DES MÉTHODES AJOUTÉES DANS L'INTERFACE
-    public function countByOwner(string $ownerId): int
+    public function countByOwner(int $ownerId): int
     {
         return Team::where('owner_id', $ownerId)->count();
     }
@@ -133,11 +133,11 @@ public function getMembers(string $teamId): Collection
             ->paginate($perPage);
     }
 
-    public function getUserTeams(string $userId): Collection
+    public function getUserTeams(int $userId): Collection
     {
         // Teams where user is owner
         $ownedTeams = Team::where('owner_id', $userId)->get();
-        
+
         // Teams where user is a member (but not owner)
         $memberTeams = DB::table('team_members')
             ->join('teams', 'team_members.team_id', '=', 'teams.id')
@@ -145,7 +145,7 @@ public function getMembers(string $teamId): Collection
             ->where('teams.owner_id', '!=', $userId)
             ->select('teams.*')
             ->get();
-        
+
         return $ownedTeams->merge($memberTeams);
     }
 }

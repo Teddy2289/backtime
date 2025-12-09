@@ -6,24 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
+use Modules\ProjectsTeams\Domain\Entities\ProjectsTeams;
 use Modules\User\Domain\Entities\User;
 
 
 class Team extends Model
 {
-    public $incrementing = false;  
-    protected $keyType = 'string';  
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (! $model->getKey()) {
-                $model->setAttribute($model->getKeyName(), Str::uuid()->toString());
-            }
-        });
-    }
     protected $fillable = [
         'name',
         'description',
@@ -48,7 +37,7 @@ class Team extends Model
 
     public function projects()
     {
-        return $this->hasMany(\Modules\Project\Domain\Entities\Project::class);
+        return $this->hasMany(ProjectsTeams::class);
     }
 
     public function isOwner($userId): bool

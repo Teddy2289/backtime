@@ -1,0 +1,16 @@
+{
+    "name": "Task",
+    "alias": "task",
+    "description": "Task management module",
+    "version": "1.0.0",
+    "keywords": ["task", "ddd", "module"],
+    "priority": 1000,
+    "providers": [
+        "Modules\\Task\\Providers\\TaskServiceProvider"
+    ],
+    "aliases": {},
+    "files": [
+        "Providers/TaskServiceProvider.php"
+    ],
+    "requires": []
+}

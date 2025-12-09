@@ -8,18 +8,18 @@ use Illuminate\Support\Collection;
 
 interface TeamRepositoryInterface
 {
-    public function find(string $id): ?Team;
+    public function find(int $id): ?Team;
     public function create(array $data): Team;
-    public function update(string $id, array $data): ?Team;
-    public function delete(string $id): bool;
+    public function update(int $id, array $data): ?Team;
+    public function delete(int $id): bool;
     public function paginate(int $perPage = 15, array $filters = []): LengthAwarePaginator;
-    public function findByOwner(string $ownerId): Collection;
-    public function addMember(string $teamId, string $userId): bool;
-    public function removeMember(string $teamId, string $userId): bool;
-    public function getMembers(string $teamId): Collection;
-    
+    public function findByOwner(int $ownerId): Collection;
+    public function addMember(int $teamId, int $userId): bool;
+    public function removeMember(int $teamId, int $userId): bool;
+    public function getMembers(int $teamId): Collection;
+
     // Ajoutez ces méthodes qui sont utilisées dans TeamService
-    public function countByOwner(string $ownerId): int;
+    public function countByOwner(int $ownerId): int;
     public function getPublicTeams(int $perPage = 15): LengthAwarePaginator;
-    public function getUserTeams(string $userId): Collection;
+    public function getUserTeams(int $userId): Collection;
 }

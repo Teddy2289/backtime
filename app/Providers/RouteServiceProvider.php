@@ -42,7 +42,7 @@ class RouteServiceProvider extends ServiceProvider
             // Pas besoin de les déclarer ici
         });
 
-        // Pattern pour UUID
-        Route::pattern('id', '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}');
+        // Pattern simplifié pour IDs numériques
+        Route::pattern('id', '[0-9]+');
     }
 }

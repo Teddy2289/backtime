@@ -11,12 +11,13 @@ class TeamService
 {
     public function __construct(
         protected TeamRepositoryInterface $repository
-    ) {}
+    ) {
+    }
 
     /**
      * Find a team by ID.
      */
-    public function find(string $id): ?Team
+    public function find(int $id): ?Team
     {
         return $this->repository->find($id);
     }
@@ -28,12 +29,12 @@ class TeamService
     {
         return DB::transaction(function () use ($data) {
             $team = $this->repository->create($data);
-            
+
             // Automatically add the owner as a member
             if (isset($data['owner_id'])) {
                 $this->repository->addMember($team->id, $data['owner_id']);
             }
-            
+
             return $team;
         });
     }
@@ -41,16 +42,16 @@ class TeamService
     /**
      * Update a team.
      */
-    public function update(string $id, array $data): ?Team
+    public function update(int $id, array $data): ?Team
     {
         return DB::transaction(function () use ($id, $data) {
             $team = $this->repository->update($id, $data);
-            
+
             // If owner changed, add new owner as member
             if ($team && isset($data['owner_id'])) {
                 $this->repository->addMember($team->id, $data['owner_id']);
             }
-            
+
             return $team;
         });
     }
@@ -58,7 +59,7 @@ class TeamService
     /**
      * Delete a team.
      */
-    public function delete(string $id): bool
+    public function delete(int $id): bool
     {
         return DB::transaction(function () use ($id) {
             return $this->repository->delete($id);
@@ -76,7 +77,7 @@ class TeamService
     /**
      * Find teams by owner.
      */
-    public function findByOwner(string $ownerId)
+    public function findByOwner(int $ownerId)
     {
         return $this->repository->findByOwner($ownerId);
     }
@@ -84,7 +85,7 @@ class TeamService
     /**
      * Add a member to a team.
      */
-    public function addMember(string $teamId, string $userId): bool
+    public function addMember(int $teamId, int $userId): bool
     {
         return DB::transaction(function () use ($teamId, $userId) {
             return $this->repository->addMember($teamId, $userId);
@@ -94,7 +95,7 @@ class TeamService
     /**
      * Remove a member from a team.
      */
-    public function removeMember(string $teamId, string $userId): bool
+    public function removeMember(int $teamId, int $userId): bool
     {
         return DB::transaction(function () use ($teamId, $userId) {
             // Don\'t allow removing the team owner
@@ -102,7 +103,7 @@ class TeamService
             if ($team && $team->owner_id == $userId) {
                 return false;
             }
-            
+
             return $this->repository->removeMember($teamId, $userId);
         });
     }
@@ -110,7 +111,7 @@ class TeamService
     /**
      * Get team members.
      */
-    public function getMembers(string $teamId)
+    public function getMembers(int $teamId)
     {
         return $this->repository->getMembers($teamId);
     }
@@ -118,7 +119,7 @@ class TeamService
     /**
      * Check if user is team owner.
      */
-    public function isOwner(string $teamId, string $userId): bool
+    public function isOwner(int $teamId, int $userId): bool
     {
         $team = $this->repository->find($teamId);
         return $team && $team->owner_id == $userId;
@@ -127,19 +128,19 @@ class TeamService
     /**
      * Check if user is team member.
      */
-public function isMember(string $teamId, string $userId): bool
-{
-    $members = $this->repository->getMembers($teamId);
-    return $members->contains('id', $userId);
-}
+    public function isMember(int $teamId, int $userId): bool
+    {
+        $members = $this->repository->getMembers($teamId);
+        return $members->contains('id', $userId);
+    }
 
     /**
      * Get teams where user is a member (including owned teams).
      */
-/**
- * Get teams where user is a member (including owned teams).
- */
-public function getUserTeams(string $userId)
+    /**
+     * Get teams where user is a member (including owned teams).
+     */
+    public function getUserTeams(int $userId)
     {
         // Utilisez la méthode du repository
         return $this->repository->getUserTeams($userId);
@@ -148,12 +149,12 @@ public function getUserTeams(string $userId)
     /**
      * Transfer team ownership.
      */
-    public function transferOwnership(string $teamId, string $newOwnerId): ?Team
+    public function transferOwnership(int $teamId, int $newOwnerId): ?Team
     {
         return DB::transaction(function () use ($teamId, $newOwnerId) {
             // First, ensure new owner is a team member
             $this->repository->addMember($teamId, $newOwnerId);
-            
+
             // Then transfer ownership
             return $this->repository->update($teamId, [
                 'owner_id' => $newOwnerId
@@ -167,35 +168,35 @@ public function getUserTeams(string $userId)
     public function search(array $criteria, int $perPage = 15): LengthAwarePaginator
     {
         $filters = [];
-        
+
         if (isset($criteria['search'])) {
             $filters['search'] = $criteria['search'];
         }
-        
+
         if (isset($criteria['owner_id'])) {
             $filters['owner_id'] = $criteria['owner_id'];
         }
-        
+
         if (isset($criteria['is_public'])) {
             $filters['is_public'] = $criteria['is_public'];
         }
-        
+
         return $this->repository->paginate($perPage, $filters);
     }
 
     /**
      * Get team statistics.
      */
-    public function getStatistics(string $teamId): array
+    public function getStatistics(int $teamId): array
     {
         $team = $this->repository->find($teamId);
-        
+
         if (!$team) {
             return [];
         }
-        
+
         $members = $this->repository->getMembers($teamId);
-        
+
         return [
             'total_members' => $members->count(),
             'created_at' => $team->created_at,

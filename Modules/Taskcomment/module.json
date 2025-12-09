@@ -1,0 +1,16 @@
+{
+    "name": "Taskcomment",
+    "alias": "taskcomment",
+    "description": "Taskcomment management module",
+    "version": "1.0.0",
+    "keywords": ["taskcomment", "ddd", "module"],
+    "priority": 1000,
+    "providers": [
+        "Modules\\Taskcomment\\Providers\\TaskcommentServiceProvider"
+    ],
+    "aliases": {},
+    "files": [
+        "Providers/TaskcommentServiceProvider.php"
+    ],
+    "requires": []
+}

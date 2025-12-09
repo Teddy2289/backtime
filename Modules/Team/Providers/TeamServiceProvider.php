@@ -2,6 +2,7 @@
 
 namespace Modules\Team\Providers;
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class TeamServiceProvider extends ServiceProvider
@@ -9,12 +10,12 @@ class TeamServiceProvider extends ServiceProvider
     /**
      * @var string $moduleName
      */
-    protected $moduleName = 'Team';
+    protected string $moduleName = 'Team';
 
     /**
      * @var string $moduleNameLower
      */
-    protected $moduleNameLower = 'team';
+    protected string $moduleNameLower = 'team';
 
     /**
      * Boot the application events.
@@ -38,13 +39,23 @@ class TeamServiceProvider extends ServiceProvider
             \Modules\Team\Domain\Interfaces\TeamRepositoryInterface::class,
             \Modules\Team\Infrastructure\Repositories\TeamRepository::class
         );
-        
-        // Register TeamService
+
+        // Register TeamService as singleton
         $this->app->singleton(
-            \Modules\Team\Application\Services\TeamService::class, // Corrected namespace
+            \Modules\Team\Application\Services\TeamService::class,
             function ($app) {
                 return new \Modules\Team\Application\Services\TeamService(
                     $app->make(\Modules\Team\Domain\Interfaces\TeamRepositoryInterface::class)
+                );
+            }
+        );
+
+        // Register TeamController for dependency injection if needed
+        $this->app->bind(
+            \Modules\Team\Presentation\Controllers\TeamController::class,
+            function ($app) {
+                return new \Modules\Team\Presentation\Controllers\TeamController(
+                    $app->make(\Modules\Team\Application\Services\TeamService::class)
                 );
             }
         );
@@ -58,6 +69,7 @@ class TeamServiceProvider extends ServiceProvider
         $this->publishes([
             module_path($this->moduleName, 'Config/config.php') => config_path($this->moduleNameLower . '.php'),
         ], 'config');
+
         $this->mergeConfigFrom(
             module_path($this->moduleName, 'Config/config.php'),
             $this->moduleNameLower
@@ -70,7 +82,6 @@ class TeamServiceProvider extends ServiceProvider
     public function registerViews(): void
     {
         $viewPath = resource_path('views/modules/' . $this->moduleNameLower);
-
         $sourcePath = module_path($this->moduleName, 'Presentation/Resources/views');
 
         $this->publishes([
@@ -91,8 +102,13 @@ class TeamServiceProvider extends ServiceProvider
             $this->loadTranslationsFrom($langPath, $this->moduleNameLower);
             $this->loadJsonTranslationsFrom($langPath);
         } else {
-            $this->loadTranslationsFrom(module_path($this->moduleName, 'Presentation/Resources/lang'), $this->moduleNameLower);
-            $this->loadJsonTranslationsFrom(module_path($this->moduleName, 'Presentation/Resources/lang'));
+            $this->loadTranslationsFrom(
+                module_path($this->moduleName, 'Presentation/Resources/lang'),
+                $this->moduleNameLower
+            );
+            $this->loadJsonTranslationsFrom(
+                module_path($this->moduleName, 'Presentation/Resources/lang')
+            );
         }
     }
 
@@ -101,7 +117,19 @@ class TeamServiceProvider extends ServiceProvider
      */
     protected function registerRoutes(): void
     {
-        $this->loadRoutesFrom(module_path($this->moduleName, 'Presentation/Routes/api.php'));
+        // Chargez les routes seulement si nous ne sommes pas en mode console
+        // et si le cache de routes n'est pas activé
+        if (!$this->app->routesAreCached() && !$this->app->runningInConsole()) {
+            Route::middleware(['api'])
+                ->prefix('api')
+                ->group(function () {
+                    $routeFile = module_path($this->moduleName, 'Presentation/Routes/api.php');
+
+                    if (file_exists($routeFile)) {
+                        require $routeFile;
+                    }
+                });
+        }
     }
 
     /**
@@ -109,7 +137,10 @@ class TeamServiceProvider extends ServiceProvider
      */
     public function provides(): array
     {
-        return [];
+        return [
+            \Modules\Team\Domain\Interfaces\TeamRepositoryInterface::class,
+            \Modules\Team\Application\Services\TeamService::class,
+        ];
     }
 
     /**
@@ -118,11 +149,15 @@ class TeamServiceProvider extends ServiceProvider
     private function getPublishableViewPaths(): array
     {
         $paths = [];
-        foreach (\Config::get('view.paths') as $path) {
-            if (is_dir($path . '/modules/' . $this->moduleNameLower)) {
-                $paths[] = $path . '/modules/' . $this->moduleNameLower;
+        $viewPaths = config('view.paths', []);
+
+        foreach ($viewPaths as $path) {
+            $modulePath = $path . '/modules/' . $this->moduleNameLower;
+            if (is_dir($modulePath)) {
+                $paths[] = $modulePath;
             }
         }
+
         return $paths;
     }
 }
