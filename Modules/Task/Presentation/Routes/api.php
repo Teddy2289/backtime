@@ -36,6 +36,13 @@ Route::prefix('tasks')->group(function () {
     // Routes de santé et test
     Route::get('/health', [TaskController::class, 'health']);
     Route::get('/test', [TaskController::class, 'test']);
+
+    Route::get('/project/{projectId}/assignable-users', [TaskController::class, 'getAssignableUsersForProject'])
+        ->where('projectId', '[0-9]+');
+
+    // Route pour les membres de l'équipe
+    Route::get('/project/{projectId}/team-members', [TaskController::class, 'getTeamMembers'])
+        ->where('projectId', '[0-9]+');
 });
 
 // Route de santé publique (sans auth)

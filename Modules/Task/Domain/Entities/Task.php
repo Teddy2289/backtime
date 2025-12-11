@@ -7,9 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Modules\ProjectsTeams\Domain\Entities\ProjectsTeams;
 use Modules\TaskComment\Domain\Entities\TaskComment;
 use Modules\Taskfiles\Domain\Entities\TaskFile;
 use Modules\Tasktimelog\Domain\Entities\TaskTimeLog;
+use Modules\Team\Domain\Entities\Team;
 use Modules\User\Domain\Entities\User;
 
 class Task extends Model
@@ -40,21 +43,6 @@ class Task extends Model
 
     protected $appends = ['progress', 'is_overdue'];
 
-    /**
-     * Relation avec le projet
-     */
-    public function project(): BelongsTo
-    {
-        return $this->belongsTo(\Modules\Projectsteams\Domain\Entities\ProjectsTeams::class, 'project_id');
-    }
-
-    /**
-     * Relation avec l'utilisateur assigné
-     */
-    public function assignedUser(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'assigned_to');
-    }
 
     /**
      * Relation avec les journaux de temps
@@ -185,5 +173,83 @@ class Task extends Model
         return $query->where('start_date', '>', now())
             ->where('start_date', '<=', now()->addDays(7))
             ->whereNotNull('start_date');
+    }
+
+    /**
+     * Relation avec le projet
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(ProjectsTeams::class, 'project_id');
+    }
+
+    /**
+     * Relation avec l'équipe via le projet
+     */
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class, 'team_id');
+    }
+
+    /**
+     * Relation avec l'équipe via le projet (alternative)
+     */
+    public function teamThroughProject(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Team::class,
+            ProjectsTeams::class,
+            'id', // Foreign key on ProjectsTeams table
+            'id', // Foreign key on Team table
+            'project_id', // Local key on Task table
+            'team_id' // Local key on ProjectsTeams table
+        );
+    }
+
+    /**
+     * Relation avec l'utilisateur assigné
+     */
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /**
+     * Relation avec les utilisateurs de l'équipe (via projet->équipe)
+     */
+    public function teamMembers()
+    {
+        return $this->hasManyThrough(
+            User::class,
+            ProjectsTeams::class,
+            'id',
+            'id',
+            'project_id',
+            'team_id'
+        );
+    }
+
+    /**
+     * Récupérer les utilisateurs assignables pour cette tâche
+     */
+    public function getAssignableUsers()
+    {
+        if ($this->project && $this->project->team) {
+            return $this->project->team->members;
+        }
+
+        return collect();
+    }
+
+    /**
+     * Vérifier si un utilisateur peut être assigné à cette tâche
+     */
+    public function canAssignUser($userId): bool
+    {
+        if (!$this->project) {
+            return false;
+        }
+
+        return $this->project->isUserInTeam($userId);
     }
 }

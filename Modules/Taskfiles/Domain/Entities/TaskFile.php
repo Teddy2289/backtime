@@ -15,7 +15,7 @@ class TaskFile extends Model
 
     protected $fillable = [
         'task_id',
-        'file_url',
+        'file_url',        // From migration
         'file_name',
         'file_size',
         'uploaded_by',
@@ -34,6 +34,8 @@ class TaskFile extends Model
         'file_url_full',
         'formatted_size',
         'icon',
+        'file_type',       // Add computed attribute for compatibility
+        'file_path',       // Add computed attribute for compatibility
     ];
 
     /**
@@ -62,6 +64,22 @@ class TaskFile extends Model
         }
 
         return asset('storage/' . $this->file_url);
+    }
+
+    /**
+     * Computed attribute for compatibility with controller
+     */
+    public function getFilePathAttribute(): string
+    {
+        return $this->file_url; // Map file_url to file_path for compatibility
+    }
+
+    /**
+     * Computed attribute for compatibility with controller
+     */
+    public function getFileTypeAttribute(): string
+    {
+        return $this->mime_type ?? $this->getMimeTypeAttribute();
     }
 
     /**
@@ -120,6 +138,10 @@ class TaskFile extends Model
      */
     public function getExtensionAttribute(): string
     {
+        if (isset($this->attributes['extension'])) {
+            return strtolower($this->attributes['extension']);
+        }
+
         return strtolower(pathinfo($this->file_name, PATHINFO_EXTENSION));
     }
 

@@ -49,15 +49,23 @@ trait ApiResponser
     /**
      * Authentication response format.
      */
+    /**
+     * Authentication response format.
+     */
     protected function authResponse(string $token, $user = null, string $message = null): JsonResponse
     {
+        // Récupérer le TTL depuis la config
+        $ttl = config('jwt.ttl', 60); // default 60 minutes
+
         $response = [
             'success' => true,
             'message' => $message,
             'data' => [
                 'access_token' => $token,
                 'token_type' => 'bearer',
-                'expires_in' => auth()->factory()->getTTL() * 60,
+                'expires_in' => $ttl * 60,
+                'expires_in_minutes' => $ttl,
+                'expires_in_hours' => $ttl / 60,
                 'user' => $user,
             ],
             'timestamp' => now()->toISOString(),
@@ -70,7 +78,6 @@ trait ApiResponser
 
         return response()->json($response, 200);
     }
-
     /**
      * Paginated response format.
      */

@@ -6,6 +6,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Schema;
 use Modules\Taskfiles\Domain\Entities\TaskFile;
 use Modules\Taskfiles\Domain\Interfaces\TaskFileRepositoryInterface;
 
@@ -42,18 +43,30 @@ class TaskFileService
         $fileName = $this->generateUniqueFileName($taskId, $file->getClientOriginalName());
         $filePath = $file->storeAs("tasks/{$taskId}", $fileName, 'public');
 
-        return $this->fileRepository->create([
+        // Créez seulement avec les colonnes qui existent
+        $data = [
             'task_id' => $taskId,
-            'file_url' => $filePath,
+            'file_url' => $filePath,  // Utilisez file_url comme dans votre DB
             'file_name' => $file->getClientOriginalName(),
             'file_size' => $file->getSize(),
             'uploaded_by' => $uploadedBy,
-            'mime_type' => $file->getMimeType(),
-            'extension' => $file->getClientOriginalExtension(),
-            'description' => $description,
-        ]);
-    }
+        ];
 
+        // Ajoutez seulement si la colonne existe
+        if (Schema::hasColumn('task_files', 'mime_type')) {
+            $data['mime_type'] = $file->getMimeType();
+        }
+
+        if (Schema::hasColumn('task_files', 'extension')) {
+            $data['extension'] = $file->getClientOriginalExtension();
+        }
+
+        if ($description && Schema::hasColumn('task_files', 'description')) {
+            $data['description'] = $description;
+        }
+
+        return $this->fileRepository->create($data);
+    }
     /**
      * Uploader plusieurs fichiers
      */

@@ -7,6 +7,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Projectsteams\Application\Services\ProjectsTeamsService;
+use Modules\ProjectsTeams\Domain\Entities\ProjectsTeams;
 
 class ProjectsteamsController extends Controller
 {
@@ -467,5 +468,142 @@ class ProjectsteamsController extends Controller
             'module' => 'Project',
             'version' => '1.0.0'
         ], 'Module is healthy');
+    }
+
+
+    /**
+     * Get team members for a project.
+     */
+    public function getProjectTeamUsers(int $projectId): JsonResponse
+    {
+        try {
+            $project = ProjectsTeams::with(['team.members'])->find($projectId);
+
+            if (!$project) {
+                return $this->notFoundResponse('Project not found');
+            }
+
+            if (!$project->team) {
+                return $this->successResponse([], 'Project has no team');
+            }
+
+            $members = $project->team->members->map(function ($member) {
+                return [
+                    'id' => $member->id,
+                    'name' => $member->name,
+                    'email' => $member->email,
+                    'avatar' => $member->avatar,
+                    'avatar_url' => $member->avatar_url ?? null,
+                    'initials' => $member->initials ?? strtoupper(substr($member->name, 0, 2)),
+                    'role' => $member->pivot->role ?? 'member',
+                ];
+            });
+
+            return $this->successResponse(
+                $members,
+                'Project team members retrieved successfully'
+            );
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Failed to retrieve project team members',
+                config('app.debug') ? $e->getMessage() : null,
+                500
+            );
+        }
+    }
+
+    /**
+     * Get assignable users for a project (team members)
+     */
+    public function getAssignableUsers(int $projectId): JsonResponse
+    {
+        try {
+            $project = ProjectsTeams::with(['team.members'])->find($projectId);
+
+            if (!$project) {
+                return $this->notFoundResponse('Project not found');
+            }
+
+            if (!$project->team) {
+                return $this->successResponse([], 'Project has no team');
+            }
+
+            $users = $project->team->members->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar,
+                    'initials' => $user->initials ?? strtoupper(substr($user->name, 0, 2)),
+                    'can_assign' => true, // Tous les membres peuvent être assignés
+                ];
+            });
+
+            return $this->successResponse(
+                $users,
+                'Assignable users retrieved successfully'
+            );
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Failed to retrieve assignable users',
+                config('app.debug') ? $e->getMessage() : null,
+                500
+            );
+        }
+    }
+
+    /**
+     * Get project with team members (detailed view)
+     */
+    public function showWithTeam(int $id): JsonResponse
+    {
+        try {
+            $project = ProjectsTeams::with(['team.members'])->find($id);
+
+            if (!$project) {
+                return $this->notFoundResponse('Project not found');
+            }
+
+            $responseData = [
+                'id' => $project->id,
+                'team_id' => $project->team_id,
+                'name' => $project->name,
+                'description' => $project->description,
+                'start_date' => $project->start_date,
+                'end_date' => $project->end_date,
+                'status' => $project->status,
+                'created_at' => $project->created_at,
+                'updated_at' => $project->updated_at,
+                'team' => $project->team ? [
+                    'id' => $project->team->id,
+                    'name' => $project->team->name,
+                    'description' => $project->team->description,
+                    'owner_id' => $project->team->owner_id,
+                    'is_public' => $project->team->is_public,
+                ] : null,
+                'team_members' => $project->team ? $project->team->members->map(function ($member) {
+                    return [
+                        'id' => $member->id,
+                        'name' => $member->name,
+                        'email' => $member->email,
+                        'avatar' => $member->avatar,
+                        'avatar_url' => $member->avatar_url ?? null,
+                        'role' => $member->pivot->role ?? 'member',
+                    ];
+                }) : [],
+                'tasks_count' => $project->tasks()->count(),
+            ];
+
+            return $this->successResponse(
+                $responseData,
+                'Project with team details retrieved successfully'
+            );
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Failed to retrieve project details',
+                config('app.debug') ? $e->getMessage() : null,
+                500
+            );
+        }
     }
 }

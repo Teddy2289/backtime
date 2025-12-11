@@ -30,7 +30,14 @@ Route::prefix('projectsTeams')->group(function () {
 
         // Restore soft-deleted project
         Route::put('/{id}/restore', [ProjectsteamsController::class, 'restore']);
+        Route::get('/{id}/team-users', [ProjectsteamsController::class, 'getProjectTeamUsers'])
+            ->where('id', '[0-9]+');
 
+        Route::get('/{id}/assignable-users', [ProjectsteamsController::class, 'getAssignableUsers'])
+            ->where('id', '[0-9]+');
+
+        Route::get('/{id}/with-team', [ProjectsteamsController::class, 'showWithTeam'])
+            ->where('id', '[0-9]+');
         // Membership check
         Route::get('/{projectId}/check-team/{teamId}', [ProjectsteamsController::class, 'checkTeamMembership']);
     });

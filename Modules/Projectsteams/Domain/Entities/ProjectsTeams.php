@@ -2,11 +2,14 @@
 
 namespace Modules\ProjectsTeams\Domain\Entities;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Task\Domain\Entities\Task;
 use Modules\Team\Domain\Entities\Team;
 
 class ProjectsTeams extends Model
@@ -101,5 +104,56 @@ class ProjectsTeams extends Model
             'on_hold' => 'On Hold',
             'cancelled' => 'Cancelled',
         ];
+    }
+
+
+    /**
+     * Get all tasks for this project.
+     */
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'project_id');
+    }
+
+
+    /**
+     * Get team members through team relationship.
+     */
+    public function teamMembers()
+    {
+        return $this->hasManyThrough(
+            User::class,
+            Team::class,
+            'id',
+            'id',
+            'team_id',
+            'id'
+        )->whereHas('members', function ($query) {
+            $query->where('user_id', '!=', null);
+        });
+    }
+
+    /**
+     * Get assignable users for this project (team members).
+     */
+    public function getAssignableUsers()
+    {
+        if ($this->team) {
+            return $this->team->members;
+        }
+
+        return collect();
+    }
+
+    /**
+     * Vérifier si un utilisateur est membre de l'équipe du projet
+     */
+    public function isUserInTeam($userId): bool
+    {
+        if (!$this->team) {
+            return false;
+        }
+
+        return $this->team->isMember($userId);
     }
 }
