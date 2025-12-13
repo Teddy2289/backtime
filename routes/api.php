@@ -13,7 +13,7 @@ Route::prefix('auth')->group(function () {
     Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
 
     // Profile routes
-    Route::prefix('profile')->middleware('auth:api')->group(function () {
+    Route::prefix('profile')->group(function () {
         Route::get('/', [AuthController::class, 'profile']);
         Route::put('/', [AuthController::class, 'updateProfile']);
         Route::post('/avatar', [AuthController::class, 'uploadAvatar']);

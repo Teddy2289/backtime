@@ -21,8 +21,6 @@ class UserMiddleware
             ], 401);
         }
 
-        // Vous pouvez ajouter des vérifications spécifiques ici
-        // Par exemple, vérifier si l'utilisateur est activé, a les permissions, etc.
 
         return $next($request);
     }
