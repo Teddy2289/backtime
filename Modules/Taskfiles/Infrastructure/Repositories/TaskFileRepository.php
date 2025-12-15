@@ -1,11 +1,11 @@
 <?php
 
-namespace Modules\Taskfiles\Infrastructure\Repositories;
+namespace Modules\TaskFiles\Infrastructure\Repositories;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
-use Modules\Taskfiles\Domain\Entities\TaskFile;
-use Modules\Taskfiles\Domain\Interfaces\TaskFileRepositoryInterface;
+use Modules\TaskFiles\Domain\Entities\TaskFile;
+use Modules\TaskFiles\Domain\Interfaces\TaskFileRepositoryInterface;
 
 class TaskFileRepository implements TaskFileRepositoryInterface
 {

@@ -1,11 +1,11 @@
 <?php
 
-namespace Modules\Taskcomment\Application\Services;
+namespace Modules\TaskComment\Application\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
-use Modules\Taskcomment\Domain\Entities\TaskComment;
-use Modules\Taskcomment\Domain\Interfaces\TaskCommentRepositoryInterface;
+use Modules\TaskComment\Domain\Entities\TaskComment;
+use Modules\TaskComment\Domain\Interfaces\TaskCommentRepositoryInterface;
 
 class TaskCommentService
 {

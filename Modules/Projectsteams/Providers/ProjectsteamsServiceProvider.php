@@ -1,13 +1,13 @@
 <?php
 
-namespace Modules\Projectsteams\Providers;
+namespace Modules\ProjectsTeams\Providers;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use Modules\Projectsteams\Application\Services\ProjectsTeamsService;
+use Modules\ProjectsTeams\Application\Services\ProjectsTeamsService;
 use Modules\ProjectsTeams\Domain\Interfaces\ProjectsTeamsRepositoryInterface;
 use Modules\ProjectsTeams\Infrastructure\Repositories\ProjectsTeamsRepository;
-use Modules\Projectsteams\Presentation\Controllers\ProjectsteamsController;
+use Modules\ProjectsTeams\Presentation\Controllers\ProjectsteamsController;
 
 class ProjectsteamsServiceProvider extends ServiceProvider
 {
@@ -86,7 +86,7 @@ class ProjectsteamsServiceProvider extends ServiceProvider
                 ProjectsTeamsController::class,
                 function ($app) {
                     return new ProjectsTeamsController(
-                        $app->make(\Modules\Projectsteams\Application\Services\ProjectsTeamsService::class)
+                        $app->make(\Modules\ProjectsTeams\Application\Services\ProjectsTeamsService::class)
                     );
                 }
             );

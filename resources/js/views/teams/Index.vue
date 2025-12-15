@@ -81,18 +81,15 @@
                         <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Mes équipes</p>
                         <p class="mt-1 text-2xl font-semibold text-gray-900">{{ teamStore.myTeams.length }}</p>
                     </div>
-                    <div class="bg-white p-4 rounded-lg border border-gray-200">
-                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Équipes publiques</p>
-                        <p class="mt-1 text-2xl font-semibold text-gray-900">{{ teamStore.publicTeams.length }}</p>
-                    </div>
+
                 </div>
 
                 <!-- Grille des équipes -->
-                <div v-if="teamStore.teams.length > 0">
+                <div v-if="teamStore.safeTeams.length > 0">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <TeamCard v-for="team in teamStore.teams" :key="team.id" :team="team"
+                        <TeamCard v-for="team in teamStore.safeTeams" :key="team.id" :team="team"
                             :can-edit="team.owner_id === authStore.user?.id"
-                            :can-delete="team.owner_id === authStore.user?.id" @view="handleViewTeam"
+                            :can-delete="team.owner_id === authStore.user?.id" @view="showTeamDetails"
                             @edit="handleEditTeam" @delete="handleDeleteTeam" />
                     </div>
 
@@ -144,6 +141,11 @@
         <!-- Modal de création -->
         <TeamCreateModal v-if="showCreateModal" @close="showCreateModal = false" @created="handleTeamCreated" />
 
+        <!-- Modal de détails -->
+        <TeamDetailModal v-if="selectedTeamForDetails" :team="selectedTeamForDetails"
+            :can-edit="selectedTeamForDetails.owner_id === authStore.user?.id" @close="selectedTeamForDetails = null"
+            @edit="handleEditFromDetails" />
+
         <!-- Modal d'édition -->
         <TeamEditModal v-if="selectedTeam" :team="selectedTeam" @close="selectedTeam = null"
             @updated="handleTeamUpdated" />
@@ -155,11 +157,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
 import { useTeamStore } from '@/stores/team.store'
+import { useAuthStore } from '@/stores/auth'
 import TeamCard from '@/components/teams/TeamCard.vue'
 import TeamCreateModal from '@/components/teams/TeamCreateModal.vue'
+import TeamDetailModal from '@/components/teams/TeamDetailModal.vue'
 import TeamEditModal from '@/components/teams/TeamEditModal.vue'
 import TeamDeleteModal from '@/components/teams/TeamDeleteModal.vue'
 import {
@@ -170,13 +173,13 @@ import {
 } from '@heroicons/vue/24/outline'
 import type { Team } from '@/services/team.service'
 
-const router = useRouter()
 const teamStore = useTeamStore()
 const authStore = useAuthStore()
 
 // State
 const showCreateModal = ref(false)
 const selectedTeam = ref<Team | null>(null)
+const selectedTeamForDetails = ref<Team | null>(null)
 const teamToDelete = ref<Team | null>(null)
 const searchQuery = ref('')
 const filters = ref({
@@ -221,8 +224,15 @@ const nextPage = () => {
 }
 
 // Gestion des événements
-const handleViewTeam = (team: Team) => {
-    router.push({ name: 'teams.detail', params: { id: team.id } })
+const showTeamDetails = (team: Team) => {
+    selectedTeamForDetails.value = team
+}
+
+const handleEditFromDetails = () => {
+    if (selectedTeamForDetails.value) {
+        selectedTeam.value = selectedTeamForDetails.value
+        selectedTeamForDetails.value = null
+    }
 }
 
 const handleEditTeam = (team: Team) => {
@@ -255,7 +265,6 @@ onMounted(() => {
 
 // Nettoyer le store quand on quitte la page
 import { onBeforeUnmount } from 'vue'
-import { useAuthStore } from '@/stores/auth'
 onBeforeUnmount(() => {
     teamStore.reset()
 })

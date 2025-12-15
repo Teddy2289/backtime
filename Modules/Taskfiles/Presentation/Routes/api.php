@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\Taskfiles\Presentation\Controllers\TaskfilesController;
+use Modules\TaskFiles\Presentation\Controllers\TaskfilesController;
 
 // Routes pour les fichiers
 Route::prefix('files')->middleware(['auth:api'])->group(function () {

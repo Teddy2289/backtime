@@ -1,10 +1,10 @@
 <?php
 
-namespace Modules\Taskfiles\Domain\Interfaces;
+namespace Modules\TaskFiles\Domain\Interfaces;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
-use Modules\Taskfiles\Domain\Entities\TaskFile;
+use Modules\TaskFiles\Domain\Entities\TaskFile;
 
 interface TaskFileRepositoryInterface
 {

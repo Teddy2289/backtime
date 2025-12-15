@@ -6,6 +6,6 @@ Route::prefix('taskcomment')
     ->middleware(['web'])
     ->group(function () {
         Route::get('/', function () {
-            return view('taskcomment::welcome');
+            return view('taskcomment::app');
         });
     });

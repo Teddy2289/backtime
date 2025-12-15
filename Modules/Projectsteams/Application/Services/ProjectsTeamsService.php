@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Projectsteams\Application\Services;
+namespace Modules\ProjectsTeams\Application\Services;
 
 use Modules\Project\Domain\Entities\Project;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

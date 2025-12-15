@@ -1,12 +1,12 @@
 <?php
 
-namespace Modules\Projectsteams\Presentation\Controllers;
+namespace Modules\ProjectsTeams\Presentation\Controllers;
 
 use App\Traits\ApiResponser;
 use Illuminate\Routing\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Modules\Projectsteams\Application\Services\ProjectsTeamsService;
+use Modules\ProjectsTeams\Application\Services\ProjectsTeamsService;
 use Modules\ProjectsTeams\Domain\Entities\ProjectsTeams;
 
 class ProjectsteamsController extends Controller

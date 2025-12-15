@@ -1,17 +1,17 @@
 <?php
 
-namespace Modules\Taskcomment\Providers;
+namespace Modules\TaskComment\Providers;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use Modules\Taskcomment\Application\Services\TaskCommentService;
-use Modules\Taskcomment\Presentation\Controllers\TaskcommentController;
+use Modules\TaskComment\Application\Services\TaskCommentService;
+use Modules\TaskComment\Presentation\Controllers\TaskcommentController;
 // AJOUTEZ CES USES
 use Modules\Task\Application\Services\TaskService;
 use Modules\Task\Domain\Interfaces\TaskRepositoryInterface;
 use Modules\Task\Infrastructure\Repositories\TaskRepository;
-use Modules\Taskcomment\Domain\Interfaces\TaskCommentRepositoryInterface;
-use Modules\Taskcomment\Infrastructure\Repositories\TaskCommentRepository;
+use Modules\TaskComment\Domain\Interfaces\TaskCommentRepositoryInterface;
+use Modules\TaskComment\Infrastructure\Repositories\TaskCommentRepository;
 
 class TaskcommentServiceProvider extends ServiceProvider
 {

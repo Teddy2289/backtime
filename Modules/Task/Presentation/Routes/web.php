@@ -6,6 +6,6 @@ Route::prefix('task')
     ->middleware(['web'])
     ->group(function () {
         Route::get('/', function () {
-            return view('task::welcome');
+            return view('task::app');
         });
     });

@@ -1,17 +1,17 @@
 <?php
 
-namespace Modules\Tasktimelog\Providers;
+namespace Modules\TaskTimeLog\Providers;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Modules\Task\Application\Services\TaskService;
-use Modules\Taskfiles\Domain\Interfaces\TaskFileRepositoryInterface;
-use Modules\Tasktimelog\Application\Services\TaskTimeLogService;
-use Modules\Tasktimelog\Domain\Interfaces\TaskTimeLogRepositoryInterface;
-use Modules\Tasktimelog\Infrastructure\Repositories\TaskTimeLogRepository;
-use Modules\Tasktimelog\Presentation\Controllers\TasktimelogController;
+use Modules\TaskTimeLog\Domain\Interfaces\TaskFileRepositoryInterface;
+use Modules\TaskTimeLog\Application\Services\TaskTimeLogService;
+use Modules\TaskTimeLog\Domain\Interfaces\TaskTimeLogRepositoryInterface;
+use Modules\TaskTimeLog\Infrastructure\Repositories\TaskTimeLogRepository;
+use Modules\TaskTimeLog\Presentation\Controllers\TasktimelogController;
 
-class TasktimelogServiceProvider extends ServiceProvider
+class TaskTimeLogServiceProvider extends ServiceProvider
 {
     protected $moduleName = 'Tasktimelog';
     protected $moduleNameLower = 'tasktimelog';

@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Tasktimelog\Presentation\Controllers;
+namespace Modules\TaskTimeLog\Presentation\Controllers;
 
 use App\Traits\ApiResponser;
 use Illuminate\Routing\Controller;
@@ -8,7 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Modules\Task\Application\Services\TaskService;
-use Modules\Tasktimelog\Application\Services\TaskTimeLogService;
+use Modules\TaskTimeLog\Application\Services\TaskTimeLogService;
 
 class TaskTimeLogController extends Controller
 {

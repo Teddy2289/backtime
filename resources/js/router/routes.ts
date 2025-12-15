@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from "vue-router";
 import { UserRole } from "@/enums/user-role";
+import { useTaskStore } from "@/stores/task.store";
 
 export const routes: RouteRecordRaw[] = [
     // Routes publiques
@@ -81,6 +82,29 @@ export const routes: RouteRecordRaw[] = [
             layout: "AppLayout",
             requiresAuth: true,
             title: "Tasks",
+        },
+    },
+    // Dans votre fichier de routes
+    {
+        path: "/tasks/:id",
+        name: "task-detail",
+        component: () => import("@/views/tasks/Detail.vue"),
+        meta: {
+            layout: "AppLayout",
+            requiresAuth: true,
+            title: "Task Detail",
+        },
+        beforeEnter: async (to, from, next) => {
+            const taskStore = useTaskStore();
+            const taskId = parseInt(to.params.id as string);
+
+            try {
+                await taskStore.fetchTask(taskId);
+                next();
+            } catch (error) {
+                // Rediriger si la tâche n'existe pas
+                next({ name: "tasks" });
+            }
         },
     },
     {

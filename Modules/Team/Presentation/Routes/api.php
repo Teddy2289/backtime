@@ -2,16 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Team\Presentation\Controllers\TeamController;
-
-// Route de santé publique
-Route::get('/team/health', function () {
-    return response()->json([
-        'status' => 'ok',
-        'module' => 'Team',
-        'timestamp' => now()->toISOString()
-    ]);
-});
-
 // Routes publiques pour Team
 Route::prefix('teams')->group(function () {
     Route::get('/', [TeamController::class, 'index']);

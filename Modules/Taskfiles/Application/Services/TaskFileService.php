@@ -1,14 +1,14 @@
 <?php
 
-namespace Modules\Taskfiles\Application\Services;
+namespace Modules\TaskFiles\Application\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;
-use Modules\Taskfiles\Domain\Entities\TaskFile;
-use Modules\Taskfiles\Domain\Interfaces\TaskFileRepositoryInterface;
+use Modules\TaskFiles\Domain\Entities\TaskFile;
+use Modules\TaskFiles\Domain\Interfaces\TaskFileRepositoryInterface;
 
 class TaskFileService
 {

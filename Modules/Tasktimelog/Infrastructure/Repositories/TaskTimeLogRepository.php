@@ -1,11 +1,11 @@
 <?php
 
-namespace Modules\Tasktimelog\Infrastructure\Repositories;
+namespace Modules\TaskTimeLog\Infrastructure\Repositories;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
-use Modules\Tasktimelog\Domain\Entities\TaskTimeLog;
-use Modules\Tasktimelog\Domain\Interfaces\TaskTimeLogRepositoryInterface;
+use Modules\TaskTimeLog\Domain\Entities\TaskTimeLog;
+use Modules\TaskTimeLog\Domain\Interfaces\TaskTimeLogRepositoryInterface;
 
 class TaskTimeLogRepository implements TaskTimeLogRepositoryInterface
 {

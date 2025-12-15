@@ -1,15 +1,15 @@
 <?php
 
-namespace Modules\Taskfiles\Providers;
+namespace Modules\TaskFiles\Providers;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Modules\Task\Application\Services\TaskService;
 use Modules\Task\Domain\Entities\Task;
-use Modules\Taskfiles\Application\Services\TaskFileService;
-use Modules\Taskfiles\Domain\Interfaces\TaskFileRepositoryInterface;
-use Modules\Taskfiles\Infrastructure\Repositories\TaskFileRepository;
-use Modules\Taskfiles\Presentation\Controllers\TaskFilesController;
+use Modules\TaskFiles\Application\Services\TaskFileService;
+use Modules\TaskFiles\Domain\Interfaces\TaskFileRepositoryInterface;
+use Modules\TaskFiles\Infrastructure\Repositories\TaskFileRepository;
+use Modules\TaskFiles\Presentation\Controllers\TaskFilesController;
 
 class TaskfilesServiceProvider extends ServiceProvider
 {

@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\Projectsteams\Presentation\Controllers\ProjectsteamsController;
+use Modules\ProjectsTeams\Presentation\Controllers\ProjectsteamsController;
 
 Route::prefix('projectsTeams')->group(function () {
     // Public routes

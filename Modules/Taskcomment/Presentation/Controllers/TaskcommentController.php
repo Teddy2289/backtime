@@ -1,13 +1,13 @@
 <?php
 
-namespace Modules\Taskcomment\Presentation\Controllers;
+namespace Modules\TaskComment\Presentation\Controllers;
 
 use App\Traits\ApiResponser;
 use Illuminate\Routing\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Modules\Taskcomment\Application\Services\TaskCommentService;
+use Modules\TaskComment\Application\Services\TaskCommentService;
 use Modules\Task\Application\Services\TaskService;
 
 class TaskcommentController extends Controller

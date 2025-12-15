@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Taskfiles\Presentation\Controllers;
+namespace Modules\TaskFiles\Presentation\Controllers;
 
 use App\Traits\ApiResponser;
 use Illuminate\Routing\Controller;
@@ -8,7 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\UploadedFile;
-use Modules\Taskfiles\Application\Services\TaskFileService;
+use Modules\TaskFiles\Application\Services\TaskFileService;
 use Modules\Task\Application\Services\TaskService;
 
 class TaskFilesController extends Controller

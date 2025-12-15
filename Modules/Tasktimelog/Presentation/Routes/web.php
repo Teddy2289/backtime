@@ -6,6 +6,6 @@ Route::prefix('tasktimelog')
     ->middleware(['web'])
     ->group(function () {
         Route::get('/', function () {
-            return view('tasktimelog::welcome');
+            return view('tasktimelog::app');
         });
     });

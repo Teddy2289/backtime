@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Tasktimelog\Domain\Entities;
+namespace Modules\TaskTimeLog\Domain\Entities;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

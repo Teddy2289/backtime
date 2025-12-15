@@ -2,7 +2,7 @@
 
 namespace Modules\User\Providers;
 
-use App\Providers\RouteServiceProvider;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class UserServiceProvider extends ServiceProvider
@@ -10,12 +10,12 @@ class UserServiceProvider extends ServiceProvider
     /**
      * @var string $moduleName
      */
-    protected $moduleName = 'User';
+    protected string $moduleName = 'User';
 
     /**
      * @var string $moduleNameLower
      */
-    protected $moduleNameLower = 'user';
+    protected string $moduleNameLower = 'user';
 
     /**
      * Boot the application events.
@@ -34,12 +34,30 @@ class UserServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->register(RouteServiceProvider::class);
-
-        // Bind repository
+        // Bind repository interface to implementation
         $this->app->bind(
             \Modules\User\Domain\Interfaces\UserRepositoryInterface::class,
             \Modules\User\Infrastructure\Repositories\UserRepository::class
+        );
+
+        // Register UserService as singleton
+        $this->app->singleton(
+            \Modules\User\Application\Services\UserService::class,
+            function ($app) {
+                return new \Modules\User\Application\Services\UserService(
+                    $app->make(\Modules\User\Domain\Interfaces\UserRepositoryInterface::class)
+                );
+            }
+        );
+
+        // Register UserController for dependency injection if needed
+        $this->app->bind(
+            \Modules\User\Presentation\Controllers\UserController::class,
+            function ($app) {
+                return new \Modules\User\Presentation\Controllers\UserController(
+                    $app->make(\Modules\User\Application\Services\UserService::class)
+                );
+            }
         );
     }
 
@@ -51,6 +69,7 @@ class UserServiceProvider extends ServiceProvider
         $this->publishes([
             module_path($this->moduleName, 'Config/config.php') => config_path($this->moduleNameLower . '.php'),
         ], 'config');
+
         $this->mergeConfigFrom(
             module_path($this->moduleName, 'Config/config.php'),
             $this->moduleNameLower
@@ -63,7 +82,6 @@ class UserServiceProvider extends ServiceProvider
     public function registerViews(): void
     {
         $viewPath = resource_path('views/modules/' . $this->moduleNameLower);
-
         $sourcePath = module_path($this->moduleName, 'Presentation/Resources/views');
 
         $this->publishes([
@@ -84,8 +102,13 @@ class UserServiceProvider extends ServiceProvider
             $this->loadTranslationsFrom($langPath, $this->moduleNameLower);
             $this->loadJsonTranslationsFrom($langPath);
         } else {
-            $this->loadTranslationsFrom(module_path($this->moduleName, 'Presentation/Resources/lang'), $this->moduleNameLower);
-            $this->loadJsonTranslationsFrom(module_path($this->moduleName, 'Presentation/Resources/lang'));
+            $this->loadTranslationsFrom(
+                module_path($this->moduleName, 'Presentation/Resources/lang'),
+                $this->moduleNameLower
+            );
+            $this->loadJsonTranslationsFrom(
+                module_path($this->moduleName, 'Presentation/Resources/lang')
+            );
         }
     }
 
@@ -94,7 +117,19 @@ class UserServiceProvider extends ServiceProvider
      */
     protected function registerRoutes(): void
     {
-        $this->loadRoutesFrom(module_path($this->moduleName, 'Presentation/Routes/api.php'));
+        // Chargez les routes seulement si nous ne sommes pas en mode console
+        // et si le cache de routes n'est pas activé
+        if (!$this->app->routesAreCached() && !$this->app->runningInConsole()) {
+            Route::middleware(['api'])
+                ->prefix('api')
+                ->group(function () {
+                    $routeFile = module_path($this->moduleName, 'Presentation/Routes/api.php');
+
+                    if (file_exists($routeFile)) {
+                        require $routeFile;
+                    }
+                });
+        }
     }
 
     /**
@@ -102,17 +137,27 @@ class UserServiceProvider extends ServiceProvider
      */
     public function provides(): array
     {
-        return [];
+        return [
+            \Modules\User\Domain\Interfaces\UserRepositoryInterface::class,
+            \Modules\User\Application\Services\UserService::class,
+        ];
     }
 
+    /**
+     * Get publishable view paths.
+     */
     private function getPublishableViewPaths(): array
     {
         $paths = [];
-        foreach (\Config::get('view.paths') as $path) {
-            if (is_dir($path . '/modules/' . $this->moduleNameLower)) {
-                $paths[] = $path . '/modules/' . $this->moduleNameLower;
+        $viewPaths = config('view.paths', []);
+
+        foreach ($viewPaths as $path) {
+            $modulePath = $path . '/modules/' . $this->moduleNameLower;
+            if (is_dir($modulePath)) {
+                $paths[] = $modulePath;
             }
         }
+
         return $paths;
     }
 }

@@ -6,6 +6,6 @@ Route::prefix('taskfiles')
     ->middleware(['web'])
     ->group(function () {
         Route::get('/', function () {
-            return view('taskfiles::welcome');
+            return view('taskfiles::app');
         });
     });

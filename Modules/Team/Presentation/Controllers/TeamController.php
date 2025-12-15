@@ -2,17 +2,19 @@
 
 namespace Modules\Team\Presentation\Controllers;
 
-use Modules\Team\Presentation\Requests\CreateTeamRequest;
-use Modules\Team\Presentation\Requests\UpdateTeamRequest;
-use Modules\Team\Presentation\Requests\AddMemberRequest;
-use Modules\Team\Presentation\Requests\TransferOwnershipRequest;
-use Modules\Team\Presentation\Resources\TeamResource;
-use Modules\Team\Application\Services\TeamService;
 use App\Traits\ApiResponser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Validator;
+use Modules\Team\Application\Models\Team;
+use Modules\Team\Application\Services\TeamService;
+use Modules\Team\Presentation\Requests\CreateTeamRequest;
+use Modules\Team\Presentation\Requests\UpdateTeamRequest;
+use Modules\Team\Presentation\Requests\AddMemberRequest;
+use Modules\Team\Presentation\Requests\TransferOwnershipRequest;
+use Modules\Team\Presentation\Resources\TeamResource;
+use Modules\Team\Presentation\Resources\TeamMemberResource;
 
 class TeamController extends Controller
 {
@@ -24,20 +26,37 @@ class TeamController extends Controller
     }
 
     /**
-     * Display a listing of teams.
+     * Liste des équipes (publique)
      */
     public function index(Request $request): JsonResponse
     {
         $perPage = $request->get('per_page', 15);
-        $filters = $request->only(['search', 'owner_id']);
-
+        $filters = $request->only(['search', 'owner_id', 'is_public']);
+        
         $teams = $this->teamService->paginate($perPage, $filters);
 
-        return $this->paginatedResponse($teams, 'Teams retrieved successfully');
+        return $this->paginatedResponse(
+            TeamResource::collection($teams),
+            'Teams retrieved successfully'
+        );
     }
 
     /**
-     * Store a newly created team.
+     * Équipes publiques
+     */
+    public function publicTeams(Request $request): JsonResponse
+    {
+        $perPage = $request->get('per_page', 15);
+        $teams = $this->teamService->getPublicTeams($perPage);
+
+        return $this->paginatedResponse(
+            TeamResource::collection($teams),
+            'Public teams retrieved successfully'
+        );
+    }
+
+    /**
+     * Créer une équipe
      */
     public function store(CreateTeamRequest $request): JsonResponse
     {
@@ -51,14 +70,14 @@ class TeamController extends Controller
     }
 
     /**
-     * Display the specified team.
+     * Afficher une équipe
      */
     public function show(string $id): JsonResponse
     {
         $team = $this->teamService->find($id);
 
         if (!$team) {
-            return $this->notFoundResponse('Team not found.');
+            return $this->notFoundResponse('Team not found');
         }
 
         return $this->successResponse(
@@ -68,14 +87,14 @@ class TeamController extends Controller
     }
 
     /**
-     * Update the specified team.
+     * Mettre à jour une équipe
      */
     public function update(UpdateTeamRequest $request, string $id): JsonResponse
     {
         $team = $this->teamService->update($id, $request->validated());
 
         if (!$team) {
-            return $this->notFoundResponse('Team not found.');
+            return $this->notFoundResponse('Team not found');
         }
 
         return $this->successResponse(
@@ -85,14 +104,14 @@ class TeamController extends Controller
     }
 
     /**
-     * Remove the specified team.
+     * Supprimer une équipe
      */
     public function destroy(string $id): JsonResponse
     {
         $deleted = $this->teamService->delete($id);
 
         if (!$deleted) {
-            return $this->notFoundResponse('Team not found.');
+            return $this->notFoundResponse('Team not found');
         }
 
         return $this->successResponse(
@@ -102,56 +121,30 @@ class TeamController extends Controller
     }
 
     /**
-     * Get teams by owner.
-     */
-    /**
-     * Get teams by owner.
+     * Équipes par propriétaire
      */
     public function getByOwner(string $ownerId): JsonResponse
     {
-        // Chargez les relations nécessaires mais pas l'owner pour éviter la boucle
         $teams = $this->teamService->findByOwner($ownerId);
 
-        // Créez une collection manuelle sans utiliser TeamResource si nécessaire
-        $teamsData = $teams->map(function ($team) {
-            return [
-                'id' => $team->id,
-                'name' => $team->name,
-                'description' => $team->description,
-                'owner_id' => $team->owner_id,
-                'is_public' => $team->is_public,
-                'created_at' => $team->created_at,
-                'updated_at' => $team->updated_at,
-                'members_count' => $team->members()->count(),
-            ];
-        });
-
         return $this->successResponse(
-            $teamsData, // Utilisez le tableau simple au lieu de TeamResource
+            TeamResource::collection($teams),
             'Teams retrieved successfully'
         );
     }
 
     /**
-     * Add member to team.
+     * Ajouter un membre
      */
-    public function addMember(Request $request, int $teamId): JsonResponse
+    public function addMember(AddMemberRequest $request, string $teamId): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|integer|exists:users,id'
-        ]);
-
-        if ($validator->fails()) {
-            return $this->validationErrorResponse($validator->errors());
-        }
-
-        $userId = $request->input('user_id');
-
-        // Pas besoin de conversion en string puisque nous utilisons des entiers
-        $added = $this->teamService->addMember($teamId, $userId);
+        $added = $this->teamService->addMember(
+            $teamId,
+            $request->validated()['user_id']
+        );
 
         if (!$added) {
-            return $this->errorResponse('Failed to add member to team.');
+            return $this->errorResponse('Failed to add member to team');
         }
 
         return $this->successResponse(
@@ -161,29 +154,14 @@ class TeamController extends Controller
     }
 
     /**
-     * Remove member from team.
+     * Retirer un membre
      */
-    public function removeMember(Request $request, string $teamId): JsonResponse
+    public function removeMember(string $teamId, string $userId): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|string|exists:users,id'
-        ]);
-
-        if ($validator->fails()) {
-            return $this->validationErrorResponse($validator->errors());
-        }
-
-        $userId = $request->input('user_id');
-
-        // S'assurer que c'est une chaîne
-        if (!is_string($userId)) {
-            $userId = (string) $userId;
-        }
-
         $removed = $this->teamService->removeMember($teamId, $userId);
 
         if (!$removed) {
-            return $this->errorResponse('Failed to remove member from team.');
+            return $this->errorResponse('Failed to remove member from team');
         }
 
         return $this->successResponse(
@@ -193,11 +171,33 @@ class TeamController extends Controller
     }
 
     /**
-     * Get team members.
+     * Liste des membres
      */
     public function getMembers(string $teamId): JsonResponse
     {
-        $members = $this->teamService->getMembers($teamId);
+        $team = $this->teamService->find($teamId);
+        
+        if (!$team) {
+            return $this->notFoundResponse('Team not found');
+        }
+
+        $members = $team->members()
+            ->select([
+                'users.id',
+                'users.name',
+                'users.email',
+                'team_user.created_at as joined_at'
+            ])
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'user_id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'joined_at' => $user->joined_at,
+                ];
+            });
 
         return $this->successResponse(
             $members,
@@ -206,7 +206,7 @@ class TeamController extends Controller
     }
 
     /**
-     * Get teams for current user.
+     * Mes équipes (utilisateur courant)
      */
     public function myTeams(Request $request): JsonResponse
     {
@@ -220,29 +220,17 @@ class TeamController extends Controller
     }
 
     /**
-     * Transfer team ownership.
+     * Transférer la propriété
      */
-    public function transferOwnership(Request $request, string $teamId): JsonResponse
+    public function transferOwnership(TransferOwnershipRequest $request, string $teamId): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'new_owner_id' => 'required|string|exists:users,id'
-        ]);
-
-        if ($validator->fails()) {
-            return $this->validationErrorResponse($validator->errors());
-        }
-
-        $newOwnerId = $request->input('new_owner_id');
-
-        // S'assurer que c'est une chaîne
-        if (!is_string($newOwnerId)) {
-            $newOwnerId = (string) $newOwnerId;
-        }
-
-        $team = $this->teamService->transferOwnership($teamId, $newOwnerId);
+        $team = $this->teamService->transferOwnership(
+            $teamId,
+            $request->validated()['new_owner_id']
+        );
 
         if (!$team) {
-            return $this->errorResponse('Team not found or failed to transfer ownership.');
+            return $this->errorResponse('Team not found or failed to transfer ownership');
         }
 
         return $this->successResponse(
@@ -252,14 +240,14 @@ class TeamController extends Controller
     }
 
     /**
-     * Get team statistics.
+     * Statistiques de l'équipe
      */
     public function statistics(string $teamId): JsonResponse
     {
         $statistics = $this->teamService->getStatistics($teamId);
 
-        if (empty($statistics)) {
-            return $this->notFoundResponse('Team not found.');
+        if (!$statistics) {
+            return $this->notFoundResponse('Team not found');
         }
 
         return $this->successResponse(
@@ -269,20 +257,47 @@ class TeamController extends Controller
     }
 
     /**
-     * Search teams with advanced filters.
+     * Recherche simple (publique)
      */
     public function search(Request $request): JsonResponse
     {
         $perPage = $request->get('per_page', 15);
         $criteria = $request->only(['search', 'owner_id', 'is_public']);
-
+        
         $teams = $this->teamService->search($criteria, $perPage);
 
-        return $this->paginatedResponse($teams, 'Teams retrieved successfully');
+        return $this->paginatedResponse(
+            TeamResource::collection($teams),
+            'Teams retrieved successfully'
+        );
     }
 
     /**
-     * Check if user is team owner.
+     * Recherche avancée (protégée)
+     */
+    public function advancedSearch(Request $request): JsonResponse
+    {
+        $perPage = $request->get('per_page', 15);
+        $criteria = $request->only([
+            'search',
+            'owner_id',
+            'is_public',
+            'created_from',
+            'created_to',
+            'min_members',
+            'max_members'
+        ]);
+        
+        $teams = $this->teamService->advancedSearch($criteria, $perPage);
+
+        return $this->paginatedResponse(
+            TeamResource::collection($teams),
+            'Teams retrieved successfully'
+        );
+    }
+
+    /**
+     * Vérifier la propriété
      */
     public function checkOwnership(Request $request, string $teamId): JsonResponse
     {
@@ -296,7 +311,7 @@ class TeamController extends Controller
     }
 
     /**
-     * Check if user is team member.
+     * Vérifier l'appartenance
      */
     public function checkMembership(Request $request, string $teamId): JsonResponse
     {

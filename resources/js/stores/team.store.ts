@@ -25,28 +25,33 @@ export const useTeamStore = defineStore("team", () => {
         total: 0,
     });
 
+    const safeTeams = computed(() => teams.value || []);
     // Getters (computed)
     const myTeams = computed(() => {
-        return teams.value.filter(
-            (team) =>
-                (team.owner_id !== undefined &&
-                    team.owner_id === authStore.user?.id!.toString()) ||
-                teamMembers.value.some(
-                    (member) => member.id === String(authStore.user?.id)
-                )
-        );
+        const user = authStore.user;
+        if (!user?.id) return [];
+
+        const userId = String(user.id);
+        return safeTeams.value.filter((team) => {
+            if (!team) return false;
+            return (
+                (team.owner_id && String(team.owner_id) === userId) ||
+                teamMembers.value.some((member) => member.id === userId)
+            );
+        });
     });
 
     const ownedTeams = computed(() => {
-        return teams.value.filter(
-            (team) =>
-                team.owner_id !== undefined &&
-                team.owner_id === authStore.user?.id!.toString()
+        const user = authStore.user;
+        if (!user?.id) return [];
+
+        const userId = String(user.id);
+        return safeTeams.value.filter(
+            (team) => team?.owner_id && String(team.owner_id) === userId
         );
     });
-
     const publicTeams = computed(() => {
-        return teams.value.filter((team) => team.is_public);
+        return safeTeams.value.filter((team) => team?.is_public);
     });
 
     const canEditCurrentTeam = computed(() => {
@@ -66,42 +71,6 @@ export const useTeamStore = defineStore("team", () => {
     });
 
     // Actions
-    async function fetchTeams(filters: TeamFilters = {}) {
-        isLoading.value = true;
-        error.value = null;
-
-        try {
-            const response: PaginatedResponse<Team> =
-                await teamService.getTeams(filters);
-            teams.value = response.data;
-            pagination.value = response.meta;
-            return response;
-        } catch (err: any) {
-            error.value =
-                err.response?.data?.message ||
-                "Erreur lors du chargement des équipes";
-            throw err;
-        } finally {
-            isLoading.value = false;
-        }
-    }
-
-    async function fetchTeam(id: string) {
-        isLoading.value = true;
-        error.value = null;
-
-        try {
-            currentTeam.value = await teamService.getTeam(id);
-            return currentTeam.value;
-        } catch (err: any) {
-            error.value =
-                err.response?.data?.message ||
-                "Erreur lors du chargement de l'équipe";
-            throw err;
-        } finally {
-            isLoading.value = false;
-        }
-    }
 
     async function fetchTeamMembers(teamId: string) {
         isLoading.value = true;
@@ -231,7 +200,48 @@ export const useTeamStore = defineStore("team", () => {
             isLoading.value = false;
         }
     }
+    async function fetchTeams(filters: TeamFilters = {}) {
+        isLoading.value = true;
+        error.value = null;
 
+        try {
+            const response: PaginatedResponse<Team> =
+                await teamService.getTeams(filters);
+            console.log("📦 Réponse API fetchTeams:", response);
+
+            // ❌ PROBLEME : Vous essayez d'extraire response.data.data
+            // Mais votre API retourne {success, message, data: [...], meta: {...}}
+            const apiData = response.data || []; // ❌ Ceci retourne undefined car response est déjà la structure complète
+
+            // ✅ CORRECTION : Utilisez directement la propriété 'data' de l'API
+            teams.value = Array.isArray(response.data) ? response.data : [];
+            // OU si teamService.getTeams() retourne déjà la bonne structure:
+            // teams.value = Array.isArray(response.data) ? response.data : [];
+
+            if (response.meta) {
+                pagination.value = {
+                    current_page: response.meta.current_page || 1,
+                    last_page: response.meta.last_page || 1,
+                    per_page: response.meta.per_page || 15,
+                    total: response.meta.total || 0,
+                };
+            }
+
+            console.log("📦 Teams après assignation:", teams.value);
+            console.log("📦 Pagination après assignation:", pagination.value);
+
+            return response;
+        } catch (err: any) {
+            console.error("❌ Erreur fetchTeams:", err);
+            error.value =
+                err.response?.data?.message ||
+                "Erreur lors du chargement des équipes";
+            teams.value = [];
+            throw err;
+        } finally {
+            isLoading.value = false;
+        }
+    }
     async function fetchMyTeams() {
         isLoading.value = true;
         error.value = null;
@@ -288,7 +298,6 @@ export const useTeamStore = defineStore("team", () => {
 
         // Actions
         fetchTeams,
-        fetchTeam,
         fetchTeamMembers,
         createTeam,
         updateTeam,

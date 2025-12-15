@@ -32,7 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Alias de middlewares
         $middleware->alias([
-            'user.middleware' => \Modules\User\Presentation\Middleware\UserMiddleware::class,
+            'user.middleware' => \Modules\User\Middleware\UserMiddleware::class,
             'auth.api' => \App\Http\Middleware\Authenticate::class,
             'auth' => \App\Http\Middleware\Authenticate::class,
             'refresh.token' => \App\Http\Middleware\RefreshToken::class,

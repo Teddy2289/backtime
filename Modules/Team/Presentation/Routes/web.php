@@ -6,6 +6,6 @@ Route::prefix('team')
     ->middleware(['web'])
     ->group(function () {
         Route::get('/', function () {
-            return view('team::welcome');
+            return view('team::app');
         });
     });
