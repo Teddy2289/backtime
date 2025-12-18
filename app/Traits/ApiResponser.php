@@ -3,6 +3,8 @@
 namespace App\Traits;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Throwable;
 
 trait ApiResponser
 {
@@ -49,9 +51,6 @@ trait ApiResponser
     /**
      * Authentication response format.
      */
-    /**
-     * Authentication response format.
-     */
     protected function authResponse(string $token, $user = null, string $message = null): JsonResponse
     {
         // Récupérer le TTL depuis la config
@@ -78,13 +77,34 @@ trait ApiResponser
 
         return response()->json($response, 200);
     }
+
     /**
      * Paginated response format.
+     * Nouvelle version qui peut retourner une erreur
      */
-    protected function paginatedResponse($paginatedData, string $message = null): JsonResponse
+    protected function paginatedResponse($paginatedData, string $message = null, bool $success = true): JsonResponse
     {
+        // Si $paginatedData est une instance d'exception ou une erreur
+        if ($paginatedData instanceof Throwable) {
+            return $this->errorResponse(
+                $message ?? 'An error occurred',
+                config('app.debug') ? $paginatedData->getMessage() : null,
+                500
+            );
+        }
+
+        // Si $paginatedData est un tableau avec une erreur
+        if (is_array($paginatedData) && isset($paginatedData['error'])) {
+            return $this->errorResponse(
+                $message ?? 'An error occurred',
+                $paginatedData['error'],
+                500
+            );
+        }
+
+        // Sinon, c'est une réponse paginée normale
         $response = [
-            'success' => true,
+            'success' => $success,
             'message' => $message,
             'data' => $paginatedData->items(),
             'meta' => [
@@ -104,7 +124,40 @@ trait ApiResponser
             'timestamp' => now()->toISOString(),
         ];
 
-        return response()->json($response, 200);
+        // Si succès false, changer le code HTTP
+        $code = $success ? 200 : 500;
+
+        return response()->json($response, $code);
+    }
+
+    /**
+     * Paginated response avec gestion d'erreur
+     */
+    protected function paginatedResponseOrError($result, string $successMessage = null, string $errorMessage = null): JsonResponse
+    {
+        try {
+            if ($result instanceof Throwable) {
+                throw $result;
+            }
+
+            if ($result instanceof LengthAwarePaginator) {
+                return $this->paginatedResponse($result, $successMessage);
+            }
+
+            // Si c'est un tableau avec une clé 'error'
+            if (is_array($result) && isset($result['error'])) {
+                throw new \Exception($result['error']);
+            }
+
+            return $this->paginatedResponse($result, $successMessage);
+
+        } catch (Throwable $e) {
+            return $this->errorResponse(
+                $errorMessage ?? 'An error occurred',
+                config('app.debug') ? $e->getMessage() : null,
+                500
+            );
+        }
     }
 
     /**

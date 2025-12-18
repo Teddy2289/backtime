@@ -115,7 +115,7 @@ export const useTeamStore = defineStore("team", () => {
         error.value = null;
 
         try {
-            const team = await teamService.updateTeam(id, data);
+            const team = await teamService.updateTeam(id, data as any);
 
             // Mettre à jour dans la liste
             const index = teams.value.findIndex((t) => t.id === id);
@@ -205,18 +205,35 @@ export const useTeamStore = defineStore("team", () => {
         error.value = null;
 
         try {
-            const response: PaginatedResponse<Team> =
-                await teamService.getTeams(filters);
-            console.log("📦 Réponse API fetchTeams:", response);
+            console.log("🔄 Fetching teams with filters:", filters);
 
-            // ❌ PROBLEME : Vous essayez d'extraire response.data.data
-            // Mais votre API retourne {success, message, data: [...], meta: {...}}
-            const apiData = response.data || []; // ❌ Ceci retourne undefined car response est déjà la structure complète
+            const response = await teamService.getTeams(filters);
 
-            // ✅ CORRECTION : Utilisez directement la propriété 'data' de l'API
-            teams.value = Array.isArray(response.data) ? response.data : [];
-            // OU si teamService.getTeams() retourne déjà la bonne structure:
-            // teams.value = Array.isArray(response.data) ? response.data : [];
+            console.log("📦 Service response:", response);
+            console.log("📦 Response data type:", typeof response.data);
+            console.log("📦 Is array?", Array.isArray(response.data));
+
+            // CORRECTION CRITIQUE : Vérifiez bien la structure
+            if (response && response.data) {
+                // Si response.data est déjà un tableau
+                if (Array.isArray(response.data)) {
+                    teams.value = response.data;
+                }
+                // Si response.data est un objet avec une propriété data (cas Laravel)
+                else if (
+                    response.data.data &&
+                    Array.isArray(response.data.data)
+                ) {
+                    teams.value = response.data.data;
+                } else {
+                    teams.value = [];
+                }
+            } else {
+                teams.value = [];
+            }
+
+            console.log("✅ Teams after assignment:", teams.value);
+            console.log("✅ Teams length:", teams.value.length);
 
             if (response.meta) {
                 pagination.value = {
@@ -227,12 +244,9 @@ export const useTeamStore = defineStore("team", () => {
                 };
             }
 
-            console.log("📦 Teams après assignation:", teams.value);
-            console.log("📦 Pagination après assignation:", pagination.value);
-
             return response;
         } catch (err: any) {
-            console.error("❌ Erreur fetchTeams:", err);
+            console.error("❌ Error fetching teams:", err);
             error.value =
                 err.response?.data?.message ||
                 "Erreur lors du chargement des équipes";

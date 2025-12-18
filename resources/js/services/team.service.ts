@@ -1,7 +1,5 @@
-// services/team.service.ts
 import { api } from "../services/api";
 
-// Types TypeScript pour une meilleure sécurité
 export interface Team {
     id: string;
     name: string;
@@ -19,12 +17,12 @@ export interface Team {
 }
 
 export interface TeamMember {
-    id: string; // Ce sera l'user_id de l'API
+    id: string;
     name: string;
     email: string;
     role?: string;
     joined_at: string;
-    user_id?: string; // Pour conserver l'user_id original
+    user_id?: string;
 }
 
 export interface TeamStatistics {
@@ -84,42 +82,68 @@ class TeamService {
         await api.delete(`${this.protectedUrl}/${id}`);
     }
 
+    // team.service.ts - getTeamMembers méthode corrigée
+
     async getTeamMembers(teamId: string): Promise<TeamMember[]> {
         try {
             const response = await api.get(
                 `${this.protectedUrl}/${teamId}/members`
             );
-
-            // Vérifiez la structure complète de la réponse
-            console.log("Réponse API complète:", response);
-            console.log("Réponse data:", response.data);
-
-            // Votre API retourne: {success, message, data, timestamp}
-            // Le tableau de membres est dans response.data.data
             const apiResponse = response.data;
 
-            // Vérifiez si data existe et est un tableau
-            const membersData = apiResponse?.data || [];
-            console.log("Données membres brutes:", membersData);
+            console.log("📡 Raw members response:", apiResponse);
+
+            // Les données peuvent être dans différentes structures
+            let membersData = [];
+
+            // Structure 1: { success, message, data: [...] }
+            if (apiResponse.data && Array.isArray(apiResponse.data)) {
+                membersData = apiResponse.data;
+            }
+            // Structure 2: { data: [...] } directement
+            else if (Array.isArray(apiResponse)) {
+                membersData = apiResponse;
+            }
+            // Structure 3: { data: { data: [...] } }
+            else if (
+                apiResponse.data?.data &&
+                Array.isArray(apiResponse.data.data)
+            ) {
+                membersData = apiResponse.data.data;
+            }
+
+            console.log("📦 Members data extracted:", membersData);
 
             // Transformez les données
-            const members = membersData.map((member: any) => ({
-                id: String(member.user_id || member.id), // ID pour l'affichage
-                name: member.name || "",
-                email: member.email || "",
-                role: member.role,
-                joined_at: member.joined_at || member.created_at,
-                user_id: String(member.user_id || member.id), // ID original
-            }));
+            const members = membersData.map((member: any) => {
+                // Différentes structures possibles
+                const userId = member.user_id || member.id || member.user?.id;
+                const userName = member.name || member.user?.name || "";
+                const userEmail = member.email || member.user?.email || "";
 
-            console.log("Membres transformés:", members);
+                // Date de jointure : essayez différentes clés
+                const joinedAt =
+                    member.joined_at ||
+                    member.created_at ||
+                    member.pivot?.created_at ||
+                    new Date().toISOString();
+
+                return {
+                    id: String(userId),
+                    name: userName,
+                    email: userEmail,
+                    role: member.role || member.pivot?.role,
+                    joined_at: joinedAt,
+                    user_id: String(userId),
+                };
+            });
+
             return members;
         } catch (error) {
             console.error("Erreur dans getTeamMembers:", error);
             throw error;
         }
     }
-
     async getTeamStatistics(teamId: string): Promise<TeamStatistics> {
         const response = await api.get(
             `${this.protectedUrl}/${teamId}/statistics`
@@ -127,17 +151,11 @@ class TeamService {
 
         // Même logique: extraire response.data.data
         const apiResponse = response.data;
-        console.log("Réponse stats complète:", apiResponse);
-        console.log("Données stats (apiResponse.data):", apiResponse.data);
 
         // Retournez directement les données statistiques
         return apiResponse.data;
     }
 
-    // === Opérations CRUD ===
-
-    // services/team.service.ts
-    // services/team.service.ts
     async getTeams(
         filters: TeamFilters = {}
     ): Promise<PaginatedResponse<Team>> {
@@ -151,24 +169,61 @@ class TeamService {
             }),
         };
 
-        const response = await api.get(this.baseUrl, { params });
+        console.log("🔍 Calling teams API with params:", params);
 
-        // 🔥 Votre API retourne: {success, message, data: [], meta: {}}
-        const apiResponse = response.data;
+        try {
+            // Ici, api.get() retourne directement response.data
+            const apiResponse = await api.get(this.baseUrl, { params });
 
-        console.log("API Response structure:", apiResponse);
-        console.log("Teams data:", apiResponse.data);
+            console.log("📡 API response:", apiResponse);
 
-        // Retournez la structure attendue par votre store
-        return {
-            data: apiResponse.data || [], // ⬅️ C'est ICI que sont les équipes
-            meta: apiResponse.meta || {
-                current_page: 1,
-                last_page: 1,
-                per_page: 15,
-                total: 0,
-            },
-        };
+            // apiResponse devrait être: {success, message, data: [...], meta: {...}}
+            if (
+                apiResponse &&
+                apiResponse.success &&
+                Array.isArray(apiResponse.data)
+            ) {
+                console.log("✅ API response structure detected");
+                return {
+                    data: apiResponse.data,
+                    meta: apiResponse.meta || {
+                        current_page: 1,
+                        last_page: 1,
+                        per_page: 15,
+                        total: apiResponse.data.length,
+                    },
+                };
+            }
+
+            // Si api.get() retourne directement le tableau
+            if (Array.isArray(apiResponse)) {
+                console.log("✅ Direct array response");
+                return {
+                    data: apiResponse,
+                    meta: {
+                        current_page: 1,
+                        last_page: 1,
+                        per_page: apiResponse.length,
+                        total: apiResponse.length,
+                    },
+                };
+            }
+
+            // Fallback
+            console.warn("⚠️ Unexpected response format");
+            return {
+                data: [],
+                meta: {
+                    current_page: 1,
+                    last_page: 1,
+                    per_page: 15,
+                    total: 0,
+                },
+            };
+        } catch (error) {
+            console.error("❌ Error in getTeams:", error);
+            throw error;
+        }
     }
 
     async getTeam(id: string): Promise<Team> {

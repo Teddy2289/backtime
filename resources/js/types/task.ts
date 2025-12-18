@@ -1,38 +1,34 @@
-// src/types/task.ts
 export interface Task {
     id: number;
     project_id: number;
     title: string;
     description?: string;
     assigned_to?: number;
+    assigned_user?: {
+        id: number;
+        name: string;
+        email: string;
+        avatar?: string;
+    };
     status: "backlog" | "todo" | "doing" | "done";
     priority: "low" | "medium" | "high";
-    start_date?: string | null;
-    due_date?: string | null;
+    start_date?: string;
+    due_date?: string;
     estimated_time?: number;
-    tags?: string[];
     progress: number;
     is_overdue: boolean;
+    tags: string[];
     created_at: string;
     updated_at: string;
     deleted_at?: string;
 
-    // Relations
-    assigned_user?: User;
-    project?: Project;
-    time_logs?: TimeLog[];
-    comments?: Comment[];
-    files?: TaskFile[];
-}
-
-export interface TaskFilter {
-    project_id?: number;
-    status?: string;
-    priority?: string;
-    assigned_to?: number;
-    search?: string;
-    order_by?: string;
-    order_direction?: "asc" | "desc";
+    // Relations optionnelles
+    project?: {
+        id: number;
+        name: string;
+    };
+    files?: any[];
+    comments?: any[];
 }
 
 export interface PaginatedTasks {
@@ -41,8 +37,21 @@ export interface PaginatedTasks {
     last_page: number;
     per_page: number;
     total: number;
+}
+export interface PaginatedTasks {
+    data: Task[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
     from: number;
     to: number;
+}
+
+export interface TaskFilter {
+    search?: string;
+    status?: string;
+    priority?: "low" | "medium" | "high";
 }
 
 export interface TaskStatistics {
@@ -70,8 +79,8 @@ export interface CreateTaskData {
     title: string;
     description?: string;
     assigned_to?: number;
-    status?: "backlog" | "todo" | "doing" | "done";
-    priority?: "low" | "medium" | "high";
+    status?: string;
+    priority?: string;
     start_date?: string;
     due_date?: string;
     estimated_time?: number;
@@ -82,13 +91,12 @@ export interface UpdateTaskData {
     title?: string;
     description?: string;
     assigned_to?: number | null;
-    status?: "backlog" | "todo" | "doing" | "done";
-    priority?: "low" | "medium" | "high";
+    status?: string;
+    priority?: string;
     start_date?: string | null;
     due_date?: string | null;
     estimated_time?: number;
     tags?: string[];
-    project_id?: number;
 }
 
 // Types complémentaires

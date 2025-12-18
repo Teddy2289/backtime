@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import type { Ref } from "vue";
 import { UserRole } from "@/enums/user-role";
 import type { User, ProfileData } from "@/types/auth";
@@ -22,12 +22,18 @@ export const useAuthStore = defineStore("auth", () => {
     const hasRole = (role: UserRole | string): boolean => {
         return roles.value.includes(role) || user.value?.role === role;
     };
-
+    watch(user, (newUser) => {
+        console.log("USER CHANGÉ:", newUser);
+        console.log("ROLE:", newUser?.role);
+    });
     const hasPermission = (permission: string): boolean => {
         return permissions.value.includes(permission);
     };
 
-    const isAdmin = computed(() => hasRole(UserRole.ADMIN));
+    const isAdmin = computed(() => user.value?.role === UserRole.ADMIN);
+
+    console.log("user.value?.role", user.value?.role);
+
     const isManager = computed(() => hasRole(UserRole.MANAGER));
     const isRegularUser = computed(() => hasRole(UserRole.USER));
     const avatarUrl = computed(() => user.value?.avatar_url || null);
@@ -39,10 +45,6 @@ export const useAuthStore = defineStore("auth", () => {
 
         token.value = payload.access_token;
         user.value = payload.user;
-        console.log("User set in store:", user.value);
-        console.log("Roles set in store:", payload.user?.role);
-        console.log("Permissions set in store:", payload.user?.permissions);
-        console.log("Access Token set in store:", payload.access_token);
 
         roles.value = payload.user?.role ? [payload.user.role] : [];
         permissions.value = payload.user?.permissions ?? [];
@@ -116,16 +118,20 @@ export const useAuthStore = defineStore("auth", () => {
 
     const fetchProfile = async () => {
         try {
-            const data = await authService.getProfile();
-            console.log("Fetched profile data:", data);
-            user.value = data;
-            roles.value = data.role ? [data.role] : [];
-            permissions.value = data.permissions || [];
-            return data;
+            const response = await authService.getProfile();
+
+            const profile = response.data;
+
+            user.value = profile;
+            roles.value = profile?.role ? [profile.role] : [];
+            permissions.value = profile?.permissions || [];
+
+            return profile;
         } catch (error: any) {
             throw error;
         }
     };
+
     const checkToken = async (): Promise<boolean> => {
         if (!token.value) return false;
 

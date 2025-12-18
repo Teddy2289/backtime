@@ -8,58 +8,85 @@ use Modules\Task\Domain\Interfaces\TaskRepositoryInterface;
 
 class TaskRepository implements TaskRepositoryInterface
 {
+
+    private function applyFilter($query, array $filters, string $key, callable $callback)
+    {
+        if (!array_key_exists($key, $filters)) {
+            return;
+        }
+
+        $value = $filters[$key];
+
+        // Valeurs ignorées
+        if ($value === null || $value === '' || $value === 'all') {
+            return;
+        }
+
+        $callback($query, $value);
+    }
+
     public function getAll(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = Task::query();
+        $query = Task::with([
+            'project:id,name,description',
+            'assignedUser:id,name,email,avatar',
+            'timeLogs:id,task_id,duration,description',
+            'files:id,task_id,file_url,file_name,file_size,mime_type,extension,uploaded_by',
+            'comments:id,task_id,content,user_id,created_at',
+        ]);
 
-        // Appliquer les filtres
-        if (!empty($filters['project_id'])) {
-            $query->where('project_id', $filters['project_id']);
-        }
+        $this->applyFilter(
+            $query,
+            $filters,
+            'project_id',
+            fn($q, $v) =>
+            $q->where('project_id', (int) $v)
+        );
 
-        if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
+        $this->applyFilter(
+            $query,
+            $filters,
+            'status',
+            fn($q, $v) =>
+            $q->where('status', $v)
+        );
 
-        if (!empty($filters['priority'])) {
-            $query->where('priority', $filters['priority']);
-        }
+        $this->applyFilter(
+            $query,
+            $filters,
+            'priority',
+            fn($q, $v) =>
+            $q->where('priority', $v)
+        );
 
-        if (!empty($filters['assigned_to'])) {
-            $query->where('assigned_to', $filters['assigned_to']);
-        }
+        $this->applyFilter(
+            $query,
+            $filters,
+            'assigned_to',
+            fn($q, $v) =>
+            $q->where('assigned_to', (int) $v)
+        );
 
-        if (!empty($filters['search'])) {
-            $query->where(function ($q) use ($filters) {
-                $q->where('title', 'like', '%' . $filters['search'] . '%')
-                    ->orWhere('description', 'like', '%' . $filters['search'] . '%');
-            });
-        }
+        $this->applyFilter(
+            $query,
+            $filters,
+            'search',
+            fn($q, $v) =>
+            $q->where(
+                fn($sub) =>
+                $sub->where('title', 'like', "%$v%")
+                    ->orWhere('description', 'like', "%$v%")
+            )
+        );
 
-        // Gestion des dates
-        if (!empty($filters['start_date_from'])) {
-            $query->whereDate('start_date', '>=', $filters['start_date_from']);
-        }
-
-        if (!empty($filters['start_date_to'])) {
-            $query->whereDate('start_date', '<=', $filters['start_date_to']);
-        }
-
-        if (!empty($filters['due_date_from'])) {
-            $query->whereDate('due_date', '>=', $filters['due_date_from']);
-        }
-
-        if (!empty($filters['due_date_to'])) {
-            $query->whereDate('due_date', '<=', $filters['due_date_to']);
-        }
-
-        // Tri
         $orderBy = $filters['order_by'] ?? 'created_at';
-        $orderDirection = $filters['order_direction'] ?? 'desc';
-        $query->orderBy($orderBy, $orderDirection);
+        $direction = $filters['order_direction'] ?? 'desc';
+
+        $query->orderBy($orderBy, $direction);
 
         return $query->paginate($perPage);
     }
+
 
     public function findById(int $id): ?Task
     {

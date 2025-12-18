@@ -15,12 +15,12 @@ class TaskFile extends Model
 
     protected $fillable = [
         'task_id',
-        'file_url',        // From migration
+        'file_url',
         'file_name',
         'file_size',
-        'uploaded_by',
         'mime_type',
         'extension',
+        'uploaded_by',
         'description',
     ];
 

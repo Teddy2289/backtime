@@ -73,7 +73,14 @@ class TaskComment extends Model
      */
     public function getIsEditedAttribute(): bool
     {
-        return $this->edited || $this->updated_at->gt($this->created_at);
+        // Vérifier que les dates ne sont pas nulles avant d'appeler gt()
+        if (!$this->updated_at || !$this->created_at) {
+            return (bool) $this->edited; // Retourne l'état booléen du champ 'edited' si les dates sont absentes
+        }
+
+        // Si edited est vrai OU si updated_at est strictement après created_at
+        // J'ai aussi ajouté un contrôle de nullité pour être sûr
+        return (bool) $this->edited || $this->updated_at->gt($this->created_at);
     }
 
     /**

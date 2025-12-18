@@ -94,16 +94,14 @@ export const routes: RouteRecordRaw[] = [
             requiresAuth: true,
             title: "Task Detail",
         },
-        beforeEnter: async (to, from, next) => {
-            const taskStore = useTaskStore();
+        // 🌟 SUPPRIMEZ LE beforeEnter ou simplifiez-le :
+        beforeEnter: (to, from, next) => {
             const taskId = parseInt(to.params.id as string);
 
-            try {
-                await taskStore.fetchTask(taskId);
-                next();
-            } catch (error) {
-                // Rediriger si la tâche n'existe pas
-                next({ name: "tasks" });
+            if (isNaN(taskId)) {
+                next({ name: "tasks" }); // ID invalide
+            } else {
+                next(); // Laissez le composant gérer le chargement
             }
         },
     },
@@ -154,18 +152,6 @@ export const routes: RouteRecordRaw[] = [
                 name: "teams.list",
                 component: () => import("@/views/teams/Index.vue"),
                 meta: { title: "All Teams" },
-            },
-            {
-                path: "projects",
-                name: "teams.projects",
-                component: () => import("@/views/teams/Projects.vue"),
-                meta: { title: "Team Projects" },
-            },
-            {
-                path: "performance",
-                name: "teams.performance",
-                component: () => import("@/views/teams/Performance.vue"),
-                meta: { title: "Team Performance" },
             },
         ],
     },

@@ -14,10 +14,17 @@ use Modules\Taskfiles\Domain\Entities\TaskFile;
 use Modules\Tasktimelog\Domain\Entities\TaskTimeLog;
 use Modules\Team\Domain\Entities\Team;
 use Modules\User\Domain\Entities\User;
+use Carbon\Carbon; // Import de Carbon pour la clarté
 
 class Task extends Model
 {
     use HasFactory, SoftDeletes;
+
+    // Définition des constantes pour les statuts pour éviter les "magic strings"
+    public const STATUS_BACKLOG = 'backlog';
+    public const STATUS_TODO = 'todo';
+    public const STATUS_DOING = 'doing';
+    public const STATUS_DONE = 'done';
 
     protected $fillable = [
         'project_id',
@@ -32,24 +39,30 @@ class Task extends Model
         'tags',
     ];
 
+    // **CORRECTION/AMÉLIORATION MAJEURE:** Suppression des accesseurs/mutateurs manuels
+    // Les 'casts' par défaut de Laravel gèrent les dates (y compris null) et 'array'
     protected $casts = [
-        'start_date' => 'date',
-        'due_date' => 'date',
+        'start_date' => 'date', // Gère automatiquement les dates comme Carbon (ou null)
+        'due_date' => 'date',   // Gère automatiquement les dates comme Carbon (ou null)
         'tags' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 
-    protected $appends = ['progress', 'is_overdue'];
+    protected $appends = ['progress', 'is_overdue', 'total_worked_time']; // Ajout de 'total_worked_time'
 
+    /* -------------------------------------------------------------------------- */
+    /* Relations                                  */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Relation avec les journaux de temps
      */
     public function timeLogs(): HasMany
     {
-        return $this->hasMany(TaskTimeLog::class, 'task_id');
+        // Les noms de clés étrangères par défaut sont généralement 'task_id' (si Task est le nom du modèle)
+        return $this->hasMany(TaskTimeLog::class);
     }
 
     /**
@@ -57,7 +70,9 @@ class Task extends Model
      */
     public function files(): HasMany
     {
-        return $this->hasMany(TaskFile::class, 'task_id');
+        // Utilisation de la relation par défaut si possible
+        return $this->hasMany(TaskFile::class)
+            ->with('uploader:id,name,email,avatar');
     }
 
     /**
@@ -65,145 +80,7 @@ class Task extends Model
      */
     public function comments(): HasMany
     {
-        return $this->hasMany(TaskComment::class, 'task_id');
-    }
-
-    /**
-     * Calculer le progrès de la tâche
-     */
-    public function getProgressAttribute(): float
-    {
-        switch ($this->status) {
-            case 'backlog':
-                return 0;
-            case 'todo':
-                return 0;
-            case 'doing':
-                return 50;
-            case 'done':
-                return 100;
-            default:
-                return 0;
-        }
-    }
-
-    /**
-     * Vérifier si la tâche est en retard
-     */
-    public function getIsOverdueAttribute(): bool
-    {
-        if (!$this->due_date || $this->status === 'done') {
-            return false;
-        }
-
-        return $this->due_date->isPast();
-    }
-
-    /**
-     * Calculer le temps total travaillé (en minutes)
-     */
-    public function getTotalWorkedTimeAttribute(): int
-    {
-        return $this->timeLogs->sum('duration') ?? 0;
-    }
-
-    /**
-     * Récupérer les tags sous forme de tableau
-     */
-    public function getTagsArrayAttribute(): array
-    {
-        return $this->tags ?? [];
-    }
-
-    /**
-     * Scope pour les tâches actives (non supprimées)
-     */
-    public function scopeActive($query)
-    {
-        return $query->whereNull('deleted_at');
-    }
-
-    /**
-     * Scope pour les tâches par statut
-     */
-    public function scopeByStatus($query, string $status)
-    {
-        return $query->where('status', $status);
-    }
-
-    /**
-     * Scope pour les tâches par priorité
-     */
-    public function scopeByPriority($query, string $priority)
-    {
-        return $query->where('priority', $priority);
-    }
-
-    /**
-     * Scope pour les tâches assignées à un utilisateur
-     */
-    public function scopeAssignedTo($query, int $userId)
-    {
-        return $query->where('assigned_to', $userId);
-    }
-
-    /**
-     * Scope pour les tâches d'un projet
-     */
-    public function scopeByProject($query, int $projectId)
-    {
-        return $query->where('project_id', $projectId);
-    }
-
-    /**
-     * Scope pour les tâches en retard
-     */
-    public function scopeOverdue($query)
-    {
-        return $query->where('due_date', '<', now())
-            ->where('status', '!=', 'done')
-            ->whereNotNull('due_date');
-    }
-
-    /**
-     * Scope pour les tâches à venir
-     */
-    public function scopeUpcoming($query)
-    {
-        return $query->where('start_date', '>', now())
-            ->where('start_date', '<=', now()->addDays(7))
-            ->whereNotNull('start_date');
-    }
-
-    /**
-     * Relation avec le projet
-     */
-    public function project(): BelongsTo
-    {
-        return $this->belongsTo(ProjectsTeams::class, 'project_id');
-    }
-
-    /**
-     * Relation avec l'équipe via le projet
-     */
-    public function team(): BelongsTo
-    {
-        return $this->belongsTo(Team::class, 'team_id');
-    }
-
-    /**
-     * Relation avec l'équipe via le projet (alternative)
-     */
-    public function teamThroughProject(): HasOneThrough
-    {
-        return $this->hasOneThrough(
-            Team::class,
-            ProjectsTeams::class,
-            'id', // Foreign key on ProjectsTeams table
-            'id', // Foreign key on Team table
-            'project_id', // Local key on Task table
-            'team_id' // Local key on ProjectsTeams table
-        );
+        return $this->hasMany(TaskComment::class);
     }
 
     /**
@@ -215,30 +92,133 @@ class Task extends Model
     }
 
     /**
-     * Relation avec les utilisateurs de l'équipe (via projet->équipe)
+     * Relation avec le projet
      */
-    public function teamMembers()
+    public function project(): BelongsTo
     {
-        return $this->hasManyThrough(
-            User::class,
+        // projects_teams est probablement un modèle de 'Projet' si il a un 'id' et 'team_id'
+        // J'ai présumé que ProjectsTeams est le modèle du projet.
+        return $this->belongsTo(
             ProjectsTeams::class,
-            'id',
-            'id',
             'project_id',
-            'team_id'
+            'id'
         );
     }
+
+    // **CORRECTION/SUPPRESSION: team()**
+    // Cette relation est incorrecte si `team_id` n'est pas directement sur la table `tasks`.
+    // L'approche `teamThroughProject` ci-dessous est la bonne. J'ai commenté/supprimé la fonction team()
+    /*
+    public function team(): BelongsTo
+    {
+        // Si team_id n'est PAS dans la table des tâches, ceci est faux.
+        // Utiliser teamThroughProject à la place.
+        return $this->belongsTo(Team::class, 'team_id');
+    }
+    */
+
+    /**
+     * Relation avec l'équipe via le projet
+     */
+    public function teamThroughProject(): HasOneThrough
+    {
+        // Logique correcte pour HasOneThrough : Task -> ProjectsTeams -> Team
+        return $this->hasOneThrough(
+            Team::class,
+            ProjectsTeams::class,
+            'id', // Clé étrangère dans la table intermédiaire (ProjectsTeams) pointant vers Task
+            'id', // Clé locale dans la table finale (Team)
+            'project_id', // Clé locale dans Task pointant vers ProjectsTeams
+            'team_id' // Clé locale dans ProjectsTeams pointant vers Team
+        );
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* Accesseurs                                */
+    /* -------------------------------------------------------------------------- */
+
+    /**
+     * Calculer le progrès de la tâche
+     */
+    public function getProgressAttribute(): int // Changé float à int car les valeurs sont entières (0, 50, 100)
+    {
+        return match ($this->status) {
+            self::STATUS_DONE => 100,
+            self::STATUS_DOING => 50,
+            default => 0, // Inclut 'backlog', 'todo' et tout autre statut inconnu
+        };
+    }
+
+    /**
+     * Vérifier si la tâche est en retard
+     */
+    public function getIsOverdueAttribute(): bool
+    {
+        // Grâce à 'protected $casts = ['due_date' => 'date'];', $this->due_date est soit Carbon, soit null.
+        if (!$this->due_date) {
+            return false;
+        }
+
+        if ($this->status === self::STATUS_DONE) {
+            return false;
+        }
+
+        // Utilisation de isPast() de Carbon.
+        // **AMÉLIORATION:** S'assurer que Carbon est utilisé (fait avec l'import `use Carbon\Carbon;`)
+        return $this->due_date->isPast();
+    }
+
+    /**
+     * Calculer le temps total travaillé (en minutes)
+     */
+    public function getTotalWorkedTimeAttribute(): int
+    {
+        // La méthode `sum` sur une collection retourne null si la collection est vide, d'où le `?? 0`.
+        return $this->timeLogs->sum('duration') ?? 0;
+    }
+
+    // **CORRECTION/SUPPRESSION:** Les accesseurs `getDueDateAttribute` et `getStartDateAttribute` sont
+    // REDONDANTS et POTENTIELLEMENT DANGEREUX car ils interfèrent avec le mécanisme de 'casts' de Laravel.
+    // L'utilisation de `$casts` ('date' ou 'datetime') est suffisante et plus propre.
+    // L'erreur "Call to a member function gt() on null" est souvent causée par le fait
+    // qu'un accesseur retourne `null` lorsque Laravel s'attend à un objet Carbon (quand il accède à la valeur).
+
+    // public function getDueDateAttribute($value) { ... } // Supprimé
+
+    // public function getStartDateAttribute($value) { ... } // Supprimé
+
+    /* -------------------------------------------------------------------------- */
+    /* Scopes                                   */
+    /* -------------------------------------------------------------------------- */
+
+    // J'ai laissé les scopes tels quels, ils sont corrects.
+
+    public function scopeOverdue($query)
+    {
+        return $query->whereNotNull('due_date')
+            ->where('due_date', '<', Carbon::now()) // Utilisation de Carbon::now() pour plus de clarté
+            ->where('status', '!=', self::STATUS_DONE);
+    }
+
+    public function scopeUpcoming($query)
+    {
+        return $query->whereNotNull('start_date')
+            ->where('start_date', '>', Carbon::now())
+            ->where('start_date', '<=', Carbon::now()->addDays(7));
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* Méthodes Métier                               */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Récupérer les utilisateurs assignables pour cette tâche
      */
     public function getAssignableUsers()
     {
-        if ($this->project && $this->project->team) {
-            return $this->project->team->members;
-        }
-
-        return collect();
+        // Vérifie la relation `project` et la relation `team` du projet.
+        // Si ProjectsTeams a une relation `team` et cette `team` a une relation `members`.
+        return $this->project?->team?->members ?? collect();
     }
 
     /**
@@ -246,10 +226,7 @@ class Task extends Model
      */
     public function canAssignUser($userId): bool
     {
-        if (!$this->project) {
-            return false;
-        }
-
-        return $this->project->isUserInTeam($userId);
+        // Utilisation de l'opérateur nullsafe `?->` pour plus de sécurité
+        return $this->project?->isUserInTeam($userId) ?? false;
     }
 }

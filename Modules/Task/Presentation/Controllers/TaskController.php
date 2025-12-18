@@ -25,16 +25,46 @@ class TaskController extends Controller
     /**
      * Display a listing of tasks.
      */
+    // Dans TaskController.php
     public function index(Request $request): JsonResponse
     {
         try {
-            $perPage = $request->get('per_page', 15);
-            $filters = $request->only(['project_id', 'status', 'priority', 'assigned_to', 'search', 'order_by', 'order_direction']);
 
+            $perPage = (int) $request->get('per_page', 15);
+
+            // 1️⃣ Récupérer uniquement les filtres autorisés
+            $filters = array_filter(
+                $request->only([
+                    'project_id',
+                    'status',
+                    'priority',
+                    'assigned_to',
+                    'search',
+                    'order_by',
+                    'order_direction',
+                ]),
+                function ($value) {
+                    if ($value === null)
+                        return false;
+                    if ($value === '')
+                        return false;
+                    if ($value === 'all')
+                        return false;
+                    if (is_numeric($value) && (int) $value === 0)
+                        return false;
+                    return true;
+                }
+            );
+
+            // 3️⃣ Appel du service avec des filtres propres
             $tasks = $this->taskService->getPaginatedTasks($perPage, $filters);
 
-            return $this->paginatedResponse($tasks, 'Tasks retrieved successfully');
-        } catch (\Exception $e) {
+            return $this->paginatedResponseOrError(
+                $tasks,
+                'Tasks retrieved successfully',
+                'Failed to retrieve tasks'
+            );
+        } catch (\Throwable $e) {
             return $this->errorResponse(
                 'Failed to retrieve tasks',
                 config('app.debug') ? $e->getMessage() : null,
@@ -42,6 +72,7 @@ class TaskController extends Controller
             );
         }
     }
+
 
     /**
      * Display the specified task.

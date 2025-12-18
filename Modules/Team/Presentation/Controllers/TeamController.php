@@ -6,6 +6,7 @@ use App\Traits\ApiResponser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Modules\Team\Application\Models\Team;
 use Modules\Team\Application\Services\TeamService;
@@ -32,7 +33,7 @@ class TeamController extends Controller
     {
         $perPage = $request->get('per_page', 15);
         $filters = $request->only(['search', 'owner_id', 'is_public']);
-        
+
         $teams = $this->teamService->paginate($perPage, $filters);
 
         return $this->paginatedResponse(
@@ -176,33 +177,48 @@ class TeamController extends Controller
     public function getMembers(string $teamId): JsonResponse
     {
         $team = $this->teamService->find($teamId);
-        
+
         if (!$team) {
             return $this->notFoundResponse('Team not found');
         }
 
-        $members = $team->members()
-            ->select([
-                'users.id',
-                'users.name',
-                'users.email',
-                'team_user.created_at as joined_at'
-            ])
-            ->get()
-            ->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'user_id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'joined_at' => $user->joined_at,
-                ];
-            });
+        try {
+            // Solution simple sans la colonne role
+            $members = DB::table('team_members')
+                ->join('users', 'team_members.user_id', '=', 'users.id')
+                ->where('team_members.team_id', $teamId)
+                ->whereNull('users.deleted_at')
+                ->select([
+                    'users.id',
+                    'users.name',
+                    'users.email',
+                    'team_members.created_at as joined_at',
+                    'team_members.user_id'
+                ])
+                ->get()
+                ->map(function ($member) use ($team) {
+                    return [
+                        'id' => $member->id,
+                        'user_id' => $member->user_id,
+                        'name' => $member->name,
+                        'email' => $member->email,
+                        'joined_at' => $member->joined_at,
+                        // Déterminez le rôle en fonction du propriétaire
+                        'is_owner' => $member->user_id == $team->owner_id,
+                    ];
+                });
 
-        return $this->successResponse(
-            $members,
-            'Team members retrieved successfully'
-        );
+            return $this->successResponse(
+                $members,
+                'Team members retrieved successfully'
+            );
+
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Failed to retrieve team members: ' . $e->getMessage(),
+                500
+            );
+        }
     }
 
     /**
@@ -263,7 +279,7 @@ class TeamController extends Controller
     {
         $perPage = $request->get('per_page', 15);
         $criteria = $request->only(['search', 'owner_id', 'is_public']);
-        
+
         $teams = $this->teamService->search($criteria, $perPage);
 
         return $this->paginatedResponse(
@@ -287,7 +303,7 @@ class TeamController extends Controller
             'min_members',
             'max_members'
         ]);
-        
+
         $teams = $this->teamService->advancedSearch($criteria, $perPage);
 
         return $this->paginatedResponse(

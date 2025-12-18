@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\WorkTimeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -20,6 +21,17 @@ Route::prefix('auth')->group(function () {
         Route::delete('/avatar', [AuthController::class, 'removeAvatar']);
     });
 
+});
+
+
+Route::prefix('dashboard')->group(function () {
+    Route::get('/', action: [DashboardController::class, 'index']);
+    Route::get('/dashboard/widgets', [DashboardController::class, 'widgetStats']);
+    Route::get('/dashboard/user/{user}', [DashboardController::class, 'userStats']);
+    Route::get('/users/{user}/work-time', [DashboardController::class, 'userWorkTime']);
+    Route::get('/users/{user}/work-time/{period}', [DashboardController::class, 'userWorkTimeByPeriod']);
+    Route::get('/users/{user}/work-history', [DashboardController::class, 'userWorkHistory']);
+    Route::get('/users/{user}/task-work-time', [DashboardController::class, 'userTaskWorkTime']);
 });
 
 

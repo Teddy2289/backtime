@@ -20,8 +20,6 @@ class WorkTimeController extends Controller
     }
 
     // Démarrer la journée de travail
-// Dans WorkTimeController.php
-    // Dans WorkTimeController.php
     public function startDay(Request $request)
     {
         $user = Auth::user();
