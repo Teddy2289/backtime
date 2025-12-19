@@ -258,6 +258,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { taskService } from '@/services/task.service';
 import { useTaskStore } from '@/stores/task.store';
 import type { CreateTaskData } from '@/types/task';
+import { projectsTeamsService } from '@/services/projectsTeams.service';
 
 interface Emits {
     (e: 'close'): void;
@@ -356,30 +357,79 @@ watch(() => form.value.project_id, async (newProjectId) => {
 // Methods
 const loadProjects = async () => {
     try {
-        // Remplacer par votre appel API réel
-        // const response = await projectService.getProjects();
-        // projects.value = response.data;
+        // Utilisez le service projectsTeamsService pour récupérer les projets
+        const response = await projectsTeamsService.getProjects({
+            per_page: 100 // Récupérer tous les projets
+        });
 
-        // Données simulées pour l'exemple
-        projects.value = [
-            { id: 1, name: 'Website Redesign', team_id: 1 },
-            { id: 2, name: 'Mobile App Development', team_id: 2 },
-            { id: 3, name: 'API Integration', team_id: 3 },
-            { id: 4, name: 'Marketing Campaign', team_id: 4 }
-        ];
+        // La réponse devrait contenir un tableau data
+        if (response && response.data) {
+            projects.value = response.data.map((project: any) => ({
+                id: project.id,
+                name: project.name,
+                team_id: project.team_id || project.team?.id
+            }));
+        }
+
+        // Si pas de données, utiliser les données simulées
+        if (projects.value.length === 0) {
+            console.warn('No projects found, using sample data');
+            projects.value = [
+                { id: 2, name: 'Mobile App Development', team_id: 2 },
+                { id: 1, name: 'Website Redesign', team_id: 1 },
+                { id: 3, name: 'API Integration', team_id: 3 },
+                { id: 4, name: 'Marketing Campaign', team_id: 4 }
+            ];
+        }
+
+        console.log('Projects loaded:', projects.value);
+
     } catch (error) {
         console.error('Failed to load projects:', error);
         showError('Failed to load projects. Please try again.');
+
+        // Utiliser les données simulées en cas d'erreur
+        projects.value = [
+            { id: 2, name: 'Mobile App Development', team_id: 2 },
+            { id: 1, name: 'Website Redesign', team_id: 1 },
+            { id: 3, name: 'API Integration', team_id: 3 },
+            { id: 4, name: 'Marketing Campaign', team_id: 4 }
+        ];
     }
 };
 
+// Dans TaskCreateModal.vue, modifiez la méthode loadTeamMembers :
 const loadTeamMembers = async (projectId: number) => {
     try {
         teamMembersLoading.value = true;
-        teamMembers.value = await taskService.getTeamMembers(projectId);
-    } catch (error) {
+        errors.value.assigned_to = '';
+
+        // Utilisez le service taskService au lieu de l'appel direct
+        const members = await taskService.getTeamMembers(projectId);
+
+        // Formatage des données si nécessaire
+        teamMembers.value = members.map(member => ({
+            id: member.id,
+            name: member.name,
+            email: member.email,
+            role: member.role || 'member',
+            avatar: member.avatar,
+            avatar_url: member.avatar_url,
+            initials: member.initials
+        }));
+
+        // Log pour debug
+        console.log('Team members loaded:', teamMembers.value);
+
+    } catch (error: any) {
         console.error('Failed to load team members:', error);
         teamMembers.value = [];
+        errors.value.assigned_to = 'Failed to load team members';
+
+        // Afficher un message à l'utilisateur
+        if (error.response?.data?.message) {
+            showError(`Failed to load team members: ${error.response.data.message}`);
+        }
     } finally {
         teamMembersLoading.value = false;
     }
@@ -482,6 +532,19 @@ const validateForm = (): boolean => {
     // Estimated time validation
     if (form.value.estimated_time !== undefined && form.value.estimated_time < 0) {
         newErrors.estimated_time = 'Estimated time cannot be negative';
+    }
+
+    if (form.value.project_id && !teamMembersLoading.value) {
+        // Vérifier si le projet a été changé récemment
+        const currentProject = projects.value.find(p => p.id === form.value.project_id);
+        if (currentProject && currentProject.team_id === 1) {
+            newErrors.project_id = 'This project has limited team members.';
+        }
+
+        // Optionnel : avertir si aucun membre n'est disponible
+        if (teamMembers.value.length === 0) {
+            console.warn('Project has no team members available');
+        }
     }
 
     errors.value = newErrors;

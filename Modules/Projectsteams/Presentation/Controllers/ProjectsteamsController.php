@@ -6,8 +6,11 @@ use App\Traits\ApiResponser;
 use Illuminate\Routing\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\ProjectsTeams\Application\Services\ProjectsTeamsService;
 use Modules\ProjectsTeams\Domain\Entities\ProjectsTeams;
+use Modules\User\Domain\Entities\User;
 
 class ProjectsteamsController extends Controller
 {
@@ -470,45 +473,60 @@ class ProjectsteamsController extends Controller
         ], 'Module is healthy');
     }
 
-
     /**
      * Get team members for a project.
      */
     public function getProjectTeamUsers(int $projectId): JsonResponse
     {
         try {
-            $project = ProjectsTeams::with(['team.members'])->find($projectId);
+            // 1. Charger le projet avec sa team ET les membres de cette team en une seule fois
+            $project = ProjectsTeams::with('team.members')->find($projectId);
 
             if (!$project) {
-                return $this->notFoundResponse('Project not found');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Project not found'
+                ], 404);
             }
 
+            // 2. Vérifier si le projet a une équipe
             if (!$project->team) {
-                return $this->successResponse([], 'Project has no team');
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'message' => 'Project has no team'
+                ], 200);
             }
 
-            $members = $project->team->members->map(function ($member) {
+            // 3. Récupérer les membres directement via la relation
+            // Eloquent filtrera automatiquement par le team_id du projet spécifique
+            $members = $project->team->members;
+
+            // 4. Formater les membres
+            $formattedMembers = $members->map(function ($user) {
                 return [
-                    'id' => $member->id,
-                    'name' => $member->name,
-                    'email' => $member->email,
-                    'avatar' => $member->avatar,
-                    'avatar_url' => $member->avatar_url ?? null,
-                    'initials' => $member->initials ?? strtoupper(substr($member->name, 0, 2)),
-                    'role' => $member->pivot->role ?? 'member',
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar,
+                    'avatar_url' => $user->avatar_url, // Utilise l'accessor de votre modèle User
+                    'initials' => $user->initials,   // Utilise l'accessor de votre modèle User
+                    'role' => 'member',
                 ];
             });
 
-            return $this->successResponse(
-                $members,
-                'Project team members retrieved successfully'
-            );
+            return response()->json([
+                'success' => true,
+                'data' => $formattedMembers,
+                'message' => 'Project team members retrieved successfully'
+            ], 200);
+
         } catch (\Exception $e) {
-            return $this->errorResponse(
-                'Failed to retrieve project team members',
-                config('app.debug') ? $e->getMessage() : null,
-                500
-            );
+            Log::error('Error in getProjectTeamUsers', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
         }
     }
 

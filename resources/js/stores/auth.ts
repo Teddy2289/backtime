@@ -22,10 +22,7 @@ export const useAuthStore = defineStore("auth", () => {
     const hasRole = (role: UserRole | string): boolean => {
         return roles.value.includes(role) || user.value?.role === role;
     };
-    watch(user, (newUser) => {
-        console.log("USER CHANGÉ:", newUser);
-        console.log("ROLE:", newUser?.role);
-    });
+
     const hasPermission = (permission: string): boolean => {
         return permissions.value.includes(permission);
     };

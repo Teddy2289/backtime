@@ -108,34 +108,13 @@ export const routes: RouteRecordRaw[] = [
     {
         path: "/tasks/list",
         name: "tasks.list",
-        component: () => import("@/views/tasks/List.vue"),
+        component: () => import("@/views/tasks/Index.vue"),
         meta: {
             layout: "AppLayout",
             requiresAuth: true,
             title: "All Tasks",
         },
     },
-    {
-        path: "/tasks/calendar",
-        name: "tasks.calendar",
-        component: () => import("@/views/tasks/Calendar.vue"),
-        meta: {
-            layout: "AppLayout",
-            requiresAuth: true,
-            title: "Task Calendar",
-        },
-    },
-    {
-        path: "/tasks/reports",
-        name: "tasks.reports",
-        component: () => import("@/views/tasks/Reports.vue"),
-        meta: {
-            layout: "AppLayout",
-            requiresAuth: true,
-            title: "Task Reports",
-        },
-    },
-
     // Équipes
     {
         path: "/teams",

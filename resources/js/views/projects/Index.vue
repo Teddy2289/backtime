@@ -117,89 +117,166 @@
             </button>
         </div>
 
-        <!-- Projects Grid -->
-        <div v-else class="tasks-grid">
-            <div v-for="project in projects" :key="project.id" class="task-card" :class="{
-                'project-overdue': isOverdue(project.end_date),
-                [`project-status-${project.status}`]: true,
-                'project-completed': project.status === 'completed'
-            }" @click="showDetail(project)">
-                <!-- Project Header -->
-                <div class="task-header">
-                    <div class="task-title-section">
-                        <h3 class="task-title">{{ project.name }}</h3>
-                        <div class="task-id">#{{ project.id }}</div>
-                    </div>
-                    <div class="task-status-badge" :class="`status-${project.status}`">
-                        {{ getStatusLabel(project.status) }}
-                    </div>
-                </div>
+        <!-- Projects Table -->
+        <div v-else class="tasks-table-container">
+            <div class="table-responsive">
+                <table class="tasks-table">
+                    <thead>
+                        <tr>
+                            <th class="table-header">
+                                <div class="header-content">
+                                    <span>Projet</span>
+                                </div>
+                            </th>
+                            <th class="table-header">
+                                <div class="header-content">
+                                    <span>Statut</span>
+                                </div>
+                            </th>
+                            <th class="table-header">
+                                <div class="header-content">
+                                    <span>Dates</span>
+                                </div>
+                            </th>
+                            <th class="table-header">
+                                <div class="header-content">
+                                    <span>Équipe</span>
+                                </div>
+                            </th>
+                            <th class="table-header">
+                                <div class="header-content">
+                                    <span>Avancement</span>
+                                </div>
+                            </th>
+                            <th class="table-header actions-header">
+                                <div class="header-content">
+                                    <span>Actions</span>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="project in projects" :key="project.id" class="table-row" :class="{
+                            'row-overdue': isOverdue(project.end_date),
+                            'row-completed': project.status === 'completed',
+                            'row-cancelled': project.status === 'cancelled'
+                        }" @click="showDetail(project)">
+                            <!-- Project Info -->
+                            <td class="table-cell project-info-cell">
+                                <div class="project-info">
+                                    <div class="project-title-wrapper">
+                                        <h3 class="project-title-table">{{ project.name }}</h3>
+                                        <span class="project-id-table">#{{ project.id }}</span>
+                                    </div>
+                                    <p v-if="project.description" class="project-description-table">
+                                        {{ truncateDescription(project.description, 60) }}
+                                    </p>
+                                    <p v-else class="project-description-placeholder-table">
+                                        Aucune description
+                                    </p>
+                                </div>
+                            </td>
 
-                <!-- Project Description -->
-                <p v-if="project.description" class="task-description">
-                    {{ truncateDescription(project.description) }}
-                </p>
-                <p v-else class="task-description-placeholder">
-                    Aucune description
-                </p>
+                            <!-- Status -->
+                            <td class="table-cell status-cell">
+                                <div class="status-wrapper">
+                                    <span class="status-badge-table" :class="`status-${project.status}`">
+                                        {{ getStatusLabel(project.status) }}
+                                    </span>
+                                    <div v-if="isOverdue(project.end_date)" class="overdue-indicator">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <polyline points="12 6 12 12 16 14" />
+                                        </svg>
+                                        <span>En retard</span>
+                                    </div>
+                                </div>
+                            </td>
 
-                <!-- Project Meta -->
-                <div class="task-meta">
-                    <div class="meta-item">
-                        <svg class="meta-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <span class="meta-text">
-                            {{ formatDate(project.start_date) }}
-                        </span>
-                    </div>
+                            <!-- Dates -->
+                            <td class="table-cell dates-cell">
+                                <div class="dates-wrapper">
+                                    <div class="date-item">
+                                        <svg class="date-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <span class="date-label">Début:</span>
+                                        <span class="date-value">{{ formatDate(project.start_date) }}</span>
+                                    </div>
+                                    <div class="date-item">
+                                        <svg class="date-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <span class="date-label">Fin:</span>
+                                        <span class="date-value"
+                                            :class="{ 'overdue-date': isOverdue(project.end_date) }">
+                                            {{ formatDate(project.end_date) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
 
-                    <div class="meta-item">
-                        <svg class="meta-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <span class="meta-text" :class="{ 'overdue-text': isOverdue(project.end_date) }">
-                            {{ formatDate(project.end_date) }}
-                        </span>
-                    </div>
+                            <!-- Team -->
+                            <td class="table-cell team-cell">
+                                <div v-if="project.team" class="team-info">
+                                    <div class="team-avatar">
+                                        {{ getInitials(project.team.name) }}
+                                    </div>
+                                    <div class="team-details">
+                                        <span class="team-name">{{ project.team.name }}</span>
+                                        <span v-if="project.team_members_count" class="team-members">
+                                            {{ project.team_members_count }} membre(s)
+                                        </span>
+                                    </div>
+                                </div>
+                                <div v-else class="no-team">
+                                    Aucune équipe
+                                </div>
+                            </td>
 
-                    <div class="priority-badge" :class="`priority-${getPriorityFromStatus(project.status)}`">
-                        {{ getPriorityLabel(project.status) }}
-                    </div>
-                </div>
+                            <!-- Progress -->
+                            <td class="table-cell progress-cell">
+                                <div class="progress-wrapper">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" :style="{ width: `${project.progress || 0}%` }">
+                                        </div>
+                                    </div>
+                                    <span class="progress-text">{{ project.progress || 0 }}%</span>
+                                </div>
+                                <div v-if="project.tasks_count" class="tasks-count">
+                                    {{ project.tasks_count }} tâche(s)
+                                </div>
+                            </td>
 
-                <!-- Project Footer -->
-                <div class="task-footer">
-                    <div class="assigned-to" v-if="project.team">
-                        <div class="avatar">
-                            {{ getInitials(project.team.name) }}
-                        </div>
-                        <span class="assigned-name">{{ project.team.name }}</span>
-                    </div>
-                    <div v-else class="unassigned">
-                        Aucune équipe
-                    </div>
-
-                    <div class="task-actions">
-                        <button @click.stop="editProject(project)" class="action-button edit-button" title="Modifier">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                        </button>
-                        <button @click.stop="confirmDelete(project)" class="action-button delete-button"
-                            title="Supprimer">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
+                            <!-- Actions -->
+                            <td class="table-cell actions-cell">
+                                <div class="actions-wrapper" @click.stop>
+                                    <button @click.stop="editProject(project)"
+                                        class="action-button-table edit-button-table" title="Modifier">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    <button @click.stop="confirmDelete(project)"
+                                        class="action-button-table delete-button-table" title="Supprimer">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -357,10 +434,10 @@ const isOverdue = (date: string | null): boolean => {
     }
 };
 
-const truncateDescription = (description: string): string => {
+const truncateDescription = (description: string, maxLength: number = 100): string => {
     if (!description) return '';
-    return description.length > 120
-        ? description.substring(0, 120) + '...'
+    return description.length > maxLength
+        ? description.substring(0, maxLength) + '...'
         : description;
 };
 
@@ -761,93 +838,173 @@ watch(
     background-color: #289396;
 }
 
-/* Tasks Grid */
-.tasks-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 20px;
-    margin-bottom: 32px;
-}
-
-.task-card {
-    background-color: white;
-    border: 1px solid #e5e7eb;
+/* Projects Table */
+.tasks-table-container {
+    background: white;
     border-radius: 12px;
-    padding: 20px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
+    border: 1px solid #e5e7eb;
     overflow: hidden;
+    margin-bottom: 32px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.task-card:hover {
-    border-color: #31b6b8;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
+.table-responsive {
+    overflow-x: auto;
 }
 
-.task-card.project-completed {
+.tasks-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+
+.table-header {
+    background-color: #f9fafb;
+    padding: 16px 24px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.table-header:first-child {
+    padding-left: 24px;
+}
+
+.table-header:last-child {
+    padding-right: 24px;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.header-content span {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.actions-header {
+    text-align: center;
+}
+
+.table-row {
+    border-bottom: 1px solid #f3f4f6;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.table-row:hover {
+    background-color: #f8fafc;
+}
+
+.table-row.row-overdue {
+    background-color: #fef2f2;
+}
+
+.table-row.row-overdue:hover {
+    background-color: #fee2e2;
+}
+
+.table-row.row-completed {
     opacity: 0.8;
 }
 
-.task-card.project-completed:hover {
-    opacity: 1;
+.table-row.row-cancelled {
+    background-color: #fef2f2;
 }
 
-.task-card.project-overdue {
-    border-left: 4px solid #dc2626;
+.table-cell {
+    padding: 20px 24px;
+    vertical-align: top;
 }
 
-.task-card.project-status-active {
-    border-left: 4px solid #10b981;
+.table-cell:first-child {
+    padding-left: 24px;
 }
 
-.task-card.project-status-on_hold {
-    border-left: 4px solid #f59e0b;
+.table-cell:last-child {
+    padding-right: 24px;
 }
 
-.task-card.project-status-cancelled {
-    border-left: 4px solid #dc2626;
+/* Project Info Cell */
+.project-info-cell {
+    width: 25%;
+    min-width: 250px;
 }
 
-/* Task Header */
-.task-header {
+.project-info {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 12px;
-    gap: 12px;
+    flex-direction: column;
+    gap: 4px;
 }
 
-.task-title-section {
-    flex: 1;
-    min-width: 0;
+.project-title-wrapper {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-.task-title {
-    font-size: 16px;
+.project-title-table {
+    font-size: 15px;
     font-weight: 600;
     color: #1a1a1a;
-    margin: 0 0 4px 0;
+    margin: 0;
     line-height: 1.4;
-    word-break: break-word;
 }
 
-.task-id {
+.project-id-table {
     font-size: 12px;
     color: #999;
-    font-family: 'Monaco', 'Consolas', monospace;
+    font-family: "Monaco", "Consolas", monospace;
+    flex-shrink: 0;
 }
 
-.task-status-badge {
-    padding: 4px 10px;
+.project-description-table {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.5;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.project-description-placeholder-table {
+    font-size: 13px;
+    color: #999;
+    font-style: italic;
+    margin: 0;
+}
+
+/* Status Cell */
+.status-cell {
+    width: 12%;
+    min-width: 120px;
+}
+
+.status-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.status-badge-table {
+    display: inline-block;
+    padding: 6px 12px;
     border-radius: 20px;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     white-space: nowrap;
-    flex-shrink: 0;
+    text-align: center;
+    width: fit-content;
 }
 
 .status-active {
@@ -870,154 +1027,194 @@ watch(
     color: #991b1b;
 }
 
-/* Task Description */
-.task-description {
-    font-size: 14px;
-    color: #666;
-    line-height: 1.5;
-    margin: 0 0 16px 0;
-    word-break: break-word;
-}
-
-.task-description-placeholder {
-    font-size: 14px;
-    color: #999;
-    font-style: italic;
-    margin: 0 0 16px 0;
-}
-
-/* Task Meta */
-.task-meta {
+.overdue-indicator {
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 11px;
+    color: #dc2626;
+    font-weight: 500;
 }
 
-.meta-item {
+.overdue-indicator svg {
+    width: 10px;
+    height: 10px;
+}
+
+/* Dates Cell */
+.dates-cell {
+    width: 20%;
+    min-width: 180px;
+}
+
+.dates-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.date-item {
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-.meta-icon {
+.date-icon {
     flex-shrink: 0;
-    color: #999;
+    color: #9ca3af;
 }
 
-.meta-text {
+.date-label {
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 500;
+    min-width: 35px;
+}
+
+.date-value {
     font-size: 13px;
-    color: #666;
-    white-space: nowrap;
-}
-
-.meta-text.overdue-text {
-    color: #dc2626;
+    color: #1a1a1a;
     font-weight: 500;
 }
 
-.priority-badge {
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
+.overdue-date {
+    color: #dc2626 !important;
 }
 
-.priority-low {
-    background-color: #d1fae5;
-    color: #065f46;
+/* Team Cell */
+.team-cell {
+    width: 18%;
+    min-width: 160px;
 }
 
-.priority-medium {
-    background-color: #fef3c7;
-    color: #92400e;
-}
-
-.priority-high {
-    background-color: #fef2f2;
-    color: #991b1b;
-}
-
-/* Task Footer */
-.task-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 16px;
-    border-top: 1px solid #f3f4f6;
-}
-
-.assigned-to {
+.team-info {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
 }
 
-.avatar {
-    width: 28px;
-    height: 28px;
+.team-avatar {
+    width: 40px;
+    height: 40px;
     background-color: #31b6b8;
     color: white;
-    border-radius: 50%;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
     flex-shrink: 0;
 }
 
-.assigned-name {
+.team-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.team-name {
     font-size: 13px;
-    color: #666;
+    font-weight: 600;
+    color: #1a1a1a;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 120px;
 }
 
-.unassigned {
+.team-members {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.no-team {
     font-size: 13px;
-    color: #999;
+    color: #9ca3af;
     font-style: italic;
+    padding: 8px 0;
 }
 
-.task-actions {
+/* Progress Cell */
+.progress-cell {
+    width: 15%;
+    min-width: 140px;
+}
+
+.progress-wrapper {
     display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 6px;
+    background-color: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #31b6b8;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+    min-width: 35px;
+    text-align: right;
+}
+
+.tasks-count {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+/* Actions Cell */
+.actions-cell {
+    width: 10%;
+    min-width: 100px;
+    text-align: center;
+}
+
+.actions-wrapper {
+    display: flex;
+    justify-content: center;
     gap: 8px;
 }
 
-.action-button {
-    width: 32px;
-    height: 32px;
+.action-button-table {
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     background-color: white;
-    color: #666;
+    color: #6b7280;
     cursor: pointer;
     transition: all 0.2s ease;
     padding: 0;
 }
 
-.action-button:hover {
-    border-color: #d1d5db;
-    background-color: #f9fafb;
+.action-button-table:hover {
+    transform: translateY(-1px);
 }
 
-.edit-button:hover {
+.edit-button-table:hover {
     color: #3b82f6;
     border-color: #bfdbfe;
     background-color: #eff6ff;
 }
 
-.delete-button:hover {
+.delete-button-table:hover {
     color: #dc2626;
     border-color: #fecaca;
     background-color: #fef2f2;
@@ -1119,9 +1316,18 @@ watch(
         grid-template-columns: 1fr;
     }
 
-    .tasks-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
+    .tasks-table-container {
+        border-radius: 8px;
+        margin: 0 -16px;
+        width: calc(100% + 32px);
+    }
+
+    .table-cell {
+        padding: 16px 12px;
+    }
+
+    .table-header {
+        padding: 12px;
     }
 
     .pagination-container {
@@ -1136,8 +1342,9 @@ watch(
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
-    .tasks-grid {
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    .tasks-table-container {
+        margin: 0 -16px;
+        width: calc(100% + 32px);
     }
 }
 </style>

@@ -84,7 +84,7 @@
                                                 </div>
                                                 <div class="flex-1 min-w-0">
                                                     <p class="text-sm font-medium text-gray-900">{{ notification.title
-                                                        }}</p>
+                                                    }}</p>
                                                     <p class="text-xs text-gray-500 truncate">{{ notification.message }}
                                                     </p>
                                                     <p class="text-xs text-gray-400 mt-0.5">{{ notification.time }}</p>
@@ -266,7 +266,7 @@ const mainNavigation = [
     },
     {
         name: 'Équipes',
-        to: { name: 'teams' },
+        to: { name: 'teams.list' },
         icon: UserGroupIcon
     },
     {

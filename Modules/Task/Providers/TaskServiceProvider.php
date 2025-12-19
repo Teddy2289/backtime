@@ -2,6 +2,7 @@
 
 namespace Modules\Task\Providers;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use Modules\Task\Application\Services\TaskService;
 use Modules\Task\Domain\Interfaces\TaskRepositoryInterface;
@@ -116,27 +117,20 @@ class TaskServiceProvider extends ServiceProvider
      */
     protected function registerRoutes(): void
     {
-        \Log::info('TaskServiceProvider: Début registerRoutes');
 
         // Enlevez temporairement la condition
         // if (!$this->app->routesAreCached() && !$this->app->runningInConsole()) {
         $routeFile = module_path($this->moduleName, 'Presentation/Routes/api.php');
-        \Log::info('TaskServiceProvider: Fichier de routes', [
-            'file' => $routeFile,
-            'exists' => file_exists($routeFile)
-        ]);
+
         if (file_exists($routeFile)) {
             Route::middleware(['api'])
                 ->prefix('api')
                 ->group(function () use ($routeFile) {
-                    \Log::info('TaskServiceProvider: Chargement du fichier de routes');
                     require $routeFile;
                 });
         } else {
-            \Log::error('TaskServiceProvider: Fichier de routes non trouvé', ['file' => $routeFile]);
+            Log::warning('TaskServiceProvider: Fichier de routes introuvable - ' . $routeFile);
         }
-        // }
-        \Log::info('TaskServiceProvider: Fin registerRoutes');
     }
 
     /**

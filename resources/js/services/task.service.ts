@@ -76,6 +76,62 @@ class TaskService {
         }
     }
 
+    // Dans task.service.ts, ajoutez cette méthode
+    async getTeamMembers(projectId: number): Promise<any[]> {
+        try {
+            // Appel à votre API existante pour récupérer les membres du projet
+            const response = await api.get(
+                `/projectsTeams/${projectId}/team-users`
+            );
+
+            // Votre API retourne { success, data, message }
+            if (response.data && response.data.success) {
+                return response.data.data; // Retourne le tableau des membres
+            }
+
+            // Fallback si la structure est différente
+            if (Array.isArray(response.data)) {
+                return response.data;
+            }
+
+            if (response.data && Array.isArray(response.data.data)) {
+                return response.data.data;
+            }
+
+            return [];
+        } catch (error) {
+            console.error(
+                `Error fetching team members for project ${projectId}:`,
+                error
+            );
+            throw error;
+        }
+    }
+
+    async getTasksByProject(projectId: number, params?: any): Promise<any> {
+        try {
+            const response = await api.get(this.baseUrl, {
+                params: { ...params, project_id: projectId },
+            });
+
+            // Gérer la réponse selon votre structure d'API
+            if (response.data && response.data.data) {
+                return {
+                    data: response.data.data,
+                    meta: response.data.meta,
+                };
+            }
+
+            return response.data;
+        } catch (error) {
+            console.error(
+                `Error fetching tasks for project ${projectId}:`,
+                error
+            );
+            throw error;
+        }
+    }
+
     async getTaskById(id: number): Promise<Task> {
         try {
             const response = await api.get(`${this.baseUrl}/${id}`);

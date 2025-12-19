@@ -1,279 +1,265 @@
-<!-- src/views/tasks/EditModal.vue -->
+<!-- src/components/tasks/TaskEditModal.vue -->
 <template>
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark/50 backdrop-blur-sm"
-        @click.self="$emit('close')">
-        <div class="relative bg-white rounded-2xl shadow-hard w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in"
-            @click.stop>
-            <!-- En-tête -->
-            <div
-                class="sticky top-0 z-10 flex items-center justify-between p-6 border-b border-gray-100 bg-slate-custom rounded-t-2xl">
-                <div class="flex items-center space-x-3">
-                    <div
-                        class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10">
-                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h2 class="text-lg font-bold text-dark">Modifier la tâche</h2>
-                        <p class="text-xs text-dark-light">#{{ task.id }} - {{ task.title }}</p>
-                    </div>
-                </div>
-                <button @click="$emit('close')"
-                    class="p-2 text-dark-light hover:text-dark hover:bg-gray-100 rounded-xl transition-colors"
-                    aria-label="Fermer">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+    <div class="modal-overlay" @click="closeModal">
+        <div class="modal-content" @click.stop>
+            <div class="modal-header">
+                <h2>Edit Task #{{ task.id }}</h2>
+                <button @click="$emit('close')" class="btn-close">×</button>
             </div>
 
-            <!-- Formulaire -->
-            <form @submit.prevent="saveChanges" class="p-6 space-y-6">
+            <form @submit.prevent="updateTask" class="modal-form">
                 <!-- Titre -->
-                <div>
-                    <label for="title"
-                        class="flex items-center mb-2 text-xs font-semibold text-dark uppercase tracking-wider">
-                        <svg class="w-4 h-4 mr-2 text-dark-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h7" />
-                        </svg>
-                        Titre *
-                    </label>
-                    <input id="title" v-model="form.title" type="text" required
-                        class="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-dark-light"
-                        placeholder="Entrez le titre de la tâche" />
+                <div class="form-group">
+                    <label for="title" class="required">Task Title</label>
+                    <input id="title" v-model="form.title" type="text" placeholder="Enter task title" required
+                        :class="{ 'error': errors.title }" @input="clearError('title')" />
+                    <div v-if="errors.title" class="error-message">
+                        {{ errors.title }}
+                    </div>
+                </div>
+
+                <!-- Projet -->
+                <div class="form-group">
+                    <label for="project_id" class="required">Project</label>
+                    <div class="select-wrapper">
+                        <select id="project_id" v-model="form.project_id" required
+                            :class="{ 'error': errors.project_id }" @change="onProjectChange">
+                            <option value="">Select a project</option>
+                            <option v-for="project in projects" :key="project.id" :value="project.id">
+                                {{ project.name }}
+                            </option>
+                        </select>
+                        <div class="select-arrow">▼</div>
+                    </div>
+                    <div v-if="errors.project_id" class="error-message">
+                        {{ errors.project_id }}
+                    </div>
                 </div>
 
                 <!-- Description -->
-                <div>
-                    <label for="description"
-                        class="flex items-center mb-2 text-xs font-semibold text-dark uppercase tracking-wider">
-                        <svg class="w-4 h-4 mr-2 text-dark-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Description
-                    </label>
-                    <textarea id="description" v-model="form.description"
-                        class="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-dark-light resize-none"
-                        placeholder="Décrivez la tâche en détail..." rows="3"></textarea>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <div class="textarea-wrapper">
+                        <textarea id="description" v-model="form.description" placeholder="Describe the task details..."
+                            rows="4" @input="updateDescriptionCount"></textarea>
+                        <div class="char-count" :class="{ 'limit': descriptionCount > 1000 }">
+                            {{ descriptionCount }}/1000
+                        </div>
+                    </div>
+                    <div class="hint">
+                        Markdown is supported. Use **bold**, *italic*, and `code` formatting.
+                    </div>
                 </div>
 
-                <!-- Grille de champs -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Projet -->
-                    <div>
-                        <label for="project_id"
-                            class="flex items-center mb-2 text-xs font-semibold text-dark uppercase tracking-wider">
-                            <svg class="w-4 h-4 mr-2 text-dark-light" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
-                            Projet *
-                        </label>
-                        <div class="relative">
-                            <select id="project_id" v-model="form.project_id" required
-                                class="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none bg-white pr-10">
-                                <option value="" disabled>Sélectionner un projet</option>
-                                <option v-for="project in projects" :key="project.id" :value="project.id">
-                                    {{ project.name }}
-                                </option>
-                            </select>
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                <svg class="w-4 h-4 text-dark-light" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Assigné à -->
-                    <div>
-                        <label for="assigned_to"
-                            class="flex items-center mb-2 text-xs font-semibold text-dark uppercase tracking-wider">
-                            <svg class="w-4 h-4 mr-2 text-dark-light" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                            Assigner à
-                        </label>
-                        <div class="relative">
+                <!-- Assigné à -->
+                <div class="form-group">
+                    <label for="assigned_to">Assign To</label>
+                    <div class="assignee-selector">
+                        <div class="select-wrapper">
                             <select id="assigned_to" v-model="form.assigned_to"
-                                class="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none bg-white pr-10">
-                                <option :value="null">Non assigné</option>
-                                <option v-for="user in assignableUsers" :key="user.id" :value="user.id">
-                                    {{ user.name }}
+                                :disabled="!form.project_id || teamMembersLoading"
+                                :class="{ 'error': errors.assigned_to }">
+                                <option :value="null">Unassigned</option>
+                                <option v-for="member in teamMembers" :key="member.id" :value="member.id">
+                                    {{ member.name }} ({{ member.role || 'member' }})
                                 </option>
                             </select>
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                <svg class="w-4 h-4 text-dark-light" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
+                            <div class="select-arrow">▼</div>
+                        </div>
+                        <div v-if="teamMembersLoading" class="loading-indicator">
+                            Loading team members...
+                        </div>
+                    </div>
+                    <div v-if="errors.assigned_to" class="error-message">
+                        {{ errors.assigned_to }}
+                    </div>
+                    <div v-if="form.project_id && teamMembers.length === 0 && !teamMembersLoading" class="hint">
+                        No team members found for this project.
+                    </div>
+                </div>
+
+                <!-- Statut et Priorité -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <div class="status-buttons">
+                            <button v-for="status in statusOptions" :key="status.value" type="button"
+                                @click="form.status = status.value" :class="[
+                                    'status-btn',
+                                    `status-${status.value}`,
+                                    { 'active': form.status === status.value }
+                                ]" :title="status.description">
+                                {{ status.label }}
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Statut -->
-                    <div>
-                        <label for="status"
-                            class="flex items-center mb-2 text-xs font-semibold text-dark uppercase tracking-wider">
-                            <svg class="w-4 h-4 mr-2 text-dark-light" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                            Statut
-                        </label>
-                        <div class="relative">
-                            <select id="status" v-model="form.status"
-                                class="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none bg-white pr-10">
-                                <option value="backlog">Backlog</option>
-                                <option value="todo">À faire</option>
-                                <option value="doing">En cours</option>
-                                <option value="done">Terminée</option>
-                            </select>
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                <svg class="w-4 h-4 text-dark-light" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
+                    <div class="form-group">
+                        <label for="priority">Priority</label>
+                        <div class="priority-buttons">
+                            <button v-for="priority in priorityOptions" :key="priority.value" type="button"
+                                @click="form.priority = priority.value" :class="[
+                                    'priority-btn',
+                                    `priority-${priority.value}`,
+                                    { 'active': form.priority === priority.value }
+                                ]" :title="priority.description">
+                                {{ priority.label }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dates -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="start_date">Start Date</label>
+                        <div class="date-input">
+                            <input id="start_date" v-model="form.start_date" type="date" :min="minStartDate"
+                                :max="form.due_date" />
+                            <button v-if="form.start_date" @click="clearDate('start_date')" type="button"
+                                class="btn-clear-date" title="Clear date">
+                                ×
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Priorité -->
-                    <div>
-                        <label for="priority"
-                            class="flex items-center mb-2 text-xs font-semibold text-dark uppercase tracking-wider">
-                            <svg class="w-4 h-4 mr-2 text-dark-light" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
-                            </svg>
-                            Priorité
-                        </label>
-                        <div class="relative">
-                            <select id="priority" v-model="form.priority"
-                                class="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none bg-white pr-10">
-                                <option value="low">Basse</option>
-                                <option value="medium">Moyenne</option>
-                                <option value="high">Haute</option>
-                            </select>
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                <svg class="w-4 h-4 text-dark-light" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
+                    <div class="form-group">
+                        <label for="due_date">Due Date</label>
+                        <div class="date-input">
+                            <input id="due_date" v-model="form.due_date" type="date"
+                                :min="form.start_date || minStartDate" />
+                            <button v-if="form.due_date" @click="clearDate('due_date')" type="button"
+                                class="btn-clear-date" title="Clear date">
+                                ×
+                            </button>
                         </div>
-                    </div>
-
-                    <!-- Date de début -->
-                    <div>
-                        <label for="start_date"
-                            class="flex items-center mb-2 text-xs font-semibold text-dark uppercase tracking-wider">
-                            <svg class="w-4 h-4 mr-2 text-dark-light" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            Date de début
-                        </label>
-                        <input id="start_date" v-model="form.start_date" type="date"
-                            class="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                    </div>
-
-                    <!-- Date d'échéance -->
-                    <div>
-                        <label for="due_date"
-                            class="flex items-center mb-2 text-xs font-semibold text-dark uppercase tracking-wider">
-                            <svg class="w-4 h-4 mr-2 text-dark-light" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Date d'échéance
-                        </label>
-                        <input id="due_date" v-model="form.due_date" type="date"
-                            class="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
                     </div>
                 </div>
 
                 <!-- Temps estimé -->
-                <div>
-                    <label for="estimated_time"
-                        class="flex items-center mb-2 text-xs font-semibold text-dark uppercase tracking-wider">
-                        <svg class="w-4 h-4 mr-2 text-dark-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Temps estimé (heures)
-                    </label>
-                    <div class="relative">
+                <div class="form-group">
+                    <label for="estimated_time">Estimated Time</label>
+                    <div class="time-input-group">
                         <input id="estimated_time" v-model.number="form.estimated_time" type="number" min="0" step="0.5"
-                            class="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all pr-16"
                             placeholder="0" />
-                        <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-sm text-dark-light">
-                            heures
-                        </span>
+                        <div class="time-unit">hours</div>
+                        <div class="time-presets">
+                            <button v-for="preset in timePresets" :key="preset" type="button"
+                                @click="form.estimated_time = preset" class="time-preset-btn">
+                                {{ preset }}h
+                            </button>
+                        </div>
+                    </div>
+                    <div class="hint">
+                        Enter estimated time in hours (0.5 = 30 minutes)
                     </div>
                 </div>
 
-                <!-- Étiquettes -->
-                <div>
-                    <label for="tags"
-                        class="flex items-center mb-2 text-xs font-semibold text-dark uppercase tracking-wider">
-                        <svg class="w-4 h-4 mr-2 text-dark-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                        </svg>
-                        Étiquettes
-                    </label>
-                    <input id="tags" v-model="tagsInput" type="text"
-                        class="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-dark-light"
-                        placeholder="design, frontend, urgent" @input="updateTags" />
-
-                    <!-- Étiquettes prévisualisées -->
-                    <div v-if="form.tags && form.tags.length > 0" class="flex flex-wrap gap-2 mt-3">
-                        <span v-for="(tag, index) in form.tags" :key="index"
-                            class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-full bg-secondary/10 text-secondary border border-secondary/20">
-                            {{ tag }}
-                            <button type="button" @click="removeTag(index)"
-                                class="ml-2 text-secondary hover:text-secondary-dark transition-colors">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12" />
-                                </svg>
+                <!-- Tags -->
+                <div class="form-group">
+                    <label>Tags</label>
+                    <div class="tags-input">
+                        <div class="tags-container">
+                            <span v-for="(tag, index) in form.tags" :key="index" class="tag">
+                                {{ tag }}
+                                <button @click="removeTag(index)" type="button" class="tag-remove" title="Remove tag">
+                                    ×
+                                </button>
+                            </span>
+                            <input v-model="newTag" type="text" placeholder="Add tag..." @keydown.enter.prevent="addTag"
+                                @keydown.esc="newTag = ''" class="tag-input" />
+                        </div>
+                        <div class="tags-hint">
+                            Press Enter to add tag. Common tags:
+                            <button v-for="commonTag in commonTags" :key="commonTag" @click="addCommonTag(commonTag)"
+                                type="button" class="common-tag-btn">
+                                {{ commonTag }}
                             </button>
-                        </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Options avancées -->
+                <div class="form-group advanced-section">
+                    <button type="button" @click="showAdvanced = !showAdvanced" class="btn-toggle-advanced">
+                        <span class="toggle-icon">{{ showAdvanced ? '▼' : '▶' }}</span>
+                        Advanced Options
+                    </button>
+
+                    <div v-if="showAdvanced" class="advanced-options">
+                        <!-- Parent Task -->
+                        <div class="form-group">
+                            <label for="parent_task_id">Parent Task</label>
+                            <select id="parent_task_id" v-model="form.parent_task_id" :disabled="!form.project_id">
+                                <option :value="null">None (Main Task)</option>
+                                <option v-for="task in availableParentTasks" :key="task.id" :value="task.id"
+                                    :disabled="task.id === props.task.id">
+                                    #{{ task.id }} {{ task.title }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Points de story -->
+                        <div class="form-group">
+                            <label for="story_points">Story Points</label>
+                            <div class="story-points">
+                                <button v-for="points in storyPointsOptions" :key="points" type="button"
+                                    @click="form.story_points = points" :class="[
+                                        'story-point-btn',
+                                        { 'active': form.story_points === points }
+                                    ]">
+                                    {{ points }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Confidential -->
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input v-model="form.is_confidential" type="checkbox" class="checkbox" />
+                                <span class="checkbox-custom"></span>
+                                Confidential Task
+                            </label>
+                            <div class="hint">
+                                Only assigned users and admins can view this task
+                            </div>
+                        </div>
+
+                        <!-- Notifications -->
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input v-model="form.send_notifications" type="checkbox" class="checkbox" />
+                                <span class="checkbox-custom"></span>
+                                Send Notifications
+                            </label>
+                            <div class="hint">
+                                Notify assigned users and team members
+                            </div>
+                        </div>
+
+                        <!-- Delete Task (dans les options avancées) -->
+                        <div class="form-group danger-zone">
+                            <label class="danger-label">Danger Zone</label>
+                            <div class="danger-actions">
+                                <button type="button" @click="confirmDelete" class="btn btn-danger" :disabled="loading">
+                                    Delete Task
+                                </button>
+                                <div class="hint">
+                                    This action cannot be undone. All task data will be permanently deleted.
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Actions -->
-                <div class="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-gray-100">
-                    <button type="button" @click="$emit('close')"
-                        class="px-6 py-3 text-sm font-semibold text-dark bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
-                        Annuler
+                <div class="form-actions">
+                    <button type="button" @click="$emit('close')" class="btn btn-secondary" :disabled="loading">
+                        Cancel
                     </button>
-                    <button type="submit" :disabled="loading"
-                        class="px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-secondary-dark rounded-xl shadow-medium hover:shadow-hard transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[200px]">
-                        <svg v-if="loading" class="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                            <path class="opacity-75" fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        {{ loading ? 'Enregistrement...' : 'Enregistrer les modifications' }}
+                    <button type="submit" class="btn btn-primary" :disabled="loading">
+                        <span v-if="loading" class="loading-spinner"></span>
+                        {{ loading ? 'Saving...' : 'Save Changes' }}
                     </button>
                 </div>
             </form>
@@ -282,9 +268,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { taskService } from '@/services/task.service';
-import type { Task, UpdateTaskData } from '@/types/task';
+import { projectsTeamsService } from '@/services/projectsTeams.service';
+import { useTaskStore } from '@/stores/task.store';
+import type { UpdateTaskData, Task } from '@/types/task';
 
 interface Props {
     task: Task;
@@ -292,187 +280,1082 @@ interface Props {
 
 interface Emits {
     (e: 'close'): void;
-    (e: 'saved', task: Task): void;
+    (e: 'updated', task: Task): void;
+    (e: 'deleted', taskId: number): void;
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-const form = ref<UpdateTaskData>({
-    title: props.task.title,
-    description: props.task.description,
-    status: props.task.status,
-    priority: props.task.priority,
-    assigned_to: props.task.assigned_to,
-    start_date: props.task.start_date?.split('T')[0],
-    due_date: props.task.due_date?.split('T')[0],
-    estimated_time: props.task.estimated_time,
-    tags: props.task.tags || [],
-    project_id: props.task.project_id
+// État du formulaire
+const form = ref<UpdateTaskData & {
+    parent_task_id?: number | null;
+    story_points?: number;
+    is_confidential?: boolean;
+    send_notifications?: boolean;
+}>({
+    title: props.task.title || '',
+    project_id: props.task.project_id,
+    description: props.task.description || '',
+    assigned_to: props.task.assigned_to || undefined,
+    status: props.task.status || 'todo',
+    priority: props.task.priority || 'medium',
+    start_date: props.task.start_date ? formatDateForInput(props.task.start_date) : '',
+    due_date: props.task.due_date ? formatDateForInput(props.task.due_date) : '',
+    estimated_time: props.task.estimated_time || undefined,
+    tags: Array.isArray(props.task.tags) ? props.task.tags : [],
+    parent_task_id: props.task.parent_task_id || null,
+    story_points: props.task.story_points || undefined,
+    is_confidential: props.task.is_confidential || false,
+    send_notifications: true
 });
 
+// Données
 const projects = ref<any[]>([]);
-const assignableUsers = ref<any[]>([]);
-const loading = ref(false);
-const tagsInput = ref((props.task.tags || []).join(', '));
+const teamMembers = ref<any[]>([]);
+const availableParentTasks = ref<any[]>([]);
 
-const updateTags = () => {
-    if (tagsInput.value.trim()) {
-        form.value.tags = tagsInput.value
-            .split(',')
-            .map(tag => tag.trim())
-            .filter(tag => tag.length > 0);
+// État
+const loading = ref(false);
+const teamMembersLoading = ref(false);
+const showAdvanced = ref(false);
+const newTag = ref('');
+const errors = ref<Record<string, string>>({});
+
+// Options
+const statusOptions = [
+    { value: 'backlog', label: 'Backlog', description: 'Not yet started' },
+    { value: 'todo', label: 'Todo', description: 'Ready to start' },
+    { value: 'doing', label: 'Doing', description: 'In progress' },
+    { value: 'done', label: 'Done', description: 'Completed' }
+];
+
+const priorityOptions = [
+    { value: 'low', label: 'Low', description: 'Low priority' },
+    { value: 'medium', label: 'Medium', description: 'Normal priority' },
+    { value: 'high', label: 'High', description: 'High priority' }
+];
+
+const timePresets = [0.5, 1, 2, 4, 8, 16, 24];
+const commonTags = ['urgent', 'bug', 'feature', 'improvement', 'design', 'backend', 'frontend', 'testing'];
+const storyPointsOptions = [1, 2, 3, 5, 8, 13, 21];
+
+// Computed
+const descriptionCount = computed(() => form.value.description?.length || 0);
+const minStartDate = computed(() => new Date().toISOString().split('T')[0]);
+
+// Fonction utilitaire pour formater les dates
+function formatDateForInput(dateString: string): string {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toISOString().split('T')[0];
+}
+
+// Chargement initial
+onMounted(async () => {
+    await loadProjects();
+    if (props.task.project_id) {
+        await loadTeamMembers(props.task.project_id);
+        await loadParentTasks(props.task.project_id);
+    }
+});
+
+// Watch project changes
+watch(() => form.value.project_id, async (newProjectId) => {
+    if (newProjectId) {
+        await loadTeamMembers(newProjectId);
+        await loadParentTasks(newProjectId);
     } else {
-        form.value.tags = [];
+        teamMembers.value = [];
+        availableParentTasks.value = [];
+    }
+});
+
+// Methods
+const loadProjects = async () => {
+    try {
+        const response = await projectsTeamsService.getProjects({
+            per_page: 100
+        });
+
+        if (response && response.data) {
+            projects.value = response.data.map((project: any) => ({
+                id: project.id,
+                name: project.name,
+                team_id: project.team_id || project.team?.id
+            }));
+        }
+
+        if (projects.value.length === 0) {
+            console.warn('No projects found, using sample data');
+            projects.value = [
+                { id: 1, name: 'Website Redesign', team_id: 1 },
+                { id: 2, name: 'Mobile App Development', team_id: 2 },
+                { id: 3, name: 'API Integration', team_id: 3 },
+                { id: 4, name: 'Marketing Campaign', team_id: 4 }
+            ];
+        }
+
+        console.log('Projects loaded:', projects.value);
+
+    } catch (error) {
+        console.error('Failed to load projects:', error);
+        projects.value = [
+            { id: 1, name: 'Website Redesign', team_id: 1 },
+            { id: 2, name: 'Mobile App Development', team_id: 2 },
+            { id: 3, name: 'API Integration', team_id: 3 },
+            { id: 4, name: 'Marketing Campaign', team_id: 4 }
+        ];
+    }
+};
+
+const loadTeamMembers = async (projectId: number) => {
+    try {
+        teamMembersLoading.value = true;
+        errors.value.assigned_to = '';
+
+        // Utilisez projectsTeamsService pour récupérer les membres
+        const members = await projectsTeamsService.getProjectTeamUsers(projectId);
+
+        // Formatage des données
+        teamMembers.value = members.map(member => ({
+            id: member.id,
+            name: member.name,
+            email: member.email,
+            role: member.role || 'member',
+            avatar: member.avatar,
+            avatar_url: member.avatar_url,
+            initials: member.initials
+        }));
+
+        console.log('Team members loaded:', teamMembers.value);
+
+    } catch (error: any) {
+        console.error('Failed to load team members:', error);
+        teamMembers.value = [];
+        errors.value.assigned_to = 'Failed to load team members';
+
+        if (error.response?.data?.message) {
+            showError(`Failed to load team members: ${error.response.data.message}`);
+        }
+    } finally {
+        teamMembersLoading.value = false;
+    }
+};
+
+const loadParentTasks = async (projectId: number) => {
+    try {
+        const response = await taskService.getTasksByProject(projectId, {
+            per_page: 50,
+            status: 'backlog,todo,doing',
+            exclude_id: props.task.id // Exclure la tâche courante
+        });
+
+        availableParentTasks.value = Array.isArray(response.data) ? response.data : [];
+
+    } catch (error) {
+        console.error('Failed to load parent tasks:', error);
+        availableParentTasks.value = [];
+    }
+};
+
+const updateTask = async () => {
+    if (!validateForm()) {
+        return;
+    }
+
+    try {
+        loading.value = true;
+        errors.value = {};
+
+        // Préparer les données pour l'update
+        const updateData: UpdateTaskData = {
+            title: form.value.title.trim(),
+            project_id: form.value.project_id!,
+            description: form.value.description?.trim() || undefined,
+            assigned_to: form.value.assigned_to || undefined,
+            status: form.value.status,
+            priority: form.value.priority,
+            start_date: form.value.start_date || undefined,
+            due_date: form.value.due_date || undefined,
+            estimated_time: form.value.estimated_time || undefined,
+            tags: form.value.tags.length > 0 ? form.value.tags : undefined,
+            parent_task_id: form.value.parent_task_id || undefined,
+            story_points: form.value.story_points || undefined,
+            is_confidential: form.value.is_confidential
+        };
+
+        // Mettre à jour via le store
+        const taskStore = useTaskStore();
+        const updatedTask = await taskStore.updateTask(props.task.id, updateData);
+
+        // Émettre l'événement
+        emit('updated', updatedTask);
+
+        // Fermer le modal
+        emit('close');
+
+    } catch (error: any) {
+        console.error('Failed to update task:', error);
+
+        // Gérer les erreurs d'API
+        if (error.response?.data?.errors) {
+            errors.value = error.response.data.errors;
+        } else {
+            showError('Failed to update task. Please try again.');
+        }
+    } finally {
+        loading.value = false;
+    }
+};
+
+const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    // Title validation
+    if (!form.value.title.trim()) {
+        newErrors.title = 'Title is required';
+    } else if (form.value.title.trim().length > 255) {
+        newErrors.title = 'Title must be less than 255 characters';
+    }
+
+    // Project validation
+    if (!form.value.project_id) {
+        newErrors.project_id = 'Project is required';
+    }
+
+    // Description validation
+    if (form.value.description && form.value.description.length > 1000) {
+        newErrors.description = 'Description must be less than 1000 characters';
+    }
+
+    // Date validation
+    if (form.value.start_date && form.value.due_date) {
+        const startDate = new Date(form.value.start_date);
+        const dueDate = new Date(form.value.due_date);
+
+        if (dueDate < startDate) {
+            newErrors.due_date = 'Due date must be after start date';
+        }
+    }
+
+    // Estimated time validation
+    if (form.value.estimated_time !== undefined && form.value.estimated_time < 0) {
+        newErrors.estimated_time = 'Estimated time cannot be negative';
+    }
+
+    errors.value = newErrors;
+    return Object.keys(newErrors).length === 0;
+};
+
+const clearError = (field: string) => {
+    if (errors.value[field]) {
+        delete errors.value[field];
+    }
+};
+
+const onProjectChange = () => {
+    // Réinitialiser l'assignation lorsque le projet change
+    form.value.assigned_to = undefined;
+    clearError('assigned_to');
+};
+
+const addTag = () => {
+    const tag = newTag.value.trim();
+    if (tag && !form.value.tags?.includes(tag)) {
+        if (!form.value.tags) {
+            form.value.tags = [];
+        }
+        form.value.tags.push(tag);
+        newTag.value = '';
+    }
+};
+
+const addCommonTag = (tag: string) => {
+    if (!form.value.tags?.includes(tag)) {
+        if (!form.value.tags) {
+            form.value.tags = [];
+        }
+        form.value.tags.push(tag);
     }
 };
 
 const removeTag = (index: number) => {
     if (form.value.tags) {
         form.value.tags.splice(index, 1);
-        tagsInput.value = form.value.tags.join(', ');
     }
 };
 
-onMounted(async () => {
-    await loadAssignableUsers();
-    await loadProjects();
-});
+const clearDate = (field: 'start_date' | 'due_date') => {
+    form.value[field] = '';
+};
 
-watch(() => props.task.project_id, async () => {
-    await loadAssignableUsers();
-});
-
-const loadAssignableUsers = async () => {
-    try {
-        // Remplacer par votre appel API
-        assignableUsers.value = [
-            { id: 1, name: 'John Doe' },
-            { id: 2, name: 'Jane Smith' },
-            { id: 3, name: 'Robert Johnson' }
-        ];
-    } catch (err) {
-        console.error('Erreur lors du chargement des utilisateurs:', err);
+const updateDescriptionCount = () => {
+    if (descriptionCount.value > 1000) {
+        errors.value.description = 'Description must be less than 1000 characters';
+    } else {
+        clearError('description');
     }
 };
 
-const loadProjects = async () => {
-    try {
-        // Remplacer par votre appel API
-        projects.value = [
-            { id: 1, name: 'Projet Alpha' },
-            { id: 2, name: 'Projet Beta' },
-            { id: 3, name: 'Projet Gamma' }
-        ];
-    } catch (err) {
-        console.error('Erreur lors du chargement des projets:', err);
+const confirmDelete = async () => {
+    if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+        return;
     }
-};
 
-const saveChanges = async () => {
     try {
         loading.value = true;
+        const taskStore = useTaskStore();
+        await taskStore.deleteTask(props.task.id);
 
-        const dataToSend = {
-            ...form.value,
-            assigned_to: form.value.assigned_to || null,
-            estimated_time: form.value.estimated_time || 0
-        };
+        // Émettre l'événement de suppression
+        emit('deleted', props.task.id);
 
-        const updatedTask = await taskService.updateTask(props.task.id, dataToSend);
-        emit('saved', updatedTask);
-    } catch (err) {
-        console.error('Échec de la mise à jour:', err);
-        alert('Échec de la mise à jour de la tâche. Veuillez réessayer.');
+        // Fermer le modal
+        emit('close');
+
+    } catch (error) {
+        console.error('Failed to delete task:', error);
+        showError('Failed to delete task. Please try again.');
     } finally {
         loading.value = false;
     }
 };
+
+const closeModal = (e: MouseEvent) => {
+    if ((e.target as HTMLElement).classList.contains('modal-overlay')) {
+        emit('close');
+    }
+};
+
+const showError = (message: string) => {
+    alert(message);
+};
 </script>
 
 <style scoped>
-/* Styles spécifiques au composant */
-:deep(.bg-dark\/30) {
-    background-color: rgba(71, 70, 101, 0.3);
+/* Utilisez les mêmes styles que TaskCreateModal.vue */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
 }
 
-:deep(.bg-dark\/80) {
-    background-color: rgba(71, 70, 101, 0.8);
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
-:deep(.from-primary) {
-    --tw-gradient-from: #ab2283 var(--tw-gradient-from-position);
-    --tw-gradient-to: rgb(171 34 131 / 0) var(--tw-gradient-to-position);
-    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease-out;
 }
 
-:deep(.to-primary-dark) {
-    --tw-gradient-to: #8a1c6a var(--tw-gradient-to-position);
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-:deep(.from-primary-dark) {
-    --tw-gradient-from: #8a1c6a var(--tw-gradient-from-position);
-    --tw-gradient-to: rgb(138 28 106 / 0) var(--tw-gradient-to-position);
-    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 32px;
+    border-bottom: 1px solid #e8e9eb;
+    background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+    border-radius: 12px 12px 0 0;
 }
 
-:deep(.to-secondary-dark) {
-    --tw-gradient-to: #289396 var(--tw-gradient-to-position);
+.modal-header h2 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 24px;
+    font-weight: 600;
 }
 
-:deep(.to-secondary) {
-    --tw-gradient-to: #31b6b8 var(--tw-gradient-to-position);
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #95a5a6;
+    cursor: pointer;
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
 }
 
-:deep(.bg-primary) {
-    background-color: #ab2283;
+.btn-close:hover {
+    background: #f8f9fa;
+    color: #e74c3c;
 }
 
-:deep(.bg-secondary) {
-    background-color: #31b6b8;
+.modal-form {
+    padding: 32px;
 }
 
-:deep(.text-primary) {
-    color: #ab2283;
+.form-group {
+    margin-bottom: 24px;
 }
 
-:deep(.text-secondary) {
-    color: #31b6b8;
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
 }
 
-:deep(.text-dark) {
-    color: #474665;
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #34495e;
+    font-size: 14px;
 }
 
-:deep(.text-dark-light) {
-    color: #5c5a7a;
+label.required::after {
+    content: ' *';
+    color: #e74c3c;
 }
 
-:deep(.bg-slate-custom) {
-    background-color: #f8fafc;
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e8e9eb;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #2c3e50;
+    transition: all 0.2s;
+    background: white;
 }
 
-:deep(.border-primary) {
-    border-color: #ab2283;
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
-:deep(.border-secondary) {
-    border-color: #31b6b8;
+input.error,
+select.error {
+    border-color: #e74c3c;
 }
 
-:deep(.focus\:ring-primary\/20:focus) {
-    --tw-ring-color: rgb(171 34 131 / 0.2);
+input.error:focus {
+    border-color: #e74c3c;
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
 }
 
-:deep(.bg-secondary\/10) {
-    background-color: rgb(49 182 184 / 0.1);
+.error-message {
+    color: #e74c3c;
+    font-size: 12px;
+    margin-top: 4px;
 }
 
-:deep(.border-secondary\/20) {
-    border-color: rgb(49 182 184 / 0.2);
+.select-wrapper {
+    position: relative;
 }
 
-:deep(.hover\:text-secondary-dark:hover) {
-    color: #289396;
+.select-arrow {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #95a5a6;
+    pointer-events: none;
+}
+
+.textarea-wrapper {
+    position: relative;
+}
+
+.char-count {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    font-size: 12px;
+    color: #95a5a6;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.char-count.limit {
+    color: #e74c3c;
+    font-weight: 600;
+}
+
+.hint {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-top: 4px;
+}
+
+.assignee-selector {
+    position: relative;
+}
+
+.loading-indicator {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+/* Status and Priority Buttons */
+.status-buttons,
+.priority-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.status-btn,
+.priority-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 10px 16px;
+    border: 2px solid #e8e9eb;
+    border-radius: 8px;
+    background: white;
+    color: #2c3e50;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.status-btn:hover,
+.priority-btn:hover {
+    border-color: #bdc3c7;
+    transform: translateY(-1px);
+}
+
+.status-btn.active,
+.priority-btn.active {
+    border-color: transparent;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Status colors */
+.status-backlog.active {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+}
+
+.status-todo.active {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.status-doing.active {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+}
+
+.status-done.active {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+}
+
+/* Priority colors */
+.priority-low.active {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+}
+
+.priority-medium.active {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+}
+
+.priority-high.active {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+/* Date Input */
+.date-input {
+    position: relative;
+}
+
+.btn-clear-date {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #95a5a6;
+    cursor: pointer;
+    font-size: 20px;
+    padding: 0 8px;
+    line-height: 1;
+}
+
+.btn-clear-date:hover {
+    color: #e74c3c;
+}
+
+/* Time Input */
+.time-input-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.time-input-group input {
+    width: 120px;
+}
+
+.time-unit {
+    color: #7f8c8d;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.time-presets {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.time-preset-btn {
+    padding: 6px 12px;
+    border: 1px solid #e8e9eb;
+    border-radius: 6px;
+    background: white;
+    color: #2c3e50;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.time-preset-btn:hover {
+    background: #f8f9fa;
+    border-color: #3498db;
+}
+
+/* Tags */
+.tags-input {
+    margin-top: 8px;
+}
+
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    padding: 12px;
+    border: 2px solid #e8e9eb;
+    border-radius: 8px;
+    min-height: 52px;
+    background: white;
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    padding: 6px 12px 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    animation: tagAppear 0.3s ease-out;
+}
+
+@keyframes tagAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.tag-remove {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+    line-height: 1;
+    opacity: 0.8;
+}
+
+.tag-remove:hover {
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+.tag-input {
+    flex: 1;
+    min-width: 120px;
+    border: none !important;
+    padding: 8px 4px !important;
+    background: transparent !important;
+}
+
+.tag-input:focus {
+    box-shadow: none !important;
+}
+
+.tags-hint {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+.common-tag-btn {
+    padding: 4px 8px;
+    border: 1px solid #e8e9eb;
+    border-radius: 4px;
+    background: white;
+    color: #2c3e50;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.common-tag-btn:hover {
+    background: #f8f9fa;
+    border-color: #3498db;
+}
+
+/* Advanced Section */
+.advanced-section {
+    border-top: 1px solid #e8e9eb;
+    padding-top: 24px;
+    margin-top: 32px;
+}
+
+.btn-toggle-advanced {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: #3498db;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.btn-toggle-advanced:hover {
+    color: #2980b9;
+}
+
+.toggle-icon {
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+.advanced-options {
+    margin-top: 16px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Story Points */
+.story-points {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.story-point-btn {
+    width: 36px;
+    height: 36px;
+    border: 2px solid #e8e9eb;
+    border-radius: 50%;
+    background: white;
+    color: #2c3e50;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.story-point-btn:hover {
+    border-color: #3498db;
+    transform: scale(1.1);
+}
+
+.story-point-btn.active {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+/* Checkbox */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox {
+    display: none;
+}
+
+.checkbox-custom {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #e8e9eb;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.checkbox:checked+.checkbox-custom {
+    background: #3498db;
+    border-color: #3498db;
+}
+
+.checkbox:checked+.checkbox-custom::after {
+    content: '✓';
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Danger Zone */
+.danger-zone {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #e8e9eb;
+}
+
+.danger-label {
+    color: #e74c3c;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.danger-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.btn-danger {
+    align-self: flex-start;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    max-width: 200px;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: linear-gradient(135deg, #c0392b, #a93226);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.btn-danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #e8e9eb;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: #f8f9fa;
+    color: #2c3e50;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #e8e9eb;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2980b9, #1c6ea4);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+}
+
+.loading-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        max-height: 95vh;
+        margin: 20px;
+    }
+
+    .modal-header {
+        padding: 20px;
+    }
+
+    .modal-form {
+        padding: 20px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .status-buttons,
+    .priority-buttons {
+        flex-direction: column;
+    }
+
+    .status-btn,
+    .priority-btn {
+        min-width: 100%;
+    }
+
+    .time-input-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .time-presets {
+        justify-content: center;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-header h2 {
+        font-size: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
 }
 </style>

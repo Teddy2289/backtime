@@ -88,30 +88,6 @@ const statsList = computed(() => {
             value: overview.total_teams || 0,
             icon: UsersIcon,
             color: '#fce7f3'
-        },
-        {
-            label: 'Commentaires',
-            value: overview.total_comments || 0,
-            icon: ChatBubbleLeftRightIcon,
-            color: '#eff6ff'
-        },
-        {
-            label: 'Fichiers',
-            value: overview.total_files || 0,
-            icon: PaperClipIcon,
-            color: '#f3e8ff'
-        },
-        {
-            label: 'Utilisateurs actifs',
-            value: overview.active_users || 0,
-            icon: ClockIcon,
-            color: '#fef9c3'
-        },
-        {
-            label: 'Tâches en attente',
-            value: overview.pending_tasks || 0,
-            icon: ExclamationTriangleIcon,
-            color: '#fee2e2'
         }
     ];
 });

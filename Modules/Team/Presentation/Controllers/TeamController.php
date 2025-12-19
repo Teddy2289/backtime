@@ -137,11 +137,15 @@ class TeamController extends Controller
     /**
      * Ajouter un membre
      */
-    public function addMember(AddMemberRequest $request, string $teamId): JsonResponse
+    public function addMember(Request $request, int $teamId): JsonResponse
     {
+        $validated = $request->validate([
+            'user_id' => 'required|integer|exists:users,id'
+        ]);
+
         $added = $this->teamService->addMember(
             $teamId,
-            $request->validated()['user_id']
+            $validated['user_id']
         );
 
         if (!$added) {
