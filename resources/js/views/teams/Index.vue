@@ -380,7 +380,7 @@
                         </p>
                         <div class="flex flex-col sm:flex-row gap-3 justify-center">
                             <button @click="showCreateModal = true"
-                                class="inline-flex items-center justify-center px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-primary to-secondary rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] transform transition-all duration-200">
+                                class="inline-flex items-center justify-center px-6 py-3 text-sm font-semibold text-white bg-secondary rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] transform transition-all duration-200">
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 4v16m8-8H4" />

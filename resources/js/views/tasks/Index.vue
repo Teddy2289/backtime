@@ -2,7 +2,7 @@
     <div class="tasks-container">
         <!-- Header -->
         <div class="header-container">
-            <div class="header-content">
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/10 via-secondary/5 to-primary/5 p-6 mb-8">  <div class="header-content">
                 <div class="header-left">
                     <h1 class="page-title">Tâches</h1>
                     <p class="page-subtitle" v-if="pagination">
@@ -16,7 +16,8 @@
                     </svg>
                     Nouvelle tâche
                 </button>
-            </div>
+            </div></div>
+            
         </div>
 
         <!-- Filters -->
@@ -27,11 +28,11 @@
                         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input v-model="searchQuery" @input="handleSearch" placeholder="Rechercher une tâche..."
-                    class="search-input" />
+                    class="pl-10 pr-4 py-3 w-full border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm bg-gray-50/50 hover:bg-white" />
             </div>
 
             <div class="filter-group">
-                <select v-model="statusFilter" @change="handleFilterChange" class="filter-select">
+                <select v-model="statusFilter" @change="handleFilterChange" class="appearance-none pl-4 pr-10 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm bg-gray-50/50 hover:bg-white min-w-[140px]">
                     <option value="">Tous les statuts</option>
                     <option value="backlog">Backlog</option>
                     <option value="todo">À faire</option>
@@ -41,7 +42,7 @@
             </div>
 
             <div class="filter-group">
-                <select v-model="priorityFilter" @change="handleFilterChange" class="filter-select">
+                <select v-model="priorityFilter" @change="handleFilterChange" class="appearance-none pl-4 pr-10 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm bg-gray-50/50 hover:bg-white min-w-[140px]">
                     <option value="">Toutes les priorités</option>
                     <option value="low">Basse</option>
                     <option value="medium">Moyenne</option>

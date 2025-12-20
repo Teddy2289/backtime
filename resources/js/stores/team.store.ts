@@ -8,11 +8,12 @@ import type {
 } from "@/services/team.service";
 import { teamService } from "@/services/team.service";
 import { useAuthStore } from "../stores/auth";
+import { UserRole } from "@/enums/user-role"; // Assurez-vous d'importer UserRole
 
 export const useTeamStore = defineStore("team", () => {
     const authStore = useAuthStore();
 
-    // State
+    // State (inchangé)
     const teams = ref<Team[]>([]);
     const currentTeam = ref<Team | null>(null);
     const teamMembers = ref<TeamMember[]>([]);
@@ -26,6 +27,7 @@ export const useTeamStore = defineStore("team", () => {
     });
 
     const safeTeams = computed(() => teams.value || []);
+    
     // Getters (computed)
     const myTeams = computed(() => {
         const user = authStore.user;
@@ -50,6 +52,7 @@ export const useTeamStore = defineStore("team", () => {
             (team) => team?.owner_id && String(team.owner_id) === userId
         );
     });
+    
     const publicTeams = computed(() => {
         return safeTeams.value.filter((team) => team?.is_public);
     });
@@ -68,6 +71,16 @@ export const useTeamStore = defineStore("team", () => {
             currentTeam.value,
             String(authStore.user.id)
         );
+    });
+
+    // NOUVEAU : Vérifier si l'utilisateur peut créer une équipe
+    const canCreateTeam = computed(() => {
+        const user = authStore.user;
+        if (!user?.id) return false;
+        
+        // Seuls les admins et managers peuvent créer des équipes
+        return authStore.hasRole(UserRole.ADMIN) || 
+               authStore.hasRole(UserRole.MANAGER);
     });
 
     // Actions
@@ -89,26 +102,52 @@ export const useTeamStore = defineStore("team", () => {
         }
     }
 
-    async function createTeam(data: {
-        name: string;
-        description?: string;
-        is_public?: boolean;
-    }) {
-        isLoading.value = true;
-        error.value = null;
+    // MODIFIÉ : Fonction createTeam avec vérification des permissions
+async function createTeam(data: {
+    name: string;
+    description?: string;
+    is_public?: boolean;
+}) {
+    isLoading.value = true;
+    error.value = null;
 
-        try {
-            const team = await teamService.createTeam(data);
-            teams.value.unshift(team);
-            return team;
-        } catch (err: any) {
-            error.value =
-                err.response?.data?.message || "Erreur lors de la création";
-            throw err;
-        } finally {
-            isLoading.value = false;
+    try {
+        // Vérifier les permissions avant de créer
+        if (!canCreateTeam.value) {
+            error.value = "Seuls les administrateurs et managers peuvent créer des équipes";
+            throw new Error(error.value);
         }
+
+        // Vérifier que l'utilisateur est connecté et a un ID
+        if (!authStore.user?.id) {
+            error.value = "Utilisateur non connecté";
+            throw new Error(error.value);
+        }
+
+        // Préparer les données avec owner_id
+        const teamData = {
+            ...data,
+            owner_id: authStore.user.id.toString() // Convertir en string si nécessaire
+        };
+
+        console.log("📝 Création d'équipe avec données:", teamData);
+
+        const team = await teamService.createTeam(teamData);
+        teams.value.unshift(team);
+        return team;
+    } catch (err: any) {
+        // Ne pas écraser l'erreur de permission personnalisée
+        if (!error.value) {
+            error.value =
+                err.response?.data?.message || 
+                err.message || 
+                "Erreur lors de la création";
+        }
+        throw err;
+    } finally {
+        isLoading.value = false;
     }
+}
 
     async function updateTeam(id: string, data: Partial<Team>) {
         isLoading.value = true;
@@ -200,6 +239,7 @@ export const useTeamStore = defineStore("team", () => {
             isLoading.value = false;
         }
     }
+    
     async function fetchTeams(filters: TeamFilters = {}) {
         isLoading.value = true;
         error.value = null;
@@ -256,6 +296,7 @@ export const useTeamStore = defineStore("team", () => {
             isLoading.value = false;
         }
     }
+    
     async function fetchMyTeams() {
         isLoading.value = true;
         error.value = null;
@@ -309,6 +350,7 @@ export const useTeamStore = defineStore("team", () => {
         publicTeams,
         canEditCurrentTeam,
         canDeleteCurrentTeam,
+        canCreateTeam, // AJOUTÉ
 
         // Actions
         fetchTeams,

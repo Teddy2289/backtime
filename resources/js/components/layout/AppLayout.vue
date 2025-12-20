@@ -10,14 +10,14 @@
                         <div class="flex items-center">
                             <router-link :to="{ name: 'dashboard' }" class="flex items-center space-x-2 group">
                                 <div
-                                    class="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+                                    class="h-8 w-8 rounded-lg bg-gradient-to-br from-secondary to-primary-light flex items-center justify-center">
                                     <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M13 10V3L4 14h7v7l9-11h-7z" />
                                     </svg>
                                 </div>
-                                <span class="text-lg font-semibold text-gray-800">WorkFlow</span>
+                                <span class="text-lg font-semibold text-gray-800">Administration</span>
                             </router-link>
                         </div>
 
@@ -270,8 +270,8 @@ const mainNavigation = [
         icon: UserGroupIcon
     },
     {
-        name: 'Rapports',
-        to: { name: 'reports' },
+        name: 'Utilisateurs',
+        to: { name: 'users' },
         icon: ChartBarIcon
     },
 ]

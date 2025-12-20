@@ -137,13 +137,13 @@ export const routes: RouteRecordRaw[] = [
 
     // Rapports
     {
-        path: "/reports",
-        name: "reports",
-        component: () => import("@/views/reports/Index.vue"),
+        path: "/utilisateurs",
+        name: "users",
+        component: () => import("@/views/users/Index.vue"),
         meta: {
             layout: "AppLayout",
             requiresAuth: true,
-            title: "Reports",
+            title: "Utilisateurs",
         },
     },
 

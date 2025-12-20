@@ -57,14 +57,15 @@ class TeamService {
     private protectedUrl = "/teamsCrud";
 
     // === Opérations CRUD ===
-    async createTeam(data: {
-        name: string;
-        description?: string;
-        is_public?: boolean;
-    }): Promise<Team> {
-        const response = await api.post(this.protectedUrl, data);
-        return response.data.data;
-    }
+async createTeam(data: {
+    name: string;
+    description?: string;
+    is_public?: boolean;
+    owner_id?: string | number; // Ajouter cette ligne
+}): Promise<Team> {
+    const response = await api.post(this.protectedUrl, data);
+    return response.data.data;
+}
 
     async updateTeam(
         id: string,
