@@ -22,7 +22,17 @@ class UpdateUserRequest extends FormRequest
             'email' => ['sometimes', 'string', 'email', 'max:255', 'unique:users,email,' . $userId],
             'password' => ['sometimes', 'string', 'min:8', 'confirmed'],
             'role' => ['sometimes', new Enum(UserRole::class)],
-            'avatar' => ['nullable', 'string', 'max:255'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'], 
+            'email_verified_at' => ['nullable', 'date'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'avatar.image' => 'Le fichier doit être une image valide',
+            'avatar.mimes' => 'Les formats acceptés sont : jpeg, png, jpg, gif, webp',
+            'avatar.max' => 'L\'image ne doit pas dépasser 2MB',
         ];
     }
 }

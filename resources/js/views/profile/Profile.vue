@@ -2,25 +2,31 @@
     <div class="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
         <div class="max-w-7xl mx-auto">
             <!-- Header -->
-            <div class="mb-8 sm:mb-12">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
-                    <div class="flex-1">
-                        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-                            Profil
-                        </h1>
-                        <p class="text-sm sm:text-base text-gray-600">
-                            Gérez vos informations personnelles et préférences
-                        </p>
-                    </div>
-                    <div class="flex-shrink-0">
-                        <div class="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-primary to-secondary 
-                                    rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-xl lg:text-2xl 
-                                    shadow-lg">
-                            {{ getInitials(authStore.user?.name || '') }}
-                        </div>
-                    </div>
-                </div>
+         <div class="mb-8 sm:mb-12">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
+        <div class="flex-1">
+            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+                Profil
+            </h1>
+            <p class="text-sm sm:text-base text-gray-600">
+                Gérez vos informations personnelles et préférences
+            </p>
+        </div>
+        <div class="flex-shrink-0">
+            <!-- Avatar avec image en background -->
+            <div class="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden shadow-lg border-4 border-white 
+                        bg-gradient-to-br from-primary to-secondary flex items-center justify-center"
+                 :style="authStore.user?.avatar 
+                         ? { backgroundImage: `url(${authStore.user.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' } 
+                         : {}">
+                <span class="text-white font-bold text-lg sm:text-xl lg:text-2xl 
+                             bg-black/30 backdrop-blur-sm rounded-full w-full h-full flex items-center justify-center">
+                    {{ getInitials(authStore.user?.name || '') }}
+                </span>
             </div>
+        </div>
+    </div>
+</div>
 
             <!-- Main Content Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

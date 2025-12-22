@@ -17,15 +17,18 @@
         </div>
 
         <!-- Affichez les statistiques seulement si elles existent -->
-        <div v-else-if="statsList.length > 0" class="stats-grid">
-            <div class="stat-card" v-for="stat in statsList" :key="stat.label">
-                <div class="stat-icon" :style="{ backgroundColor: stat.color }">
+        <div v-else-if="statsList.length > 0" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow" v-for="stat in statsList" :key="stat.label">
+               <div class="flex items-center gap-4">
+<div class="stat-icon" :style="{ backgroundColor: stat.color }">
                     <component :is="stat.icon" class="icon" />
                 </div>
                 <div class="stat-content">
-                    <p class="stat-value">{{ stat.value }}</p>
-                    <p class="stat-label">{{ stat.label }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stat.value }}</p>
+                    <p class="text-sm text-gray-600">{{ stat.label }}</p>
                 </div>
+               </div>
+                
             </div>
         </div>
 

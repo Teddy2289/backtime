@@ -6,13 +6,22 @@ use Modules\User\Domain\Entities\User;
 use Modules\User\Domain\Enums\UserRole;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class UserService
 {
     public function create(array $data): User
     {
         return DB::transaction(function () use ($data) {
-            $userData = $data;
+            $userData = $this->processUserData($data);
+
+            // Gérer l'upload de l'avatar s'il existe
+            if (isset($data['avatar']) && $data['avatar'] instanceof UploadedFile) {
+                $userData['avatar'] = $this->storeAvatar($data['avatar']);
+                $userData['avatar_url'] = Storage::url($userData['avatar']);
+            }
 
             // Hash du mot de passe
             if (isset($userData['password'])) {
@@ -44,22 +53,38 @@ class UserService
     public function update(User $user, array $data): User
     {
         return DB::transaction(function () use ($user, $data) {
+            $userData = $this->processUserData($data, $user);
+
+            // Gérer l'upload de l'avatar s'il existe
+            if (isset($data['avatar']) && $data['avatar'] instanceof UploadedFile) {
+                // Supprimer l'ancien avatar s'il existe
+                $this->deleteAvatar($user->avatar);
+                
+                $userData['avatar'] = $this->storeAvatar($data['avatar']);
+                $userData['avatar_url'] = Storage::url($userData['avatar']);
+            } else {
+                // Si pas de nouveau fichier, ne pas modifier l'avatar
+                unset($userData['avatar']);
+            }
+
             // Hash du mot de passe si fourni
-            if (isset($data['password'])) {
-                $data['password'] = Hash::make($data['password']);
+            if (isset($userData['password'])) {
+                $userData['password'] = Hash::make($userData['password']);
+            } else {
+                unset($userData['password']);
             }
 
             // Gérer le rôle
-            if (isset($data['role'])) {
-                $role = UserRole::tryFrom($data['role'])
-                    ? UserRole::from($data['role'])
+            if (isset($userData['role'])) {
+                $role = UserRole::tryFrom($userData['role'])
+                    ? UserRole::from($userData['role'])
                     : UserRole::USER;
 
-                $data['role'] = $role->value;
+                $userData['role'] = $role->value;
                 $user->syncRoles([$role->value]);
             }
 
-            $user->update($data);
+            $user->update($userData);
 
             return $user->fresh();
         });
@@ -68,6 +93,9 @@ class UserService
     public function delete(User $user): bool
     {
         return DB::transaction(function () use ($user) {
+            // Supprimer l'avatar s'il existe
+            $this->deleteAvatar($user->avatar);
+
             // Supprimer les rôles associés
             $user->roles()->detach();
 
@@ -118,4 +146,112 @@ class UserService
     {
         return $user->role === $role || $user->hasRole($role->value);
     }
+
+    /**
+     * Upload d'avatar séparé
+     */
+    public function uploadAvatar(User $user, UploadedFile $avatarFile): User
+    {
+        return DB::transaction(function () use ($user, $avatarFile) {
+            // Supprimer l'ancien avatar s'il existe
+            $this->deleteAvatar($user->avatar);
+            
+            // Stocker le nouvel avatar
+            $avatarPath = $this->storeAvatar($avatarFile);
+            
+            $user->update([
+                'avatar' => $avatarPath,
+                'avatar_url' => Storage::url($avatarPath),
+            ]);
+
+            return $user->fresh();
+        });
+    }
+
+    /**
+     * Supprimer l'avatar d'un utilisateur
+     */
+    public function removeAvatar(User $user): User
+    {
+        return DB::transaction(function () use ($user) {
+            $this->deleteAvatar($user->avatar);
+            
+            $user->update([
+                'avatar' => null,
+                'avatar_url' => null,
+            ]);
+
+            return $user->fresh();
+        });
+    }
+
+    /**
+     * Stocker un fichier avatar
+     */
+// Modules\User\Application\Services\UserService.php
+protected function storeAvatar(UploadedFile $avatarFile): string
+{
+    // Générer un nom de fichier unique
+    $extension = $avatarFile->getClientOriginalExtension();
+    $filename = 'avatar_' . time() . '_' . Str::random(10) . '.' . $extension;
+    
+    // Stocker directement dans public/avatars
+    $path = 'avatars/' . $filename;
+    $avatarFile->move(public_path('avatars'), $filename);
+    
+    return $path; // Retourne 'avatars/filename.png'
+}
+
+    /**
+     * Supprimer un fichier avatar
+     */
+    protected function deleteAvatar(?string $avatarPath): void
+    {
+        if ($avatarPath && Storage::disk('public')->exists($avatarPath)) {
+            Storage::disk('public')->delete($avatarPath);
+        }
+    }
+
+    /**
+     * Traiter les données utilisateur (filtrer et valider)
+     */
+    protected function processUserData(array $data, ?User $user = null): array
+    {
+        $allowedFields = [
+            'name', 'email', 'password', 'role', 
+            'avatar', 'avatar_url', 'email_verified_at'
+        ];
+
+        $processedData = array_filter($data, function ($key) use ($allowedFields) {
+            return in_array($key, $allowedFields);
+        }, ARRAY_FILTER_USE_KEY);
+
+        // Traiter email_verified_at
+        if (isset($processedData['email_verified_at'])) {
+            if ($processedData['email_verified_at'] === 'true' || $processedData['email_verified_at'] === true) {
+                $processedData['email_verified_at'] = now();
+            } elseif ($processedData['email_verified_at'] === 'false' || $processedData['email_verified_at'] === false || $processedData['email_verified_at'] === 'null') {
+                $processedData['email_verified_at'] = null;
+            }
+        }
+
+        return $processedData;
+    }
+
+    /**
+     * Obtenir l'URL complète de l'avatar
+     */
+  public function getAvatarUrl(?string $avatarPath): ?string
+{
+    if (!$avatarPath) {
+        return null;
+    }
+
+    // Si le chemin commence déjà par 'avatars/', ne pas ajouter de préfixe
+    if (strpos($avatarPath, 'avatars/') === 0) {
+        return asset('storage/' . $avatarPath);
+    }
+
+    return asset('storage/' . $avatarPath);
+}
 }

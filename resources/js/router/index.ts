@@ -21,7 +21,7 @@ router.beforeEach(authGuard);
 // Mettre à jour le titre de la page
 router.afterEach((to: RouteLocationNormalized) => {
     const title = to.meta.title || "My App";
-    document.title = `${title} - Laravel Vue`;
+    document.title = `${title} - Administration`;
 });
 
 export default router;

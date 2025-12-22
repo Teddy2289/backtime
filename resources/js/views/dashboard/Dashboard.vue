@@ -7,10 +7,7 @@
                     <h1 class="page-title">Tableau de bord</h1>
                     <p class="page-subtitle">Gérez vos utilisateurs et consultez les statistiques</p>
                 </div>
-                <button @click="openCreateModal" class="create-button">
-                    <PlusIcon class="button-icon" />
-                    Nouvel utilisateur
-                </button>
+                
             </div>
         </div>
 
@@ -110,8 +107,8 @@
                                     <td class="table-cell user-cell">
                                         <div class="user-info">
                                             <div class="avatar-container">
-                                                <div v-if="user.avatar_url" class="user-avatar"
-                                                    :style="{ backgroundImage: `url(${user.avatar_url})` }">
+                                                <div v-if="user.avatar" class="user-avatar"
+                                                    :style="{ backgroundImage: `url(${user.avatar})` }">
                                                 </div>
                                                 <div v-else class="user-avatar placeholder">
                                                     {{ user.initials }}
@@ -552,17 +549,6 @@ import {
     ChevronRightIcon,
     XMarkIcon,
     ExclamationTriangleIcon,
-    UserIcon,
-    EnvelopeIcon,
-    ShieldCheckIcon,
-    LockClosedIcon,
-    EyeIcon,
-    EyeSlashIcon,
-    KeyIcon,
-    PhotoIcon,
-    CheckCircleIcon,
-    ArrowPathIcon,
-    CheckIcon,
     ChartBarIcon,
     ClockIcon,
     ArrowDownTrayIcon
@@ -770,6 +756,35 @@ const validateForm = (): boolean => {
 
     return isValid
 }
+
+const getAvatarUrl = (user: User): string => {
+    if (!user) return '';
+    
+    // Utiliser avatar_url en priorité, sinon avatar
+    const avatarPath = user.avatar_url || user.avatar;
+    
+    if (!avatarPath) return '';
+    
+    // Si c'est déjà une URL complète, la retourner
+    if (avatarPath.startsWith('http')) {
+        return avatarPath;
+    }
+    
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    
+    // Si le chemin commence par storage/, l'utiliser tel quel
+    if (avatarPath.startsWith('storage/')) {
+        return `${baseUrl}/${avatarPath}`;
+    }
+    
+    // Si le chemin commence par avatars/, ajouter storage/
+    if (avatarPath.startsWith('avatars/')) {
+        return `${baseUrl}/storage/${avatarPath}`;
+    }
+    
+    // Pour les noms de fichiers simples
+    return `${baseUrl}/storage/avatars/${avatarPath}`;
+};
 
 const submitForm = async () => {
     if (!validateForm()) {

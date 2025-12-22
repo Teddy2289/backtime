@@ -4,13 +4,13 @@
         <div class="mb-8">
             <!-- En-tête avec dégradé -->
             <div
-                class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 p-6 mb-8 border border-blue-100">
+                class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/10 via-secondary/5 to-primary/5 p-6 mb-8">
                 <div class="relative">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div class="flex-1">
                             <div class="flex items-center gap-3 mb-2">
                                 <div class="p-2 bg-white rounded-xl shadow-sm">
-                                    <UserGroupIcon class="w-6 h-6 text-blue-600" />
+                                    <UserGroupIcon class="w-6 h-6 text-primary" />
                                 </div>
                                 <div>
                                     <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Gestion des utilisateurs</h1>
@@ -22,7 +22,7 @@
                         </div>
 
                         <button @click="openCreateModal"
-                            class="group relative inline-flex items-center justify-center px-6 py-3 text-sm font-semibold text-white bg-blue-600 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] transform transition-all duration-200 min-w-[180px] hover:bg-blue-700">
+                            class="group relative inline-flex items-center justify-center px-6 py-3 text-sm font-semibold text-white bg-secondary rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] transform transition-all duration-200 min-w-[180px] hover:bg-secondary-dark">
                             <PlusIcon class="w-5 h-5 mr-2" />
                             <span>Nouvel utilisateur</span>
                         </button>
@@ -43,7 +43,7 @@
                         </div>
                         <input v-model="searchQuery" @input="handleSearch" type="text" 
                             placeholder="Nom, email, rôle..." 
-                            class="pl-10 pr-4 py-2.5 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm" />
+                            class="pl-10 pr-4 py-3 w-full border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm bg-gray-50/50 hover:bg-white" />
                     </div>
                 </div>
 
@@ -51,7 +51,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Rôle</label>
                     <select v-model="roleFilter" @change="onRoleFilterChange"
-                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm">
+                        class="pl-10 pr-4 py-3 w-full border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm bg-gray-50/50 hover:bg-white">
                         <option value="">Tous les rôles</option>
                         <option value="admin">Administrateur</option>
                         <option value="manager">Manager</option>
@@ -63,7 +63,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Statut</label>
                     <select v-model="statusFilter" @change="onStatusFilterChange"
-                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm">
+                        class="pl-10 pr-4 py-3 w-full border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm bg-gray-50/50 hover:bg-white">
                         <option value="">Tous les statuts</option>
                         <option value="active">Actif</option>
                         <option value="inactive">Inactif</option>
@@ -76,7 +76,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Date d'inscription</label>
                     <input v-model="dateFilter" type="date" 
-                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm" />
+                        class="pl-10 pr-4 py-3 w-full border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm bg-gray-50/50 hover:bg-white" />
                 </div>
             </div>
 
@@ -93,7 +93,7 @@
         <!-- Quick Stats -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <!-- Total Users -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
                         <UserGroupIcon class="w-6 h-6 text-yellow-600" />
@@ -106,7 +106,7 @@
             </div>
 
             <!-- Admins -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
                         <ShieldCheckIcon class="w-6 h-6 text-red-600" />
@@ -119,7 +119,7 @@
             </div>
 
             <!-- Managers -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                         <UserIcon class="w-6 h-6 text-blue-600" />
@@ -132,7 +132,7 @@
             </div>
 
             <!-- New Today -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                         <CalendarIcon class="w-6 h-6 text-green-600" />
@@ -218,9 +218,9 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10">
-                                        <div v-if="user.avatar_url" 
-                                            class="h-10 w-10 rounded-full bg-cover bg-center"
-                                            :style="{ backgroundImage: `url(${user.avatar_url})` }"></div>
+                                        <div v-if="user.avatar" 
+     class="h-10 w-10 rounded-full bg-cover bg-center"
+     :style="{ backgroundImage: `url(${user.avatar})` }"></div>
                                         <div v-else 
                                             class="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
                                             {{ getInitials(user.name) }}
@@ -261,15 +261,15 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">
                                     <button @click="viewUser(user)" 
-                                        class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50">
+                                        class="action-button-table view-button-table">
                                         <EyeIcon class="w-5 h-5" />
                                     </button>
                                     <button @click="editUser(user)" 
-                                        class="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50">
+                                        class="action-button-table edit-button-table">
                                         <PencilSquareIcon class="w-5 h-5" />
                                     </button>
                                     <button v-if="authStore.isAdmin && user.id !== authStore.user?.id" @click="deleteUser(user)" 
-                                        class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
+                                        class="action-button-table delete-button-table">
                                         <TrashIcon class="w-5 h-5" />
                                     </button>
                                 </div>
@@ -315,160 +315,213 @@
         </div>
 
         <!-- User Modal -->
-        <div v-if="showModal" class="fixed inset-0 z-50 overflow-y-auto">
-            <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" @click="closeModal"></div>
-            <div class="flex min-h-full items-center justify-center p-4">
-                <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl">
-                    <!-- Header -->
-                    <div class="px-6 py-4 border-b border-gray-200">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-xl font-bold text-gray-900">
-                                {{ isEditMode ? 'Modifier l\'utilisateur' : 'Créer un nouvel utilisateur' }}
-                            </h2>
-                            <button @click="closeModal" class="p-2 hover:bg-gray-100 rounded-lg">
-                                <XMarkIcon class="w-5 h-5 text-gray-500" />
-                            </button>
+     <!-- Modal amélioré dans Users.vue -->
+<!-- User Modal -->
+<div v-if="showModal" class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="closeModal"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+            <!-- Header avec gradient -->
+            <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-primary/10 via-secondary/5 to-primary/5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-primary">
+                            {{ isEditMode ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur' }}
+                        </h2>
+                        <p class="text-sm text-dark mt-1">
+                            {{ isEditMode ? 'Mettez à jour les informations' : 'Ajoutez un nouvel utilisateur' }}
+                        </p>
+                    </div>
+                    <button @click="closeModal" class="text-dark hover:text-secondary transition-colors">
+                        <XMarkIcon class="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="px-6 py-5 max-h-[70vh] overflow-y-auto">
+                <!-- Loading State -->
+                <div v-if="modalLoading" class="py-10 text-center">
+                    <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-4">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                    <p class="text-gray-600 font-medium">
+                        {{ isEditMode ? 'Mise à jour...' : 'Création...' }}
+                    </p>
+                </div>
+
+                <!-- Error State -->
+                <div v-else-if="modalError" class="mb-5 p-4 bg-red-50 border border-red-100 rounded-lg">
+                    <div class="flex items-start">
+                        <ExclamationCircleIcon class="w-5 h-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
+                        <p class="text-sm text-red-700">{{ modalError }}</p>
+                    </div>
+                </div>
+
+                <!-- Form -->
+                <form v-else @submit.prevent="submitForm" class="space-y-4">
+                    <!-- Avatar Upload -->
+                    <div class="flex flex-col items-center mb-4">
+                        <div class="relative mb-3">
+                            <div v-if="avatarPreview || (isEditMode && selectedUser?.avatar_url)" 
+                                 class="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
+                                <img :src="avatarPreview || getAvatarUrl(selectedUser)" 
+                                     class="w-full h-full object-cover"
+                                     alt="Avatar preview">
+                            </div>
+                            <div v-else 
+                                 class="w-24 h-24 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center border-4 border-white shadow-lg">
+                                <UserIcon class="w-10 h-10 text-gray-400" />
+                            </div>
+                            
+                            <label for="avatar-upload" 
+                                   class="absolute -bottom-2 -right-2 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-blue-700 transition-colors shadow-lg">
+                                <CameraIcon class="w-5 h-5" />
+                                <input id="avatar-upload" 
+                                       @change="handleAvatarUpload"
+                                       type="file" 
+                                       accept="image/*"
+                                       class="hidden">
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-500 text-center">
+                            Cliquez sur l'icône pour changer la photo
+                        </p>
+                    </div>
+
+                    <!-- Name -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Nom complet *
+                        </label>
+                        <div class="relative">
+                            <UserIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input v-model="formData.name" type="text" 
+                                   :class="['pl-10 pr-4 py-3 w-full border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm bg-gray-50/50 hover:bg-white', 
+                                   errors.name ? 'border-red-300 bg-red-50' : 'border-gray-300']"
+                                   placeholder="Jean Dupont" />
+                        </div>
+                        <p v-if="errors.name" class="mt-1 text-xs text-red-600">{{ errors.name }}</p>
+                    </div>
+
+                    <!-- Email -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Email *
+                        </label>
+                        <div class="relative">
+                            <EnvelopeIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input v-model="formData.email" type="email" 
+                                   :class="['pl-10 pr-4 py-3 w-full border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm bg-gray-50/50 hover:bg-white', 
+                                   errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300']"
+                                   placeholder="jean.dupont@example.com" />
+                        </div>
+                        <p v-if="errors.email" class="mt-1 text-xs text-red-600">{{ errors.email }}</p>
+                    </div>
+
+                    <!-- Role -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Rôle *
+                        </label>
+                        <select v-model="formData.role" 
+                                :class="['pl-10 pr-4 py-3 w-full border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm bg-gray-50/50 hover:bg-white', 
+                                errors.role ? 'border-red-300 bg-red-50' : 'border-gray-300']">
+                            <option value="">Sélectionner un rôle</option>
+                            <option value="user">Utilisateur</option>
+                            <option value="manager">Manager</option>
+                            <option value="admin">Administrateur</option>
+                        </select>
+                        <p v-if="errors.role" class="mt-1 text-xs text-red-600">{{ errors.role }}</p>
+                    </div>
+
+                    <!-- Password Fields -->
+                    <div v-if="!isEditMode || showPasswordField" class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                {{ isEditMode ? 'Nouveau mot de passe' : 'Mot de passe' }} 
+                                <span v-if="!isEditMode">*</span>
+                            </label>
+                            <div class="relative">
+                                <LockClosedIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <input v-model="formData.password" 
+                                       :type="showPassword ? 'text' : 'password'"
+                                       :class="['pl-10 pr-4 py-3 w-full border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm bg-gray-50/50 hover:bg-white', 
+                                       errors.password ? 'border-red-300 bg-red-50' : 'border-gray-300']"
+                                       :placeholder="isEditMode ? 'Laisser vide pour ne pas changer' : '●●●●●●●●'" />
+                                <button type="button" @click="showPassword = !showPassword" 
+                                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                    <EyeIcon v-if="!showPassword" class="w-5 h-5" />
+                                    <EyeSlashIcon v-else class="w-5 h-5" />
+                                </button>
+                            </div>
+                            <p v-if="errors.password" class="mt-1 text-xs text-red-600">{{ errors.password }}</p>
+                        </div>
+
+                        <div v-if="formData.password">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Confirmation du mot de passe
+                                <span v-if="!isEditMode">*</span>
+                            </label>
+                            <div class="relative">
+                                <LockClosedIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <input v-model="formData.password_confirmation" 
+                                       :type="showPassword ? 'text' : 'password'"
+                                       :class="['pl-10 pr-4 py-3 w-full border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm bg-gray-50/50 hover:bg-white', 
+                                       errors.password_confirmation ? 'border-red-300 bg-red-50' : 'border-gray-300']"
+                                       placeholder="Confirmez le mot de passe" />
+                            </div>
+                            <p v-if="errors.password_confirmation" class="mt-1 text-xs text-red-600">{{ errors.password_confirmation }}</p>
                         </div>
                     </div>
 
-                    <!-- Content -->
-                    <div class="px-6 py-4">
-                        <form @submit.prevent="submitForm">
-                            <!-- Loading State -->
-                            <div v-if="modalLoading" class="py-8 text-center">
-                                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-                                <p class="text-gray-600">
-                                    {{ isEditMode ? 'Modification en cours...' : 'Création en cours...' }}
-                                </p>
-                            </div>
-
-                            <!-- Error State -->
-                            <div v-else-if="modalError" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                                <div class="flex items-center">
-                                    <ExclamationCircleIcon class="w-5 h-5 text-red-500 mr-2" />
-                                    <p class="text-sm text-red-700">{{ modalError }}</p>
-                                </div>
-                            </div>
-
-                            <!-- Form Fields -->
-                            <div v-else class="space-y-4">
-                                <!-- Name -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                                        Nom complet <span class="text-red-500">*</span>
-                                    </label>
-                                    <input v-model="formData.name" type="text" 
-                                        :class="['w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500', 
-                                        errors.name ? 'border-red-300' : 'border-gray-300']"
-                                        placeholder="Jean Dupont" />
-                                    <p v-if="errors.name" class="mt-1 text-sm text-red-600">{{ errors.name }}</p>
-                                </div>
-
-                                <!-- Email -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                                        Email <span class="text-red-500">*</span>
-                                    </label>
-                                    <input v-model="formData.email" type="email" 
-                                        :class="['w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500', 
-                                        errors.email ? 'border-red-300' : 'border-gray-300']"
-                                        placeholder="jean.dupont@example.com" />
-                                    <p v-if="errors.email" class="mt-1 text-sm text-red-600">{{ errors.email }}</p>
-                                </div>
-
-                                <!-- Role -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                                        Rôle <span class="text-red-500">*</span>
-                                    </label>
-                                    <select v-model="formData.role" 
-                                        :class="['w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500', 
-                                        errors.role ? 'border-red-300' : 'border-gray-300']">
-                                        <option value="">Sélectionner un rôle</option>
-                                        <option value="user">Utilisateur</option>
-                                        <option value="manager">Manager</option>
-                                        <option value="admin">Administrateur</option>
-                                    </select>
-                                    <p v-if="errors.role" class="mt-1 text-sm text-red-600">{{ errors.role }}</p>
-                                </div>
-
-                                <!-- Password (Create or Edit) -->
-                                <div v-if="!isEditMode || showPasswordField">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                                        {{ isEditMode ? 'Nouveau mot de passe' : 'Mot de passe' }}
-                                        <span v-if="!isEditMode" class="text-red-500">*</span>
-                                    </label>
-                                    <div class="relative">
-                                        <input v-model="formData.password" 
-                                            :type="showPassword ? 'text' : 'password'"
-                                            :class="['w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10', 
-                                            errors.password ? 'border-red-300' : 'border-gray-300']"
-                                            :placeholder="isEditMode ? 'Laisser vide pour conserver l\'actuel' : 'Mot de passe'" />
-                                        <button type="button" @click="showPassword = !showPassword" 
-                                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                                            <EyeIcon v-if="!showPassword" class="w-5 h-5" />
-                                            <EyeSlashIcon v-else class="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                    <p v-if="errors.password" class="mt-1 text-sm text-red-600">{{ errors.password }}</p>
-                                    <div v-if="isEditMode" class="mt-2">
-                                        <button type="button" @click="togglePasswordField" 
-                                            class="text-sm text-blue-600 hover:text-blue-800">
-                                            {{ showPasswordField ? 'Annuler le changement' : 'Changer le mot de passe' }}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <!-- Password Confirmation -->
-                                <div v-if="(!isEditMode || showPasswordField) && formData.password">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                                        Confirmer le mot de passe
-                                        <span v-if="!isEditMode" class="text-red-500">*</span>
-                                    </label>
-                                    <input v-model="formData.password_confirmation" 
-                                        :type="showPassword ? 'text' : 'password'"
-                                        :class="['w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500', 
-                                        errors.password_confirmation ? 'border-red-300' : 'border-gray-300']"
-                                        placeholder="Confirmer le mot de passe" />
-                                    <p v-if="errors.password_confirmation" class="mt-1 text-sm text-red-600">{{ errors.password_confirmation }}</p>
-                                </div>
-
-                                <!-- Avatar URL -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                                        URL de l'avatar
-                                    </label>
-                                    <input v-model="formData.avatar" type="url" 
-                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="https://example.com/avatar.jpg" />
-                                </div>
-
-                                <!-- Email Verified -->
-                                <div v-if="authStore.isAdmin" class="flex items-center">
-                                    <input v-model="formData.email_verified" type="checkbox" 
-                                        class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
-                                    <label class="ml-2 block text-sm text-gray-700">
-                                        Email vérifié
-                                    </label>
-                                </div>
-                            </div>
-                        </form>
+                    <!-- Password Toggle (Edit mode only) -->
+                    <div v-if="isEditMode" class="pt-2">
+                        <button type="button" @click="togglePasswordField" 
+                                class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium">
+                            <KeyIcon class="w-4 h-4 mr-1" />
+                            {{ showPasswordField ? 'Annuler le changement' : 'Changer le mot de passe' }}
+                        </button>
                     </div>
 
-                    <!-- Footer -->
-                    <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                    <!-- Email Verified -->
+                    <div v-if="authStore.isAdmin" class="flex items-center pt-2">
+                        <div class="flex items-center h-5">
+                            <input v-model="formData.email_verified" type="checkbox" 
+                                   class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+                        </div>
+                        <label class="ml-2 text-sm text-gray-700">
+                            <span class="font-medium">Email vérifié</span>
+                            <p class="text-xs text-gray-500">L'utilisateur pourra se connecter immédiatement</p>
+                        </label>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-xs text-gray-500">
+                            * Champs obligatoires
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-3">
                         <button @click="closeModal" :disabled="modalLoading"
-                            class="px-4 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50">
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50">
                             Annuler
                         </button>
                         <button @click="submitForm" :disabled="modalLoading"
-                            class="px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
-                            {{ isEditMode ? 'Modifier' : 'Créer' }}
+                                :class="['px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50',
+                                isEditMode ? 'bg-secondary hover:bg-secondary-dark' : 'bg-secondary hover:bg-secondary-dark']">
+                            {{ isEditMode ? 'Mettre à jour' : 'Créer' }}
                         </button>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
         <!-- User Detail Modal -->
         <UserDetailModal 
@@ -478,7 +531,6 @@
         />
     </div>
 </template>
-
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, reactive } from 'vue'
 import { useAuthStore } from '@/stores/auth'
@@ -488,7 +540,7 @@ import debounce from 'lodash/debounce'
 import UserDetailModal from '@/components/users/UserDetailModal.vue'
 import type { User } from '@/types/User'
 
-// Import icons
+// Import icons (ajoutez ces icônes)
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -504,9 +556,12 @@ import {
     XMarkIcon,
     EyeIcon,
     EllipsisVerticalIcon,
-    ArrowDownTrayIcon,
     ArrowPathIcon,
-    EyeSlashIcon
+    EyeSlashIcon,
+    CameraIcon,      // Ajouté
+    LockClosedIcon,  // Ajouté
+    KeyIcon,         // Ajouté
+    EnvelopeIcon     // Ajouté
 } from '@heroicons/vue/24/outline'
 
 const authStore = useAuthStore()
@@ -527,15 +582,16 @@ const modalLoading = ref(false)
 const modalError = ref<string | null>(null)
 const showPassword = ref(false)
 const showPasswordField = ref(false)
+const avatarFile = ref<File | null>(null)
+const avatarPreview = ref<string>('')
 
-// Form Data - CHANGÉ DE ref À reactive POUR LES BINDINGS
+// Form Data
 const formData = reactive({
     name: '',
     email: '',
     role: 'user',
     password: '',
     password_confirmation: '',
-    avatar: '',
     email_verified: false
 })
 
@@ -576,46 +632,45 @@ const newTodayUsers = computed(() => {
 })
 
 const filteredUsers = computed(() => {
-    let users = userStore.users
-
-    // Filtre par recherche
-    if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase()
-        users = users.filter(user => 
-            user.name?.toLowerCase().includes(query) || 
-            user.email?.toLowerCase().includes(query) ||
-            user.role?.toLowerCase().includes(query)
-        )
-    }
-
-    // Filtre par rôle
-    if (roleFilter.value) {
-        users = users.filter(user => user.role === roleFilter.value)
-    }
-
-    // Filtre par statut
-    if (statusFilter.value) {
-        users = users.filter(user => {
+    return userStore.users.filter(user => {
+        let match = true
+        
+        if (searchQuery.value) {
+            const query = searchQuery.value.toLowerCase()
+            match = match && (
+                user.name?.toLowerCase().includes(query) || 
+                user.email?.toLowerCase().includes(query) ||
+                user.role?.toLowerCase().includes(query)
+            )
+        }
+        
+        if (roleFilter.value) {
+            match = match && (user.role === roleFilter.value)
+        }
+        
+        if (statusFilter.value) {
             switch (statusFilter.value) {
                 case 'active':
-                    return user.last_login_at
+                    match = match && user.last_login_at
+                    break
                 case 'inactive':
-                    return !user.last_login_at
+                    match = match && !user.last_login_at
+                    break
                 case 'verified':
-                    return user.email_verified_at
+                    match = match && user.email_verified_at
+                    break
                 case 'unverified':
-                    return !user.email_verified_at
-                default:
-                    return true
+                    match = match && !user.email_verified_at
+                    break
             }
-        })
-    }
-
-    return users
+        }
+        
+        return match
+    })
 })
 
 // Methods
-const formatDate = (dateString: string) => {
+const formatDate = (dateString?: string) => {
     if (!dateString) return '-'
     try {
         const date = new Date(dateString)
@@ -629,7 +684,7 @@ const formatDate = (dateString: string) => {
     }
 }
 
-const formatLastLogin = (dateString: string | null) => {
+const formatLastLogin = (dateString?: string | null) => {
     if (!dateString) return 'Jamais'
     try {
         const date = new Date(dateString)
@@ -658,6 +713,35 @@ const getInitials = (name: string) => {
         .substring(0, 2)
 }
 
+const getAvatarUrl = (user: User): string => {
+    if (!user) return '';
+    
+    // Utiliser avatar_url en priorité, sinon avatar
+    const avatarPath = user.avatar_url || user.avatar;
+    
+    if (!avatarPath) return '';
+    
+    // Si c'est déjà une URL complète, la retourner
+    if (avatarPath.startsWith('http')) {
+        return avatarPath;
+    }
+    
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    
+    // Si le chemin commence par storage/, l'utiliser tel quel
+    if (avatarPath.startsWith('storage/')) {
+        return `${baseUrl}/${avatarPath}`;
+    }
+    
+    // Si le chemin commence par avatars/, ajouter storage/
+    if (avatarPath.startsWith('avatars/')) {
+        return `${baseUrl}/storage/${avatarPath}`;
+    }
+    
+    // Pour les noms de fichiers simples
+    return `${baseUrl}/storage/avatars/${avatarPath}`;
+};
+
 const getUserStatus = (user: User) => {
     if (user.email_verified_at) {
         return 'Vérifié'
@@ -668,16 +752,42 @@ const getUserStatus = (user: User) => {
     }
 }
 
-// CORRECTION : Cette fonction doit être définie
+const handleAvatarUpload = (event: Event) => {
+    const input = event.target as HTMLInputElement
+    if (input.files && input.files[0]) {
+        const file = input.files[0]
+        
+        // Validation de la taille (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            errors.avatar = 'L\'image ne doit pas dépasser 2MB'
+            return
+        }
+        
+        // Validation du type
+        if (!file.type.startsWith('image/')) {
+            errors.avatar = 'Veuillez sélectionner une image valide'
+            return
+        }
+        
+        avatarFile.value = file
+        errors.avatar = ''
+        
+        // Créer l'aperçu
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            avatarPreview.value = e.target?.result as string
+        }
+        reader.readAsDataURL(file)
+    }
+}
+
 const openCreateModal = () => {
-    console.log('Opening create modal')
     isEditMode.value = false
     resetForm()
     showModal.value = true
 }
 
 const editUser = (user: User) => {
-    console.log('Editing user:', user)
     isEditMode.value = true
     selectedUser.value = user
     resetForm()
@@ -686,10 +796,11 @@ const editUser = (user: User) => {
     formData.name = user.name || ''
     formData.email = user.email || ''
     formData.role = user.role || 'user'
-    formData.password = ''
-    formData.password_confirmation = ''
-    formData.avatar = user.avatar || ''
     formData.email_verified = !!user.email_verified_at
+
+    // Réinitialiser l'aperçu de l'avatar
+    avatarPreview.value = ''
+    avatarFile.value = null
 
     showModal.value = true
 }
@@ -700,7 +811,6 @@ const resetForm = () => {
     formData.role = 'user'
     formData.password = ''
     formData.password_confirmation = ''
-    formData.avatar = ''
     formData.email_verified = false
 
     // Réinitialiser les erreurs
@@ -709,6 +819,8 @@ const resetForm = () => {
     })
 
     modalError.value = null
+    avatarPreview.value = ''
+    avatarFile.value = null
     showPasswordField.value = false
     showPassword.value = false
     modalLoading.value = false
@@ -776,9 +888,7 @@ const validateForm = (): boolean => {
 }
 
 const submitForm = async () => {
-    console.log('Submitting form')
     if (!validateForm()) {
-        console.log('Form validation failed')
         return
     }
 
@@ -792,26 +902,27 @@ const submitForm = async () => {
             role: formData.role
         }
 
-        if (formData.avatar.trim()) {
-            userData.avatar = formData.avatar
+        // Ajouter l'avatar si un fichier est sélectionné
+        if (avatarFile.value) {
+            userData.avatar = avatarFile.value
         }
 
+        // Gérer l'email vérifié
         if (formData.email_verified) {
             userData.email_verified_at = new Date().toISOString()
         } else if (isEditMode.value) {
             userData.email_verified_at = null
         }
 
+        // Ajouter le mot de passe si nécessaire
         if (formData.password) {
             userData.password = formData.password
             userData.password_confirmation = formData.password_confirmation
         }
 
         if (isEditMode.value && selectedUser.value) {
-            console.log('Updating user:', selectedUser.value.id, userData)
             await userStore.updateUser(selectedUser.value.id, userData)
         } else {
-            console.log('Creating user:', userData)
             await userStore.createUser(userData)
         }
 
@@ -864,55 +975,37 @@ const bulkActions = () => {
     console.log('Bulk actions for:', selectedUsers.value)
 }
 
-const exportUsers = async () => {
-    try {
-        await userStore.exportUsers()
-    } catch (error) {
-        console.error('Export error:', error)
-    }
-}
-
 const resetFilters = () => {
     searchQuery.value = ''
     roleFilter.value = ''
     statusFilter.value = ''
     dateFilter.value = ''
-    // Si votre store a une méthode resetFilters, utilisez-la
-    if (userStore.resetFilters) {
-        userStore.resetFilters()
-    }
+    selectedUsers.value = []
+    selectAll.value = false
 }
 
-const onRoleFilterChange = () => {
-    if (userStore.filterByRole) {
-        userStore.filterByRole(roleFilter.value)
-    }
-}
+const onRoleFilterChange = debounce(() => {
+    userStore.filterByRole(roleFilter.value)
+}, 300)
 
-const onStatusFilterChange = () => {
-    if (userStore.filterByStatus) {
-        userStore.filterByStatus(statusFilter.value)
-    }
-}
+const onStatusFilterChange = debounce(() => {
+    // Implémentez la logique de filtrage par statut si nécessaire
+    console.log('Status filter:', statusFilter.value)
+}, 300)
 
 const goToPage = (page: number) => {
-    if (userStore.changePage) {
-        userStore.changePage(page)
-    }
+    userStore.changePage(page)
 }
 
 const goToPreviousPage = () => {
-    const currentPage = userStore.currentPage || 1
-    if (currentPage > 1 && userStore.changePage) {
-        userStore.changePage(currentPage - 1)
+    if (userStore.currentPage > 1) {
+        userStore.changePage(userStore.currentPage - 1)
     }
 }
 
 const goToNextPage = () => {
-    const currentPage = userStore.currentPage || 1
-    const lastPage = userStore.lastPage || 1
-    if (currentPage < lastPage && userStore.changePage) {
-        userStore.changePage(currentPage + 1)
+    if (userStore.currentPage < userStore.lastPage) {
+        userStore.changePage(userStore.currentPage + 1)
     }
 }
 
@@ -926,11 +1019,8 @@ const closeDetailModal = () => {
     selectedUser.value = null
 }
 
-// Gestion de la recherche avec debounce
 const handleSearch = debounce(() => {
-    if (userStore.searchUsers) {
-        userStore.searchUsers(searchQuery.value)
-    }
+    userStore.searchUsers(searchQuery.value)
 }, 500)
 
 // Lifecycle
@@ -943,3 +1033,42 @@ watch(selectedUsers, (newVal) => {
     selectAll.value = newVal.length === filteredUsers.value.length
 })
 </script>
+
+<style scoped>
+.action-button-table {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: white;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.action-button-table:hover {
+    transform: translateY(-1px);
+}
+
+.edit-button-table:hover {
+    color: #3b82f6;
+    border-color: #bfdbfe;
+    background-color: #eff6ff;
+}
+
+.delete-button-table:hover {
+    color: #dc2626;
+    border-color: #fecaca;
+    background-color: #fef2f2;
+}
+
+.view-button-table:hover {
+    color: #10b981;
+    border-color: #bbf7d0;
+    background-color: #ecfdf5;
+}
+</style>

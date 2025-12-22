@@ -20,8 +20,7 @@ class CreateUserRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role' => ['sometimes', new Enum(UserRole::class)],
-            'avatar' => ['nullable', 'string', 'max:255'],
-        ];
+'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],        ];
     }
 
     public function messages(): array

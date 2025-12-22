@@ -534,23 +534,21 @@ const validateForm = (): boolean => {
         newErrors.estimated_time = 'Estimated time cannot be negative';
     }
 
-    if (form.value.project_id && !teamMembersLoading.value) {
-        // Vérifier si le projet a été changé récemment
-        const currentProject = projects.value.find(p => p.id === form.value.project_id);
-        if (currentProject && currentProject.team_id === 1) {
-            newErrors.project_id = 'This project has limited team members.';
-        }
-
-        // Optionnel : avertir si aucun membre n'est disponible
-        if (teamMembers.value.length === 0) {
-            console.warn('Project has no team members available');
-        }
-    }
+    // SUPPRIMEZ cette section problématique :
+    // if (form.value.project_id && !teamMembersLoading.value) {
+    //     const currentProject = projects.value.find(p => p.id === form.value.project_id);
+    //     if (currentProject && currentProject.team_id === 1) {
+    //         newErrors.project_id = 'This project has limited team members.';
+    //     }
+        
+    //     if (teamMembers.value.length === 0) {
+    //         console.warn('Project has no team members available');
+    //     }
+    // }
 
     errors.value = newErrors;
     return Object.keys(newErrors).length === 0;
 };
-
 const clearError = (field: string) => {
     if (errors.value[field]) {
         delete errors.value[field];
