@@ -195,7 +195,7 @@
                                                     <div class="relative">
                                                         <div v-if="member.avatar_url"
                                                             class="w-14 h-14 rounded-xl overflow-hidden ring-2 ring-white shadow-sm">
-                                                            <img :src="member.avatar_url" :alt="member.name"
+                                                            <img :src="member.avatar" :alt="member.name"
                                                                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                                                         </div>
                                                         <div v-else

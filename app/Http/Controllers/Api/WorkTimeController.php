@@ -45,7 +45,7 @@ class WorkTimeController extends Controller
             $workTime = WorkTime::create([
                 'user_id' => $user->id,
                 'work_date' => $today,
-                'status' => 'in_progress',
+                'status' => 'En cours',
                 'start_time' => $currentTime,
                 'daily_target' => $this->workTimeService->getExpectedHoursForDate($today) * 3600,
             ]);
@@ -250,7 +250,7 @@ class WorkTimeController extends Controller
 
         $workTime = WorkTime::where('user_id', $user->id)
             ->where('work_date', $today)
-            ->whereIn('status', ['in_progress', 'paused'])
+            ->whereIn('status', ['doing', 'paused'])
             ->first();
 
         if (!$workTime) {

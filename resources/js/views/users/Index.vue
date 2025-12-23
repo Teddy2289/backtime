@@ -365,7 +365,7 @@
                         <div class="relative mb-3">
                             <div v-if="avatarPreview || (isEditMode && selectedUser?.avatar_url)" 
                                  class="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
-                                <img :src="avatarPreview || getAvatarUrl(selectedUser)" 
+                                <img :src="avatarPreview || selectedUser?.avatar" 
                                      class="w-full h-full object-cover"
                                      alt="Avatar preview">
                             </div>

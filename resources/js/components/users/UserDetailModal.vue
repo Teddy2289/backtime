@@ -27,7 +27,7 @@
                         <div class="relative mb-4">
                             <div v-if="user.avatar_url || user.avatar" 
                                  class="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-lg">
-                                <img :src="getAvatarUrl(user)" 
+                                <img :src="(user.avatar)"
                                      class="w-full h-full object-cover"
                                      :alt="user.name">
                             </div>

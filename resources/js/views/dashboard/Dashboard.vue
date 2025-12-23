@@ -156,9 +156,9 @@
                 </div>
 
                 <!-- Top Performers -->
-                <div class="dashboard-card">
+                <!-- <div class="dashboard-card">
                     <TopPerformers />
-                </div>
+                </div> -->
             </div>
         </div>
 

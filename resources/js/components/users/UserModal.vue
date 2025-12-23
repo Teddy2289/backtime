@@ -155,8 +155,8 @@
 
                 <div class="task-footer">
                     <div class="assigned-to">
-                        <div v-if="user.avatar_url" class="avatar"
-                            :style="{ backgroundImage: `url(${user.avatar_url})`, backgroundSize: 'cover' }"></div>
+                        <div v-if="user.avatar" class="avatar"
+                            :style="{ backgroundImage: `url(${user.avatar})`, backgroundSize: 'cover' }"></div>
                         <div v-else class="avatar">{{ user.initials }}</div>
                         <span class="assigned-name">{{ user.name }}</span>
                     </div>

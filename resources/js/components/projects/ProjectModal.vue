@@ -2,12 +2,12 @@
     <div class="modal-overlay" @click="closeModal">
         <div class="modal-content" @click.stop>
             <div class="modal-header">
-                <h2>{{ isEditMode ? 'Edit Project' : 'Create New Project' }}</h2>
+                <h2>{{ isEditMode ? 'Modifier le Projet' : 'Créer un Nouveau Projet' }}</h2>
                 <button @click="$emit('close')" class="btn-close">×</button>
             </div>
 
             <form @submit.prevent="submitForm" class="modal-form">
-                <!-- Error Message -->
+                <!-- Message d'Erreur -->
                 <div v-if="error" class="error-banner">
                     <div class="error-content">
                         <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -18,13 +18,13 @@
                     </div>
                 </div>
 
-                <!-- Team Selection -->
+                <!-- Sélection de l'Équipe -->
                 <div class="form-group">
-                    <label for="team_id" class="required">Team</label>
+                    <label for="team_id" class="required">Équipe</label>
                     <div class="select-wrapper">
                         <select id="team_id" v-model="formData.team_id" required :disabled="isEditMode || teamsLoading"
                             :class="{ 'error': errors.team_id, 'disabled': isEditMode || teamsLoading }">
-                            <option value="">Select a team</option>
+                            <option value="">Sélectionner une équipe</option>
                             <option v-for="team in availableTeams" :key="team.id" :value="team.id">
                                 {{ team.name }}
                             </option>
@@ -32,23 +32,23 @@
                         <div class="select-arrow">▼</div>
                     </div>
                     <div v-if="teamsLoading" class="loading-indicator">
-                        Loading teams...
+                        Chargement des équipes...
                     </div>
                     <div v-if="teamsError" class="error-message">
                         {{ teamsError }}
                     </div>
                     <div v-if="!availableTeams.length && !teamsLoading && !teamsError" class="hint">
-                        No teams available. Create a team first.
+                        Aucune équipe disponible. Créez d'abord une équipe.
                     </div>
                     <div v-if="errors.team_id" class="error-message">
                         {{ errors.team_id }}
                     </div>
                 </div>
 
-                <!-- Project Name -->
+                <!-- Nom du Projet -->
                 <div class="form-group">
-                    <label for="name" class="required">Project Name</label>
-                    <input id="name" v-model="formData.name" type="text" placeholder="Enter project name" required
+                    <label for="name" class="required">Nom du Projet</label>
+                    <input id="name" v-model="formData.name" type="text" placeholder="Entrez le nom du projet" required
                         :class="{ 'error': errors.name }" @input="clearError('name')" />
                     <div v-if="errors.name" class="error-message">
                         {{ errors.name }}
@@ -60,26 +60,26 @@
                     <label for="description">Description</label>
                     <div class="textarea-wrapper">
                         <textarea id="description" v-model="formData.description"
-                            placeholder="Describe the project details..." rows="4"
+                            placeholder="Décrivez les détails du projet..." rows="4"
                             @input="updateDescriptionCount"></textarea>
                         <div class="char-count" :class="{ 'limit': descriptionCount > 1000 }">
                             {{ descriptionCount }}/1000
                         </div>
                     </div>
                     <div class="hint">
-                        Markdown is supported. Use **bold**, *italic*, and `code` formatting.
+                        Le Markdown est pris en charge. Utilisez **gras**, *italique* et `code`.
                     </div>
                 </div>
 
                 <!-- Dates -->
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="start_date">Start Date</label>
+                        <label for="start_date">Date de Début</label>
                         <div class="date-input">
                             <input id="start_date" v-model="formData.start_date" type="date" :min="minStartDate"
                                 :max="formData.end_date" />
                             <button v-if="formData.start_date" @click="clearDate('start_date')" type="button"
-                                class="btn-clear-date" title="Clear date">
+                                class="btn-clear-date" title="Effacer la date">
                                 ×
                             </button>
                         </div>
@@ -89,12 +89,12 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="end_date">End Date</label>
+                        <label for="end_date">Date de Fin</label>
                         <div class="date-input">
                             <input id="end_date" v-model="formData.end_date" type="date"
                                 :min="formData.start_date || minStartDate" />
                             <button v-if="formData.end_date" @click="clearDate('end_date')" type="button"
-                                class="btn-clear-date" title="Clear date">
+                                class="btn-clear-date" title="Effacer la date">
                                 ×
                             </button>
                         </div>
@@ -104,9 +104,9 @@
                     </div>
                 </div>
 
-                <!-- Status -->
+                <!-- Statut -->
                 <div class="form-group">
-                    <label for="status">Status</label>
+                    <label for="status">Statut</label>
                     <div class="status-buttons">
                         <button v-for="status in statusOptions" :key="status.value" type="button"
                             @click="formData.status = status.value" :class="[
@@ -122,23 +122,23 @@
                     </div>
                 </div>
 
-                <!-- Options avancées -->
+                <!-- Options Avancées -->
                 <div class="form-group advanced-section">
                     <button type="button" @click="showAdvanced = !showAdvanced" class="btn-toggle-advanced">
                         <span class="toggle-icon">{{ showAdvanced ? '▼' : '▶' }}</span>
-                        Advanced Options
+                        Options Avancées
                     </button>
 
                     <div v-if="showAdvanced" class="advanced-options">
-                        <!-- Public/Private -->
+                        <!-- Public/Privé -->
                         <div class="form-group">
                             <label class="checkbox-label">
                                 <input v-model="formData.is_public" type="checkbox" class="checkbox" />
                                 <span class="checkbox-custom"></span>
-                                Public Project
+                                Projet Public
                             </label>
                             <div class="hint">
-                                Make this project visible to all team members
+                                Rendre ce projet visible à tous les membres de l'équipe
                             </div>
                         </div>
 
@@ -147,25 +147,25 @@
                             <label class="checkbox-label">
                                 <input v-model="formData.send_notifications" type="checkbox" class="checkbox" />
                                 <span class="checkbox-custom"></span>
-                                Send Notifications
+                                Envoyer les Notifications
                             </label>
                             <div class="hint">
-                                Notify team members about project updates
+                                Notifier les membres de l'équipe des mises à jour du projet
                             </div>
                         </div>
 
-                        <!-- Template -->
+                        <!-- Modèle -->
                         <div class="form-group">
-                            <label for="template_id">Use Template</label>
+                            <label for="template_id">Utiliser un Modèle</label>
                             <select id="template_id" v-model="formData.template_id">
-                                <option :value="null">None (Empty Project)</option>
-                                <option value="software">Software Development</option>
-                                <option value="marketing">Marketing Campaign</option>
-                                <option value="research">Research Project</option>
-                                <option value="event">Event Planning</option>
+                                <option :value="null">Aucun (Projet Vide)</option>
+                                <option value="software">Développement Logiciel</option>
+                                <option value="marketing">Campagne Marketing</option>
+                                <option value="research">Projet de Recherche</option>
+                                <option value="event">Organisation d'Événement</option>
                             </select>
                             <div class="hint">
-                                Select a template to pre-populate tasks and structure
+                                Sélectionnez un modèle pour pré-remplir les tâches et la structure
                             </div>
                         </div>
                     </div>
@@ -174,12 +174,12 @@
                 <!-- Actions -->
                 <div class="form-actions">
                     <button type="button" @click="$emit('close')" class="btn btn-secondary" :disabled="loading">
-                        Cancel
+                        Annuler
                     </button>
                     <button type="submit" class="btn btn-primary" :disabled="loading">
                         <span v-if="loading" class="loading-spinner"></span>
-                        {{ loading ? (isEditMode ? 'Saving...' : 'Creating...') : (isEditMode ? 'Save Changes' :
-                            'Create Project') }}
+                        {{ loading ? (isEditMode ? 'Enregistrement...' : 'Création...') : (isEditMode ? 'Enregistrer les Modifications' :
+                            'Créer le Projet') }}
                     </button>
                 </div>
             </form>
