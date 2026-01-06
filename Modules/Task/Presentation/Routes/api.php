@@ -43,6 +43,10 @@ Route::prefix('tasks')->group(function () {
     // Route pour les membres de l'équipe
     Route::get('/project/{projectId}/team-members', [TaskController::class, 'getTeamMembers'])
         ->where('projectId', '[0-9]+');
+
+    Route::get('/scheduled', [TaskController::class, 'getScheduled']);
+    Route::get('/unscheduled', [TaskController::class, 'getUnscheduled']);
+    Route::post('/{id}/schedule', [TaskController::class, 'schedule'])->where('id', '[0-9]+');
 });
 
 // Route de santé publique (sans auth)

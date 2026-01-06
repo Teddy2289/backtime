@@ -45,7 +45,7 @@ class WorkTimeController extends Controller
             $workTime = WorkTime::create([
                 'user_id' => $user->id,
                 'work_date' => $today,
-                'status' => 'En cours',
+                'status' => 'in_progress',
                 'start_time' => $currentTime,
                 'daily_target' => $this->workTimeService->getExpectedHoursForDate($today) * 3600,
             ]);
@@ -250,7 +250,7 @@ class WorkTimeController extends Controller
 
         $workTime = WorkTime::where('user_id', $user->id)
             ->where('work_date', $today)
-            ->whereIn('status', ['doing', 'paused'])
+            ->whereIn('status', ['in_progress', 'paused'])
             ->first();
 
         if (!$workTime) {
@@ -288,7 +288,7 @@ class WorkTimeController extends Controller
     }
 
     // Récupérer le statut actuel - CETTE MÉTHODE MANQUAIT
-// Dans WorkTimeController.php
+    // Dans WorkTimeController.php
     public function status()
     {
         $user = Auth::user();

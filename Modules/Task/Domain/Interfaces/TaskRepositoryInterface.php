@@ -86,4 +86,6 @@ interface TaskRepositoryInterface
      * Calculer les statistiques des tâches
      */
     public function getStatistics(int $projectId = null): array;
+    public function getScheduledTasks(int $projectId = null, int $perPage = 15): LengthAwarePaginator;
+    public function getUnscheduledTasks(int $projectId = null, int $perPage = 15): LengthAwarePaginator;
 }

@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\WorkTimeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Api\DashboardUserController;
 
 // Auth routes
 Route::prefix('auth')->group(function () {
@@ -19,8 +20,26 @@ Route::prefix('auth')->group(function () {
         Route::put('/', [AuthController::class, 'updateProfile']);
         Route::post('/avatar', [AuthController::class, 'uploadAvatar']);
         Route::delete('/avatar', [AuthController::class, 'removeAvatar']);
-    });
+    }); 
+    
+});
 
+
+Route::prefix('userDashboard')->group(function () {
+    // Dashboard principal
+    Route::get('/', [DashboardUserController::class, 'index']);
+    // Résumé mensuel
+    Route::get('/monthly-summary', [DashboardUserController::class, 'monthlySummary']);
+    // Statistiques détaillées des tâches (avec ou sans période)
+    Route::get('/task-stats', [DashboardUserController::class, 'taskStatusStats']);   
+    // Liste des tâches avec pagination et filtres
+    Route::get('/tasks', [DashboardUserController::class, 'tasksList']);
+    // Tâches récentes (limité à 10)
+    Route::get('/recent-tasks', [DashboardUserController::class, 'recentTasks']);
+    // Tâches en retard
+    Route::get('/overdue-tasks', [DashboardUserController::class, 'overdueTasks']);
+    // Tâches à venir
+    Route::get('/upcoming-tasks', [DashboardUserController::class, 'upcomingTasks']);
 });
 
 
@@ -64,6 +83,8 @@ if (file_exists(base_path('Modules/Project/Presentation/Routes/api.php'))) {
 if (file_exists(base_path('Modules/Projectsteams/Presentation/Routes/api.php'))) {
     require base_path('Modules/Projectsteams/Presentation/Routes/api.php');
 }
+
+
 
 // Health check
 Route::get('/health', function () {

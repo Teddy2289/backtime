@@ -234,4 +234,32 @@ class TaskRepository implements TaskRepositoryInterface
             'avg_completion_days' => round($avgCompletionTime, 2),
         ];
     }
+
+    public function getScheduledTasks(int $projectId = null, int $perPage = 15): LengthAwarePaginator
+{
+    $query = Task::scheduled()->with([
+        'project:id,name,description',
+        'assignedUser:id,name,email,avatar',
+    ]);
+
+    if ($projectId) {
+        $query->where('project_id', $projectId);
+    }
+
+    return $query->orderBy('start_date', 'asc')->paginate($perPage);
+}
+
+public function getUnscheduledTasks(int $projectId = null, int $perPage = 15): LengthAwarePaginator
+{
+    $query = Task::unscheduled()->with([
+        'project:id,name,description',
+        'assignedUser:id,name,email,avatar',
+    ]);
+
+    if ($projectId) {
+        $query->where('project_id', $projectId);
+    }
+
+    return $query->orderBy('created_at', 'desc')->paginate($perPage);
+}
 }

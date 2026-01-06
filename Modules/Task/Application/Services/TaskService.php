@@ -22,7 +22,35 @@ class TaskService
     {
         return $this->taskRepository->getAll($filters, $perPage);
     }
+    /**
+     * Récupérer les tâches planifiées
+     */
+    public function getScheduledTasks(int $projectId = null, int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->taskRepository->getScheduledTasks($projectId, $perPage);
+    }
 
+    /**
+     * Récupérer les tâches non planifiées
+     */
+    public function getUnscheduledTasks(int $projectId = null, int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->taskRepository->getUnscheduledTasks($projectId, $perPage);
+    }
+
+    /**
+     * Planifier une tâche (définir une date de début)
+     */
+    public function scheduleTask(int $id, string $startDate, string $dueDate = null): ?Task
+    {
+        $data = ['start_date' => $startDate];
+
+        if ($dueDate) {
+            $data['due_date'] = $dueDate;
+        }
+
+        return $this->updateTask($id, $data);
+    }
     /**
      * Récupérer une tâche par son ID
      */

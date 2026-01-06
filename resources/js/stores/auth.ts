@@ -154,7 +154,7 @@ export const useAuthStore = defineStore("auth", () => {
         await fetchProfile();
 
         if (hasRole(UserRole.ADMIN)) {
-            router.push({ name: "admin.dashboard" });
+            router.push({ name: "dashboard" });
         } else if (hasRole(UserRole.MANAGER)) {
             router.push({ name: "manager.dashboard" });
         } else {

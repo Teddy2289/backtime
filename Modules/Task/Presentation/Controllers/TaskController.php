@@ -344,6 +344,86 @@ class TaskController extends Controller
     }
 
     /**
+     * Get scheduled tasks
+     */
+    public function getScheduled(Request $request): JsonResponse
+    {
+        try {
+            $projectId = $request->get('project_id');
+            $perPage = $request->get('per_page', 15);
+
+            $tasks = $this->taskService->getScheduledTasks($projectId, $perPage);
+
+            return $this->paginatedResponse($tasks, 'Scheduled tasks retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Failed to retrieve scheduled tasks',
+                config('app.debug') ? $e->getMessage() : null,
+                500
+            );
+        }
+    }
+
+    /**
+     * Get unscheduled tasks
+     */
+    public function getUnscheduled(Request $request): JsonResponse
+    {
+        try {
+            $projectId = $request->get('project_id');
+            $perPage = $request->get('per_page', 15);
+
+            $tasks = $this->taskService->getUnscheduledTasks($projectId, $perPage);
+
+            return $this->paginatedResponse($tasks, 'Unscheduled tasks retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Failed to retrieve unscheduled tasks',
+                config('app.debug') ? $e->getMessage() : null,
+                500
+            );
+        }
+    }
+
+    /**
+     * Schedule a task
+     */
+    public function schedule(Request $request, int $id): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'start_date' => 'required|date',
+                'due_date' => 'nullable|date|after_or_equal:start_date',
+            ]);
+
+            if ($validator->fails()) {
+                return $this->validationErrorResponse($validator->errors());
+            }
+
+            $task = $this->taskService->scheduleTask(
+                $id,
+                $request->input('start_date'),
+                $request->input('due_date')
+            );
+
+            if (!$task) {
+                return $this->notFoundResponse('Task not found');
+            }
+
+            return $this->successResponse(
+                $task,
+                'Task scheduled successfully'
+            );
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Failed to schedule task',
+                config('app.debug') ? $e->getMessage() : null,
+                500
+            );
+        }
+    }
+
+    /**
      * Start working on a task.
      */
     public function start(int $id): JsonResponse

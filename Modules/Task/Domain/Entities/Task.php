@@ -14,7 +14,9 @@ use Modules\Taskfiles\Domain\Entities\TaskFile;
 use Modules\Tasktimelog\Domain\Entities\TaskTimeLog;
 use Modules\Team\Domain\Entities\Team;
 use Modules\User\Domain\Entities\User;
-use Carbon\Carbon; // Import de Carbon pour la clarté
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+
 
 class Task extends Model
 {
@@ -177,15 +179,7 @@ class Task extends Model
         return $this->timeLogs->sum('duration') ?? 0;
     }
 
-    // **CORRECTION/SUPPRESSION:** Les accesseurs `getDueDateAttribute` et `getStartDateAttribute` sont
-    // REDONDANTS et POTENTIELLEMENT DANGEREUX car ils interfèrent avec le mécanisme de 'casts' de Laravel.
-    // L'utilisation de `$casts` ('date' ou 'datetime') est suffisante et plus propre.
-    // L'erreur "Call to a member function gt() on null" est souvent causée par le fait
-    // qu'un accesseur retourne `null` lorsque Laravel s'attend à un objet Carbon (quand il accède à la valeur).
-
-    // public function getDueDateAttribute($value) { ... } // Supprimé
-
-    // public function getStartDateAttribute($value) { ... } // Supprimé
+   
 
     /* -------------------------------------------------------------------------- */
     /* Scopes                                   */
@@ -198,13 +192,6 @@ class Task extends Model
         return $query->whereNotNull('due_date')
             ->where('due_date', '<', Carbon::now()) // Utilisation de Carbon::now() pour plus de clarté
             ->where('status', '!=', self::STATUS_DONE);
-    }
-
-    public function scopeUpcoming($query)
-    {
-        return $query->whereNotNull('start_date')
-            ->where('start_date', '>', Carbon::now())
-            ->where('start_date', '<=', Carbon::now()->addDays(7));
     }
 
     /* -------------------------------------------------------------------------- */
@@ -228,5 +215,60 @@ class Task extends Model
     {
         // Utilisation de l'opérateur nullsafe `?->` pour plus de sécurité
         return $this->project?->isUserInTeam($userId) ?? false;
+    }
+
+    /**
+     * Scope pour les tâches à venir
+     */
+    public function scopeUpcoming(Builder $query): Builder
+    {
+        return $query->where('start_date', '>', now())
+            ->orWhere(function ($q) {
+                $q->whereNull('start_date')
+                  ->where('due_date', '>', now());
+            })
+            ->where('status', '!=', 'done');
+    }
+
+    /**
+     * Scope pour les tâches planifiées
+     */
+    public function scopeScheduled(Builder $query): Builder
+    {
+        return $query->whereNotNull('start_date');
+    }
+
+    /**
+     * Scope pour les tâches non planifiées
+     */
+    public function scopeUnscheduled(Builder $query): Builder
+    {
+        return $query->whereNull('start_date');
+    }
+
+
+
+    /**
+     * Vérifie si la tâche est à venir
+     */
+    public function isUpcoming(): bool
+    {
+        if ($this->start_date) {
+            return $this->start_date->isFuture() && $this->status !== 'done';
+        }
+        
+        if ($this->due_date) {
+            return $this->due_date->isFuture() && $this->status !== 'done';
+        }
+        
+        return false;
+    }
+
+    /**
+     * Vérifie si la tâche est planifiée
+     */
+    public function isScheduled(): bool
+    {
+        return !is_null($this->start_date);
     }
 }
