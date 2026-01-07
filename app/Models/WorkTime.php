@@ -10,6 +10,11 @@ class WorkTime extends Model
 {
     use HasFactory;
 
+    const STATUS_PENDING = 'pending';
+    const STATUS_IN_PROGRESS = 'in_progress';
+    const STATUS_PAUSED = 'paused';
+    const STATUS_COMPLETED = 'completed';
+
     protected $fillable = [
         'user_id',
         'work_date',
@@ -22,7 +27,7 @@ class WorkTime extends Model
         'net_seconds',
         'status',
         'notes',
-        'daily_target' // Ajoutez ce champ si nécessaire
+        'daily_target',
     ];
 
     protected $casts = [

@@ -483,7 +483,7 @@ class DashboardHelperService
             'assigned_user' => $task->assignedUser ? [
                 'id' => $task->assignedUser->id,
                 'name' => $task->assignedUser->name,
-                'avatar' => $task->assignedUser->avatar_url,
+                'avatar' => $task->assignedUser->avatar,
                 'initials' => $task->assignedUser->initials,
             ] : null,
 
@@ -839,5 +839,569 @@ class DashboardHelperService
             });
 
         return $activeUsers->toArray();
+    }
+
+    /**
+     * Get task status stats API response
+     */
+    public function getTaskStatusStatsResponse($request)
+    {
+        // Cette méthode est maintenant dans AdminDashboardService
+        // Elle est maintenue ici pour compatibilité
+        $adminService = app(AdminDashboardService::class);
+        return $adminService->getTaskStatusStatsResponse($request);
+    }
+
+    /**
+     * Get monthly summary API response
+     */
+    public function getMonthlySummaryResponse($request)
+    {
+        // Cette méthode est maintenant dans UserDashboardService
+        $userService = app(UserDashboardService::class);
+        return $userService->getMonthlySummaryResponse($request);
+    }
+
+    /**
+     * Get tasks list API response
+     */
+    public function getTasksListResponse($request): \Illuminate\Http\JsonResponse
+    {
+        $user = auth()->user();
+        $perPage = $request->input('per_page', 15);
+        $page = $request->input('page', 1);
+
+        // Récupérer les filtres
+        $filters = [
+            'status' => $request->input('status'),
+            'priority' => $request->input('priority'),
+            'project_id' => $request->input('project_id'),
+            'assigned_to' => $request->input('assigned_to'),
+            'search' => $request->input('search'),
+            'sort_by' => $request->input('sort_by', 'created_at'),
+            'sort_order' => $request->input('sort_order', 'desc'),
+        ];
+
+        // Construire la requête
+        if ($user->isAdmin()) {
+            $query = $this->buildAdminTasksQuery($filters);
+        } else {
+            $query = $this->buildUserTasksQuery($user, $filters);
+        }
+
+        // Pagination
+        $tasks = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Transformer les données
+        $transformedTasks = $tasks->map(function ($task) use ($user) {
+            return $this->transformTask($task, $user);
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'tasks' => $transformedTasks,
+                'pagination' => [
+                    'total' => $tasks->total(),
+                    'per_page' => $tasks->perPage(),
+                    'current_page' => $tasks->currentPage(),
+                    'last_page' => $tasks->lastPage(),
+                    'from' => $tasks->firstItem(),
+                    'to' => $tasks->lastItem(),
+                ],
+                'filters' => $filters,
+                'user_role' => $user->role->value,
+            ],
+        ]);
+    }
+
+    /**
+     * Get recent tasks API response
+     */
+    public function getRecentTasksResponse($request): \Illuminate\Http\JsonResponse
+    {
+        $user = auth()->user();
+        $limit = $request->input('limit', 10);
+
+        // Définir la période récente (7 derniers jours par défaut)
+        $days = $request->input('days', 7);
+        $startDate = Carbon::now()->subDays($days);
+
+        // Construire la requête selon le rôle
+        if ($user->isAdmin()) {
+            $query = Task::with(['project', 'project.team', 'assignedUser'])
+                ->where('created_at', '>=', $startDate)
+                ->orWhere('updated_at', '>=', $startDate);
+        } else {
+            // Récupérer les projets des équipes de l'utilisateur
+            $userTeams = $user->teams()->get();
+
+            if ($userTeams->isEmpty()) {
+                // Si pas d'équipe, seulement les tâches assignées
+                $query = Task::with(['project', 'assignedUser'])
+                    ->where('assigned_to', $user->id)
+                    ->orWhereHas('timeLogs', function ($q) use ($user) {
+                        $q->where('user_id', $user->id);
+                    });
+            } else {
+                $projectIds = $userTeams->flatMap(function ($team) {
+                    return $team->projects()->pluck('id');
+                })->unique();
+
+                $query = Task::with(['project', 'project.team', 'assignedUser'])
+                    ->whereIn('project_id', $projectIds)
+                    ->where(function ($query) use ($user) {
+                        $query->where('assigned_to', $user->id)
+                            ->orWhereHas('timeLogs', function ($q) use ($user) {
+                                $q->where('user_id', $user->id);
+                            });
+                    });
+            }
+
+            // Filtrer par date récente
+            $query->where(function ($q) use ($startDate) {
+                $q->where('created_at', '>=', $startDate)
+                    ->orWhere('updated_at', '>=', $startDate);
+            });
+        }
+
+        // Ordonner par date de mise à jour (les plus récentes d'abord)
+        $tasks = $query->orderBy('updated_at', 'desc')
+            ->limit($limit)
+            ->get();
+
+        // Transformer les données
+        $transformedTasks = $tasks->map(function ($task) {
+            return [
+                'id' => $task->id,
+                'title' => $task->title,
+                'status' => $task->status,
+                'priority' => $task->priority,
+                'progress' => $task->progress,
+                'is_overdue' => $task->is_overdue,
+                'due_date' => $task->due_date ? $task->due_date->format('Y-m-d') : null,
+                'created_at' => $task->created_at->format('Y-m-d H:i'),
+                'updated_at' => $task->updated_at->format('Y-m-d H:i'),
+                'time_since_update' => $this->getTimeAgo($task->updated_at),
+                'project' => $task->project ? [
+                    'id' => $task->project->id,
+                    'name' => $task->project->name,
+                    'team_name' => $task->project->team->name ?? null,
+                ] : null,
+                'assigned_user' => $task->assignedUser ? [
+                    'id' => $task->assignedUser->id,
+                    'name' => $task->assignedUser->name,
+                    'avatar' => $task->assignedUser->avatar,
+                    'initials' => $task->assignedUser->initials,
+                ] : null,
+                'changes' => $this->getRecentChanges($task),
+            ];
+        });
+
+        // Grouper par jour pour l'affichage
+        $groupedTasks = $this->groupTasksByDay($tasks);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'tasks' => $transformedTasks,
+                'grouped_tasks' => $groupedTasks,
+                'total' => $tasks->count(),
+                'period' => [
+                    'days' => $days,
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => Carbon::now()->format('Y-m-d'),
+                ],
+                'user_role' => $user->role->value,
+            ],
+        ]);
+    }
+
+    /**
+     * Get overdue tasks API response
+     */
+    public function getOverdueTasksResponse($request): \Illuminate\Http\JsonResponse
+    {
+        $user = auth()->user();
+        $limit = $request->input('limit', 20);
+
+        // Construire la requête pour les tâches en retard
+        if ($user->isAdmin()) {
+            $query = Task::with(['project', 'project.team', 'assignedUser'])
+                ->whereNotNull('due_date')
+                ->where('due_date', '<', Carbon::now())
+                ->where('status', '!=', Task::STATUS_DONE);
+        } else {
+            // Récupérer les projets des équipes de l'utilisateur
+            $userTeams = $user->teams()->get();
+
+            if ($userTeams->isEmpty()) {
+                // Si pas d'équipe, seulement les tâches assignées
+                $query = Task::with(['project', 'assignedUser'])
+                    ->where('assigned_to', $user->id)
+                    ->whereNotNull('due_date')
+                    ->where('due_date', '<', Carbon::now())
+                    ->where('status', '!=', Task::STATUS_DONE);
+            } else {
+                $projectIds = $userTeams->flatMap(function ($team) {
+                    return $team->projects()->pluck('id');
+                })->unique();
+
+                $query = Task::with(['project', 'project.team', 'assignedUser'])
+                    ->whereIn('project_id', $projectIds)
+                    ->where(function ($query) use ($user) {
+                        $query->where('assigned_to', $user->id)
+                            ->orWhereHas('timeLogs', function ($q) use ($user) {
+                                $q->where('user_id', $user->id);
+                            });
+                    })
+                    ->whereNotNull('due_date')
+                    ->where('due_date', '<', Carbon::now())
+                    ->where('status', '!=', Task::STATUS_DONE);
+            }
+        }
+
+        // Trier par retard (les plus en retard d'abord)
+        $tasks = $query->orderBy('due_date', 'asc')
+            ->limit($limit)
+            ->get();
+
+        // Calculer les statistiques de retard
+        $overdueStats = [
+            'total' => $tasks->count(),
+            'by_priority' => [
+                'high' => $tasks->where('priority', 'high')->count(),
+                'medium' => $tasks->where('priority', 'medium')->count(),
+                'low' => $tasks->where('priority', 'low')->count(),
+            ],
+            'by_project' => $tasks->groupBy('project_id')->map(function ($projectTasks, $projectId) {
+                $project = $projectTasks->first()->project;
+                return [
+                    'project_id' => $projectId,
+                    'project_name' => $project ? $project->name : 'N/A',
+                    'count' => $projectTasks->count(),
+                ];
+            })->values()->take(5),
+            'days_overdue_stats' => [
+                '1-3_days' => $tasks->filter(fn($task) => $task->due_date->diffInDays(Carbon::now()) <= 3)->count(),
+                '4-7_days' => $tasks->filter(fn($task) => $task->due_date->diffInDays(Carbon::now()) > 3 &&
+                    $task->due_date->diffInDays(Carbon::now()) <= 7)->count(),
+                '8-14_days' => $tasks->filter(fn($task) => $task->due_date->diffInDays(Carbon::now()) > 7 &&
+                    $task->due_date->diffInDays(Carbon::now()) <= 14)->count(),
+                '15+_days' => $tasks->filter(fn($task) => $task->due_date->diffInDays(Carbon::now()) > 14)->count(),
+            ],
+        ];
+
+        // Transformer les tâches
+        $transformedTasks = $tasks->map(function ($task) {
+            $daysOverdue = $task->due_date->diffInDays(Carbon::now());
+
+            return [
+                'id' => $task->id,
+                'title' => $task->title,
+                'status' => $task->status,
+                'priority' => $task->priority,
+                'progress' => $task->progress,
+                'due_date' => $task->due_date->format('Y-m-d'),
+                'days_overdue' => $daysOverdue,
+                'severity' => $this->getOverdueSeverity($daysOverdue, $task->priority),
+                'project' => $task->project ? [
+                    'id' => $task->project->id,
+                    'name' => $task->project->name,
+                    'team_name' => $task->project->team->name ?? null,
+                ] : null,
+                'assigned_user' => $task->assignedUser ? [
+                    'id' => $task->assignedUser->id,
+                    'name' => $task->assignedUser->name,
+                    'avatar' => $task->assignedUser->avatar_url,
+                    'initials' => $task->assignedUser->initials,
+                ] : null,
+                'total_worked_time' => $task->total_worked_time,
+                'estimated_time' => $task->estimated_time,
+                'time_completion_rate' => $task->estimated_time > 0 ?
+                    round(($task->total_worked_time / $task->estimated_time) * 100, 2) : 0,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'tasks' => $transformedTasks,
+                'statistics' => $overdueStats,
+                'total' => $tasks->count(),
+                'user_role' => $user->role->value,
+                'current_date' => Carbon::now()->format('Y-m-d'),
+            ],
+        ]);
+    }
+
+    /**
+     * Get upcoming tasks API response
+     */
+    public function getUpcomingTasksResponse($request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $user = auth()->user();
+
+            // S'assurer que les paramètres sont des entiers
+            $limit = (int) $request->input('limit', 15);
+            $daysAhead = (int) $request->input('days_ahead', 7);
+
+            // Utiliser now() au lieu de Carbon::now() si possible
+            $startDate = now();
+            $endDate = now()->addDays($daysAhead);
+
+            // Construire la requête pour les tâches à venir
+            if ($user->isAdmin()) {
+                $query = Task::with(['project', 'project.team', 'assignedUser'])
+                    ->where(function ($query) use ($startDate, $endDate) {
+                        $query->where(function ($q) use ($startDate, $endDate) {
+                            $q->whereNotNull('start_date')
+                                ->where('start_date', '>', $startDate)
+                                ->where('start_date', '<=', $endDate)
+                                ->where('status', '!=', Task::STATUS_DONE);
+                        })->orWhere(function ($q) use ($startDate, $endDate) {
+                            $q->whereNull('start_date')
+                                ->whereNotNull('due_date')
+                                ->where('due_date', '>', $startDate)
+                                ->where('due_date', '<=', $endDate)
+                                ->where('status', '!=', Task::STATUS_DONE);
+                        });
+                    });
+            } else {
+                // Récupérer les projets des équipes de l'utilisateur
+                $userTeams = $user->teams()->get();
+
+                if ($userTeams->isEmpty()) {
+                    // Si pas d'équipe, seulement les tâches assignées
+                    $query = Task::with(['project', 'assignedUser'])
+                        ->where('assigned_to', $user->id)
+                        ->where(function ($query) use ($startDate, $endDate) {
+                            $query->where(function ($q) use ($startDate, $endDate) {
+                                $q->whereNotNull('start_date')
+                                    ->where('start_date', '>', $startDate)
+                                    ->where('start_date', '<=', $endDate)
+                                    ->where('status', '!=', Task::STATUS_DONE);
+                            })->orWhere(function ($q) use ($startDate, $endDate) {
+                                $q->whereNull('start_date')
+                                    ->whereNotNull('due_date')
+                                    ->where('due_date', '>', $startDate)
+                                    ->where('due_date', '<=', $endDate)
+                                    ->where('status', '!=', Task::STATUS_DONE);
+                            });
+                        });
+                } else {
+                    $projectIds = $userTeams->flatMap(function ($team) {
+                        return $team->projects()->pluck('id');
+                    })->unique();
+
+                    $query = Task::with(['project', 'project.team', 'assignedUser'])
+                        ->whereIn('project_id', $projectIds)
+                        ->where(function ($query) use ($user) {
+                            $query->where('assigned_to', $user->id)
+                                ->orWhereHas('timeLogs', function ($q) use ($user) {
+                                    $q->where('user_id', $user->id);
+                                });
+                        })
+                        ->where(function ($query) use ($startDate, $endDate) {
+                            $query->where(function ($q) use ($startDate, $endDate) {
+                                $q->whereNotNull('start_date')
+                                    ->where('start_date', '>', $startDate)
+                                    ->where('start_date', '<=', $endDate)
+                                    ->where('status', '!=', Task::STATUS_DONE);
+                            })->orWhere(function ($q) use ($startDate, $endDate) {
+                                $q->whereNull('start_date')
+                                    ->whereNotNull('due_date')
+                                    ->where('due_date', '>', $startDate)
+                                    ->where('due_date', '<=', $endDate)
+                                    ->where('status', '!=', Task::STATUS_DONE);
+                            });
+                        });
+                }
+            }
+
+            // Trier par date la plus proche (priorité à start_date, sinon due_date)
+            $tasks = $query->orderByRaw('COALESCE(start_date, due_date) ASC')
+                ->orderBy('priority', 'desc')
+                ->limit($limit)
+                ->get();
+
+            // Grouper par jour avec la date appropriée
+            $tasksByDay = $tasks->groupBy(function ($task) {
+                // Utiliser start_date si disponible, sinon due_date
+                $referenceDate = $task->start_date ?? $task->due_date;
+                return $referenceDate ? $referenceDate->format('Y-m-d') : 'no-date';
+            })->filter(function ($dayTasks, $date) {
+                return $date !== 'no-date';
+            })->map(function ($dayTasks, $date) {
+                $dateObj = Carbon::parse($date);
+                $today = now();
+
+                // Calculer les jours restants
+                $daysUntil = $today->diffInDays($dateObj, false);
+
+                return [
+                    'date' => $date,
+                    'day_name' => $dateObj->locale('fr')->dayName,
+                    'is_today' => $dateObj->isToday(),
+                    'is_tomorrow' => $dateObj->isTomorrow(),
+                    'date_type' => $dayTasks->first()->start_date ? 'start_date' : 'due_date',
+                    'days_until' => $daysUntil,
+                    'tasks' => $dayTasks->map(function ($task) {
+                        $referenceDate = $task->start_date ?? $task->due_date;
+                        $today = now();
+                        $daysUntil = $referenceDate ? $today->diffInDays($referenceDate, false) : 0;
+
+                        return [
+                            'id' => $task->id,
+                            'title' => $task->title,
+                            'description' => $task->description,
+                            'status' => $task->status,
+                            'priority' => $task->priority,
+                            'progress' => $task->progress ?? 0,
+                            'start_date' => $task->start_date?->format('Y-m-d'),
+                            'due_date' => $task->due_date?->format('Y-m-d'),
+                            'reference_date' => $referenceDate?->format('Y-m-d'),
+                            'date_type' => $task->start_date ? 'start_date' : 'due_date',
+                            'days_until' => $daysUntil,
+                            'urgency' => $this->getTaskUrgency($daysUntil, $task->priority),
+                            'is_scheduled' => !is_null($task->start_date),
+                            'project' => $task->project ? [
+                                'id' => $task->project->id,
+                                'name' => $task->project->name,
+                                'team_name' => $task->project->team->name ?? null,
+                            ] : null,
+                            'assigned_user' => $task->assignedUser ? [
+                                'id' => $task->assignedUser->id,
+                                'name' => $task->assignedUser->name,
+                                'avatar' => $task->assignedUser->avatar_url,
+                                'initials' => $task->assignedUser->initials ?? strtoupper(substr($task->assignedUser->name, 0, 2)),
+                            ] : null,
+                            'estimated_time' => $task->estimated_time,
+                            'total_worked_time' => $task->total_worked_time ?? 0,
+                            'time_remaining' => $task->estimated_time > 0 ?
+                                max(0, $task->estimated_time - ($task->total_worked_time ?? 0)) : null,
+                            'tags' => $task->tags ?? [],
+                        ];
+                    }),
+                    'count' => $dayTasks->count(),
+                    'high_priority_count' => $dayTasks->where('priority', 'high')->count(),
+                    'scheduled_count' => $dayTasks->whereNotNull('start_date')->count(),
+                    'unscheduled_count' => $dayTasks->whereNull('start_date')->count(),
+                ];
+            })->sortBy('date')->values();
+
+            // Tâches critiques (haute priorité et moins de 3 jours)
+            $criticalTasks = $tasks->filter(function ($task) {
+                $referenceDate = $task->start_date ?? $task->due_date;
+                if (!$referenceDate) return false;
+
+                $daysUntil = now()->diffInDays($referenceDate, false);
+
+                return $task->priority === 'high' && $daysUntil <= 3 && $daysUntil >= 0;
+            })->map(function ($task) {
+                $referenceDate = $task->start_date ?? $task->due_date;
+
+                return [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'project_name' => $task->project->name ?? 'N/A',
+                    'date_type' => $task->start_date ? 'start_date' : 'due_date',
+                    'reference_date' => $referenceDate?->format('Y-m-d'),
+                    'due_date' => $task->due_date?->format('Y-m-d'),
+                    'start_date' => $task->start_date?->format('Y-m-d'),
+                    'days_until' => $referenceDate ? now()->diffInDays($referenceDate, false) : 0,
+                    'progress' => $task->progress ?? 0,
+                    'priority' => $task->priority,
+                ];
+            })->values();
+
+            // Statistiques des tâches à venir
+            $upcomingStats = [
+                'total' => $tasks->count(),
+                'by_day' => $tasksByDay->map(function ($day) {
+                    return [
+                        'date' => $day['date'],
+                        'count' => $day['count'],
+                        'high_priority_count' => $day['high_priority_count'],
+                        'scheduled_count' => $day['scheduled_count'],
+                        'unscheduled_count' => $day['unscheduled_count'],
+                    ];
+                })->values(),
+                'by_priority' => [
+                    'high' => $tasks->where('priority', 'high')->count(),
+                    'medium' => $tasks->where('priority', 'medium')->count(),
+                    'low' => $tasks->where('priority', 'low')->count(),
+                ],
+                'by_schedule_type' => [
+                    'scheduled' => $tasks->whereNotNull('start_date')->count(),
+                    'unscheduled' => $tasks->whereNull('start_date')->count(),
+                ],
+                'by_project' => $tasks->groupBy('project_id')->map(function ($projectTasks, $projectId) {
+                    $project = $projectTasks->first()->project;
+                    return [
+                        'project_id' => $projectId,
+                        'project_name' => $project ? $project->name : 'N/A',
+                        'count' => $projectTasks->count(),
+                        'high_priority_count' => $projectTasks->where('priority', 'high')->count(),
+                        'scheduled_count' => $projectTasks->whereNotNull('start_date')->count(),
+                    ];
+                })->sortByDesc('count')->values()->take(5),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'tasks_by_day' => $tasksByDay,
+                    'critical_tasks' => $criticalTasks,
+                    'statistics' => $upcomingStats,
+                    'period' => [
+                        'days_ahead' => $daysAhead,
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date' => $endDate->format('Y-m-d'),
+                    ],
+                    'user_role' => $user->role->value ?? $user->role,
+                    'current_date' => now()->format('Y-m-d'),
+                    'date_logic' => [
+                        'priority_order' => 'start_date avant due_date',
+                        'definition' => 'Tâche à venir = start_date OU due_date dans le futur (max ' . $daysAhead . ' jours)',
+                        'excluded_status' => 'done',
+                    ],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in upcomingTasks: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve upcoming tasks: ' . $e->getMessage(),
+                'data' => [
+                    'tasks_by_day' => [],
+                    'critical_tasks' => [],
+                    'statistics' => [
+                        'total' => 0,
+                        'by_day' => [],
+                        'by_priority' => ['high' => 0, 'medium' => 0, 'low' => 0],
+                        'by_schedule_type' => ['scheduled' => 0, 'unscheduled' => 0],
+                        'by_project' => [],
+                    ],
+                    'period' => [
+                        'days_ahead' => $request->input('days_ahead', 7),
+                        'start_date' => now()->format('Y-m-d'),
+                        'end_date' => now()->addDays($request->input('days_ahead', 7))->format('Y-m-d'),
+                    ],
+                    'user_role' => 'error',
+                    'current_date' => now()->format('Y-m-d'),
+                ],
+                'error' => config('app.debug') ? [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ] : null,
+            ], 500);
+        }
     }
 }

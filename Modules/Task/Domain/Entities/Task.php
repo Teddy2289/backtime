@@ -22,11 +22,11 @@ class Task extends Model
 {
     use HasFactory, SoftDeletes;
 
-    // Définition des constantes pour les statuts pour éviter les "magic strings"
     public const STATUS_BACKLOG = 'backlog';
     public const STATUS_TODO = 'todo';
     public const STATUS_DOING = 'doing';
     public const STATUS_DONE = 'done';
+    public const STATUS_IN_PROGRESS = 'in_progress';
 
     protected $fillable = [
         'project_id',
@@ -41,11 +41,26 @@ class Task extends Model
         'tags',
     ];
 
-    // **CORRECTION/AMÉLIORATION MAJEURE:** Suppression des accesseurs/mutateurs manuels
-    // Les 'casts' par défaut de Laravel gèrent les dates (y compris null) et 'array'
+    public static function getValidStatuses(): array
+    {
+        return [
+            self::STATUS_BACKLOG,
+            self::STATUS_TODO,
+            self::STATUS_DOING,
+            self::STATUS_DONE,
+        ];
+    }
+
+    // Scope pour vérifier les statuts
+    public function scopeWithValidStatus($query)
+    {
+        return $query->whereIn('status', self::getValidStatuses());
+    }
+
     protected $casts = [
-        'start_date' => 'date', // Gère automatiquement les dates comme Carbon (ou null)
-        'due_date' => 'date',   // Gère automatiquement les dates comme Carbon (ou null)
+        'status' => 'string',
+        'start_date' => 'date',
+        'due_date' => 'date',
         'tags' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -179,7 +194,7 @@ class Task extends Model
         return $this->timeLogs->sum('duration') ?? 0;
     }
 
-   
+
 
     /* -------------------------------------------------------------------------- */
     /* Scopes                                   */
@@ -225,7 +240,7 @@ class Task extends Model
         return $query->where('start_date', '>', now())
             ->orWhere(function ($q) {
                 $q->whereNull('start_date')
-                  ->where('due_date', '>', now());
+                    ->where('due_date', '>', now());
             })
             ->where('status', '!=', 'done');
     }
@@ -256,11 +271,11 @@ class Task extends Model
         if ($this->start_date) {
             return $this->start_date->isFuture() && $this->status !== 'done';
         }
-        
+
         if ($this->due_date) {
             return $this->due_date->isFuture() && $this->status !== 'done';
         }
-        
+
         return false;
     }
 
