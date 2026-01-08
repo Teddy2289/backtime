@@ -164,19 +164,18 @@ class WorkTime extends Model
             $this->total_seconds = 0;
             $this->pause_seconds = 0;
             $this->net_seconds = 0;
-            // NE PAS sauvegarder les heures calculées (net_hours, pause_hours)
-            // car ce sont des accesseurs, pas des colonnes de la base
             return $this->save();
         }
 
         $totalWorkSeconds = 0;
         $totalPauseSeconds = 0;
+        $now = Carbon::now();
 
         foreach ($this->sessions as $session) {
             $start = Carbon::parse($session->session_start);
             $end = $session->session_end
                 ? Carbon::parse($session->session_end)
-                : Carbon::now();
+                : $now;  // Utiliser l'heure actuelle si la session est active
 
             $duration = $start->diffInSeconds($end);
 
@@ -187,13 +186,9 @@ class WorkTime extends Model
             }
         }
 
-        // Mettre à jour uniquement les colonnes qui existent dans la table
         $this->total_seconds = $totalWorkSeconds + $totalPauseSeconds;
         $this->pause_seconds = $totalPauseSeconds;
         $this->net_seconds = $totalWorkSeconds;
-
-        // NE PAS essayer de sauvegarder net_hours et pause_hours
-        // car ce sont des accesseurs calculés, pas des colonnes
 
         $this->save();
     }
