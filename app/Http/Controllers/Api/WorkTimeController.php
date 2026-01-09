@@ -26,7 +26,7 @@ class WorkTimeController extends Controller
         $today = Carbon::today();
         $currentTime = Carbon::now();
 
-        // Vérifier si c'est un jour ouvrable
+        // Vérifier si c'est un jour ouvrable (on garde seulement dimanche comme jour non travaillé)
         if (!$this->workTimeService->isWorkDay($today)) {
             return response()->json([
                 'success' => false,
@@ -64,13 +64,23 @@ class WorkTimeController extends Controller
             ]);
         }
 
-        // CAS 2: Journée déjà terminée
+        // CAS 2: Journée déjà terminée - On permet de continuer en heures supplémentaires
         if ($workTime->status === 'completed') {
+            // On change le statut pour permettre de continuer le travail
+            $workTime->update(['status' => 'in_progress']);
+
+            // Démarrer une nouvelle session de travail
+            WorkSession::create([
+                'work_time_id' => $workTime->id,
+                'session_start' => $currentTime,
+                'type' => 'work'
+            ]);
+
             return response()->json([
-                'success' => false,
-                'message' => 'Journée déjà terminée. Vous ne pouvez pas redémarrer une journée terminée.',
-                'data' => $workTime
-            ], 400);
+                'success' => true,
+                'message' => 'Travail repris (en heures supplémentaires)',
+                'data' => $workTime->fresh()->load('sessions')
+            ]);
         }
 
         // CAS 3: Journée en pause - Reprendre automatiquement
@@ -249,17 +259,26 @@ class WorkTimeController extends Controller
         $user = Auth::user();
         $today = Carbon::today();
 
-        // Chercher une journée qui n'est pas déjà terminée
+        // Chercher la journée d'aujourd'hui (peut être déjà terminée)
         $workTime = WorkTime::where('user_id', $user->id)
             ->where('work_date', $today)
-            ->whereIn('status', [WorkTime::STATUS_IN_PROGRESS, WorkTime::STATUS_PAUSED])
             ->first();
 
         if (!$workTime) {
             return response()->json([
                 'success' => false,
-                'message' => 'Aucune journée en cours'
+                'message' => 'Aucune journée trouvée pour aujourd\'hui'
             ], 404);
+        }
+
+        // Si la journée est déjà terminée, informer l'utilisateur qu'il peut la redémarrer
+        if ($workTime->status === WorkTime::STATUS_COMPLETED) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La journée est déjà terminée. Utilisez "Démarrer" pour continuer en heures supplémentaires.',
+                'already_completed' => true,
+                'data' => $workTime
+            ], 400);
         }
 
         // Terminer la dernière session de travail si elle existe
@@ -293,6 +312,16 @@ class WorkTimeController extends Controller
         // Calculer les totaux AVANT de mettre à jour le statut
         $workTime->calculateTotalTime();
 
+        // Calculer les heures supplémentaires
+        $dailyTarget = $workTime->getDailyTargetAttribute();
+        $extraHours = 0;
+        $extraSeconds = 0;
+
+        if ($workTime->net_seconds > $dailyTarget) {
+            $extraSeconds = $workTime->net_seconds - $dailyTarget;
+            $extraHours = $extraSeconds / 3600;
+        }
+
         // Mettre à jour le statut
         $workTime->update([
             'status' => WorkTime::STATUS_COMPLETED,
@@ -304,8 +333,12 @@ class WorkTimeController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Journée terminée',
-            'data' => $workTime
+            'message' => 'Journée terminée' . ($extraHours > 0 ? ' (+' . round($extraHours, 2) . 'h supplémentaires)' : ''),
+            'data' => $workTime,
+            'extra_hours' => round($extraHours, 2),
+            'extra_seconds' => $extraSeconds,
+            'daily_target_hours' => $dailyTarget / 3600,
+            'worked_hours' => $workTime->net_seconds / 3600
         ]);
     }
 

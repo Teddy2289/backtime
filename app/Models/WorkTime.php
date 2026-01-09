@@ -47,12 +47,13 @@ class WorkTime extends Model
         'daily_target_hours',
         'progress_percentage',
         'is_within_schedule',
-        'day_name'
+        'day_name',
+        'extra_hours',
+        'total_worked_hours',
+        'extended_progress_percentage',
+        'has_exceeded_target',
+        'progress_color',
     ];
-
-    // Retirez ces colonnes qui n'existent pas dans la table
-    // protected $appends = ['net_hours', 'pause_hours']; // Ces sont des accesseurs
-
     // Relation avec l'utilisateur
     public function user()
     {
@@ -144,6 +145,63 @@ class WorkTime extends Model
 
         return true;
     }
+
+
+    // Dans le modèle WorkTime.php
+
+    // Calcul des heures supplémentaires
+    public function getExtraHoursAttribute(): float
+    {
+        $dailyTarget = $this->getDailyTargetAttribute();
+        if ($this->net_seconds > $dailyTarget) {
+            return ($this->net_seconds - $dailyTarget) / 3600;
+        }
+        return 0;
+    }
+
+    // Heures travaillées totales (objectif + supplémentaires)
+    public function getTotalWorkedHoursAttribute(): float
+    {
+        return $this->net_seconds / 3600;
+    }
+
+    // Pourcentage de l'objectif (peut dépasser 100%)
+    public function getExtendedProgressPercentageAttribute(): float
+    {
+        $dailyTarget = $this->getDailyTargetAttribute();
+
+        if ($dailyTarget === 0) {
+            return 0;
+        }
+
+        $progress = ($this->net_seconds / $dailyTarget) * 100;
+        return round($progress, 2); // Peut être > 100%
+    }
+
+    // Vérifier si on a dépassé l'objectif
+    public function getHasExceededTargetAttribute(): bool
+    {
+        return $this->net_seconds > $this->getDailyTargetAttribute();
+    }
+
+    // Obtenir la couleur selon la progression
+    public function getProgressColorAttribute(): string
+    {
+        $progress = $this->getExtendedProgressPercentageAttribute();
+
+        if ($progress < 80) {
+            return 'red'; // En retard
+        } elseif ($progress < 100) {
+            return 'yellow'; // En bonne voie
+        } elseif ($progress < 120) {
+            return 'green'; // Objectif atteint
+        } elseif ($progress < 150) {
+            return 'blue'; // Heures supplémentaires modérées
+        } else {
+            return 'purple'; // Beaucoup d'heures supplémentaires
+        }
+    }
+
 
     public function getDayNameAttribute(): string
     {
