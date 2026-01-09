@@ -17,15 +17,18 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-
-        // Middleware API (globaux pour toutes les routes API)
-        $middleware->api([
-            \Illuminate\Http\Middleware\HandleCors::class,            // OBLIGATOIRE
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        // MIDDLEWARE GLOBAL (appliqué à toutes les routes)
+        $middleware->use([
+            \Illuminate\Http\Middleware\HandleCors::class, // OBLIGATOIRE pour CORS
+            \Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance::class,
+            \Illuminate\Http\Middleware\ValidatePostSize::class,
+            \Illuminate\Foundation\Http\Middleware\TrimStrings::class,
+            \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
         ]);
 
         // Middleware du groupe "api"
         $middleware->group('api', [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Routing\Middleware\ThrottleRequests::class . ':api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
@@ -36,10 +39,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.api' => \App\Http\Middleware\Authenticate::class,
             'auth' => \App\Http\Middleware\Authenticate::class,
             'refresh.token' => \App\Http\Middleware\RefreshToken::class,
+            'cors' => \App\Http\Middleware\Cors::class,
         ]);
-
-        // Prepend global (gardé)
-        $middleware->prepend(HandleCors::class);
     })
 
     ->withExceptions(function (Exceptions $exceptions): void {
