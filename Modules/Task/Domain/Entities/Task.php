@@ -41,18 +41,16 @@ class Task extends Model
         'tags',
     ];
 
-    // **CORRECTION/AMÉLIORATION MAJEURE:** Suppression des accesseurs/mutateurs manuels
-    // Les 'casts' par défaut de Laravel gèrent les dates (y compris null) et 'array'
     protected $casts = [
-        'start_date' => 'date', // Gère automatiquement les dates comme Carbon (ou null)
-        'due_date' => 'date',   // Gère automatiquement les dates comme Carbon (ou null)
+        'start_date' => 'date',
+        'due_date' => 'date',
         'tags' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 
-    protected $appends = ['progress', 'is_overdue', 'total_worked_time']; // Ajout de 'total_worked_time'
+    protected $appends = ['progress', 'is_overdue', 'total_worked_time'];
 
     /* -------------------------------------------------------------------------- */
     /* Relations                                  */
@@ -98,26 +96,13 @@ class Task extends Model
      */
     public function project(): BelongsTo
     {
-        // projects_teams est probablement un modèle de 'Projet' si il a un 'id' et 'team_id'
-        // J'ai présumé que ProjectsTeams est le modèle du projet.
+
         return $this->belongsTo(
             ProjectsTeams::class,
             'project_id',
             'id'
         );
     }
-
-    // **CORRECTION/SUPPRESSION: team()**
-    // Cette relation est incorrecte si `team_id` n'est pas directement sur la table `tasks`.
-    // L'approche `teamThroughProject` ci-dessous est la bonne. J'ai commenté/supprimé la fonction team()
-    /*
-    public function team(): BelongsTo
-    {
-        // Si team_id n'est PAS dans la table des tâches, ceci est faux.
-        // Utiliser teamThroughProject à la place.
-        return $this->belongsTo(Team::class, 'team_id');
-    }
-    */
 
     /**
      * Relation avec l'équipe via le projet
@@ -128,10 +113,10 @@ class Task extends Model
         return $this->hasOneThrough(
             Team::class,
             ProjectsTeams::class,
-            'id', // Clé étrangère dans la table intermédiaire (ProjectsTeams) pointant vers Task
-            'id', // Clé locale dans la table finale (Team)
-            'project_id', // Clé locale dans Task pointant vers ProjectsTeams
-            'team_id' // Clé locale dans ProjectsTeams pointant vers Team
+            'id',
+            'id',
+            'project_id',
+            'team_id'
         );
     }
 
@@ -142,12 +127,12 @@ class Task extends Model
     /**
      * Calculer le progrès de la tâche
      */
-    public function getProgressAttribute(): int // Changé float à int car les valeurs sont entières (0, 50, 100)
+    public function getProgressAttribute(): int
     {
         return match ($this->status) {
             self::STATUS_DONE => 100,
             self::STATUS_DOING => 50,
-            default => 0, // Inclut 'backlog', 'todo' et tout autre statut inconnu
+            default => 0,
         };
     }
 
@@ -165,8 +150,7 @@ class Task extends Model
             return false;
         }
 
-        // Utilisation de isPast() de Carbon.
-        // **AMÉLIORATION:** S'assurer que Carbon est utilisé (fait avec l'import `use Carbon\Carbon;`)
+
         return $this->due_date->isPast();
     }
 
@@ -179,7 +163,7 @@ class Task extends Model
         return $this->timeLogs->sum('duration') ?? 0;
     }
 
-   
+
 
     /* -------------------------------------------------------------------------- */
     /* Scopes                                   */
@@ -190,7 +174,7 @@ class Task extends Model
     public function scopeOverdue($query)
     {
         return $query->whereNotNull('due_date')
-            ->where('due_date', '<', Carbon::now()) // Utilisation de Carbon::now() pour plus de clarté
+            ->where('due_date', '<', Carbon::now())
             ->where('status', '!=', self::STATUS_DONE);
     }
 
@@ -225,7 +209,7 @@ class Task extends Model
         return $query->where('start_date', '>', now())
             ->orWhere(function ($q) {
                 $q->whereNull('start_date')
-                  ->where('due_date', '>', now());
+                    ->where('due_date', '>', now());
             })
             ->where('status', '!=', 'done');
     }
@@ -256,11 +240,11 @@ class Task extends Model
         if ($this->start_date) {
             return $this->start_date->isFuture() && $this->status !== 'done';
         }
-        
+
         if ($this->due_date) {
             return $this->due_date->isFuture() && $this->status !== 'done';
         }
-        
+
         return false;
     }
 
