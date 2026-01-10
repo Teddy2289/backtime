@@ -230,7 +230,6 @@ class Task extends Model
             ->orWhere(function ($q) {
                 $q->whereNull('start_date')
                     ->where('due_date', '>', now());
-                    ->where('due_date', '>', now());
             })
             ->where('status', '!=', 'done');
     }
