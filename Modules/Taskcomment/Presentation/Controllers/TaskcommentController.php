@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Modules\TaskComment\Application\Services\TaskCommentService;
 use Modules\Task\Application\Services\TaskService;
 
-class TaskcommentController extends Controller
+class TaskCommentController extends Controller
 {
     use ApiResponser;
 

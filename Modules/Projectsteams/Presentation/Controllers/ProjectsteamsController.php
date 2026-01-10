@@ -12,7 +12,7 @@ use Modules\ProjectsTeams\Application\Services\ProjectsTeamsService;
 use Modules\ProjectsTeams\Domain\Entities\ProjectsTeams;
 use Modules\User\Domain\Entities\User;
 
-class ProjectsteamsController extends Controller
+class ProjectsTeamsController extends Controller
 {
     use ApiResponser;
 

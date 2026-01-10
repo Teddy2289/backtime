@@ -26,7 +26,7 @@ class WorkTimeController extends Controller
         $today = Carbon::today();
         $currentTime = Carbon::now();
 
-        // Vérifier si c'est un jour ouvrable
+        // Vérifier si c'est un jour ouvrable (on garde seulement dimanche comme jour non travaillé)
         if (!$this->workTimeService->isWorkDay($today)) {
             return response()->json([
                 'success' => false,
@@ -64,13 +64,23 @@ class WorkTimeController extends Controller
             ]);
         }
 
-        // CAS 2: Journée déjà terminée
+        // CAS 2: Journée déjà terminée - On permet de continuer en heures supplémentaires
         if ($workTime->status === 'completed') {
+            // On change le statut pour permettre de continuer le travail
+            $workTime->update(['status' => 'in_progress']);
+
+            // Démarrer une nouvelle session de travail
+            WorkSession::create([
+                'work_time_id' => $workTime->id,
+                'session_start' => $currentTime,
+                'type' => 'work'
+            ]);
+
             return response()->json([
-                'success' => false,
-                'message' => 'Journée déjà terminée. Vous ne pouvez pas redémarrer une journée terminée.',
-                'data' => $workTime
-            ], 400);
+                'success' => true,
+                'message' => 'Travail repris (en heures supplémentaires)',
+                'data' => $workTime->fresh()->load('sessions')
+            ]);
         }
 
         // CAS 3: Journée en pause - Reprendre automatiquement
@@ -150,7 +160,8 @@ class WorkTimeController extends Controller
 
         $workTime = WorkTime::where('user_id', $user->id)
             ->where('work_date', $today)
-            ->where('status', 'in_progress')
+            // Seulement si en cours
+            ->where('status', WorkTime::STATUS_IN_PROGRESS)
             ->first();
 
         if (!$workTime) {
@@ -169,20 +180,21 @@ class WorkTimeController extends Controller
 
         if ($lastWorkSession) {
             $lastWorkSession->update([
-                'session_end' => Carbon::now()
+                'session_end' => Carbon::now(),
+                'duration_seconds' => Carbon::now()->diffInSeconds($lastWorkSession->session_start)
             ]);
         }
 
         // Démarrer une session de pause
-        $pauseSession = WorkSession::create([
-            'work_time_id' => $workTime->id,
+        $workTime->sessions()->create([
             'session_start' => Carbon::now(),
-            'type' => 'pause'
+            'type' => 'pause',
         ]);
 
+        // Mettre à jour le statut
         $workTime->update([
-            'status' => 'paused',
-            'pause_start' => Carbon::now()
+            'status' => WorkTime::STATUS_PAUSED,
+            'pause_start' => Carbon::now(),
         ]);
 
         return response()->json([
@@ -191,7 +203,6 @@ class WorkTimeController extends Controller
             'data' => $workTime->fresh()->load('sessions')
         ]);
     }
-
     // Reprendre le travail
     public function resume(Request $request)
     {
@@ -200,17 +211,17 @@ class WorkTimeController extends Controller
 
         $workTime = WorkTime::where('user_id', $user->id)
             ->where('work_date', $today)
-            ->where('status', 'paused')
+            ->where('status', WorkTime::STATUS_PAUSED) // Seulement si en pause
             ->first();
 
         if (!$workTime) {
             return response()->json([
                 'success' => false,
-                'message' => 'Aucune pause en cours'
+                'message' => 'Aucune journée en pause'
             ], 404);
         }
 
-        // Terminer la pause en cours
+        // Terminer la session de pause en cours
         $lastPauseSession = $workTime->sessions()
             ->where('type', 'pause')
             ->whereNull('session_end')
@@ -219,20 +230,21 @@ class WorkTimeController extends Controller
 
         if ($lastPauseSession) {
             $lastPauseSession->update([
-                'session_end' => Carbon::now()
+                'session_end' => Carbon::now(),
+                'duration_seconds' => Carbon::now()->diffInSeconds($lastPauseSession->session_start)
             ]);
         }
 
         // Démarrer une nouvelle session de travail
-        $workSession = WorkSession::create([
-            'work_time_id' => $workTime->id,
+        $workTime->sessions()->create([
             'session_start' => Carbon::now(),
-            'type' => 'work'
+            'type' => 'work',
         ]);
 
+        // Mettre à jour le statut
         $workTime->update([
-            'status' => 'in_progress',
-            'pause_end' => Carbon::now()
+            'status' => WorkTime::STATUS_IN_PROGRESS,
+            'pause_end' => Carbon::now(),
         ]);
 
         return response()->json([
@@ -241,49 +253,92 @@ class WorkTimeController extends Controller
             'data' => $workTime->fresh()->load('sessions')
         ]);
     }
-
     // Terminer la journée
     public function endDay(Request $request)
     {
         $user = Auth::user();
         $today = Carbon::today();
 
+        // Chercher la journée d'aujourd'hui (peut être déjà terminée)
         $workTime = WorkTime::where('user_id', $user->id)
             ->where('work_date', $today)
-            ->whereIn('status', ['in_progress', 'paused'])
             ->first();
 
         if (!$workTime) {
             return response()->json([
                 'success' => false,
-                'message' => 'Aucune journée en cours'
+                'message' => 'Aucune journée trouvée pour aujourd\'hui'
             ], 404);
         }
 
-        // Terminer la dernière session
+        // Si la journée est déjà terminée, informer l'utilisateur qu'il peut la redémarrer
+        if ($workTime->status === WorkTime::STATUS_COMPLETED) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La journée est déjà terminée. Utilisez "Démarrer" pour continuer en heures supplémentaires.',
+                'already_completed' => true,
+                'data' => $workTime
+            ], 400);
+        }
+
+        // Terminer la dernière session de travail si elle existe
         $lastSession = $workTime->sessions()
+            ->where('type', 'work')
             ->whereNull('session_end')
             ->latest()
             ->first();
 
         if ($lastSession) {
             $lastSession->update([
-                'session_end' => Carbon::now()
+                'session_end' => Carbon::now(),
+                'duration_seconds' => Carbon::now()->diffInSeconds($lastSession->session_start)
             ]);
         }
 
-        // Calculer les totaux
+        // Terminer la session de pause si elle existe
+        $lastPauseSession = $workTime->sessions()
+            ->where('type', 'pause')
+            ->whereNull('session_end')
+            ->latest()
+            ->first();
+
+        if ($lastPauseSession) {
+            $lastPauseSession->update([
+                'session_end' => Carbon::now(),
+                'duration_seconds' => Carbon::now()->diffInSeconds($lastPauseSession->session_start)
+            ]);
+        }
+
+        // Calculer les totaux AVANT de mettre à jour le statut
         $workTime->calculateTotalTime();
 
+        // Calculer les heures supplémentaires
+        $dailyTarget = $workTime->getDailyTargetAttribute();
+        $extraHours = 0;
+        $extraSeconds = 0;
+
+        if ($workTime->net_seconds > $dailyTarget) {
+            $extraSeconds = $workTime->net_seconds - $dailyTarget;
+            $extraHours = $extraSeconds / 3600;
+        }
+
+        // Mettre à jour le statut
         $workTime->update([
-            'status' => 'completed',
+            'status' => WorkTime::STATUS_COMPLETED,
             'end_time' => Carbon::now()
         ]);
 
+        // Recharger les sessions pour avoir les données fraîches
+        $workTime->load('sessions');
+
         return response()->json([
             'success' => true,
-            'message' => 'Journée terminée',
-            'data' => $workTime->fresh()->load('sessions')
+            'message' => 'Journée terminée' . ($extraHours > 0 ? ' (+' . round($extraHours, 2) . 'h supplémentaires)' : ''),
+            'data' => $workTime,
+            'extra_hours' => round($extraHours, 2),
+            'extra_seconds' => $extraSeconds,
+            'daily_target_hours' => $dailyTarget / 3600,
+            'worked_hours' => $workTime->net_seconds / 3600
         ]);
     }
 

@@ -17,19 +17,20 @@ Modules/Tasktimelog/
 ## Installation
 
 1. Ajouter au `config/app.php` (section providers):
-   ```php
-   Modules\Tasktimelog\Providers\TasktimelogServiceProvider::class,
-   ```
+
+    ```php
+    Modules\Tasktimelog\Providers\TasktimelogServiceProvider::class,
+    ```
 
 2. Exécuter:
-   ```bash
-   composer dump-autoload
-   ```
+    ```bash
+    composer dump-autoload
+    ```
 
 ## Routes
 
-- API: `GET /api/tasktimelog`
-- Web: `GET /tasktimelog`
+-   API: `GET /api/tasktimelog`
+-   Web: `GET /tasktimelog`
 
 ## Test
 

@@ -1,39 +1,76 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\TaskFiles\Presentation\Controllers\TaskfilesController;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Http\Request;
+use Modules\Taskfiles\Presentation\Controllers\TaskfilesController;
 
-// Routes pour les fichiers
-Route::prefix('files')->middleware(['auth:api'])->group(function () {
-    Route::get('/', [TaskfilesController::class, 'index']);
-    Route::post('/', [TaskfilesController::class, 'store']);
-    Route::get('/{id}', [TaskfilesController::class, 'show'])->where('id', '[0-9]+');
-    Route::put('/{id}', [TaskfilesController::class, 'update'])->where('id', '[0-9]+');
-    Route::delete('/{id}', [TaskfilesController::class, 'destroy'])->where('id', '[0-9]+');
-    Route::delete('/', [TaskfilesController::class, 'destroyMultiple']);
+// Route POUR TOUS les fichiers storage (avec CORS)
+Route::middleware(['cors'])->prefix('files')->group(function () {
 
-    // Actions spécifiques
-    Route::get('/{id}/download', [TaskfilesController::class, 'download'])->where('id', '[0-9]+');
-    Route::get('/{id}/preview', [TaskfilesController::class, 'preview'])->where('id', '[0-9]+');
+    // Route pour servir n'importe quel fichier du storage
+    Route::get('/serve/{path}', function (Request $request, $path) {
+        try {
+            // Décoder le chemin
+            $decodedPath = urldecode($path);
 
-    // Filtres
-    Route::get('/task/{taskId}', [TaskfilesController::class, 'getByTask'])->where('taskId', '[0-9]+');
-    Route::get('/uploader/{userId}', [TaskfilesController::class, 'getByUploader'])->where('userId', '[0-9]+');
-    Route::post('/search', [TaskfilesController::class, 'search']);
+            // Vérifier si le fichier existe
+            $storagePath = 'public/' . $decodedPath;
 
-    // Statistiques
-    Route::get('/statistics', [TaskfilesController::class, 'statistics']);
+            if (!Storage::exists($storagePath)) {
+                return response()->json([
+                    'error' => 'Fichier non trouvé',
+                    'path' => $decodedPath
+                ], 404);
+            }
 
-    // Routes de santé
-    Route::get('/health', [TaskfilesController::class, 'health']);
+            // Chemin complet
+            $fullPath = Storage::path($storagePath);
+
+            // Type MIME
+            $mimeType = mime_content_type($fullPath);
+
+            // Headers CORS SPÉCIFIQUES
+            $headers = [
+                'Content-Type' => $mimeType,
+                'Access-Control-Allow-Origin' => 'http://localhost:5174', // Spécifique, pas '*'
+                'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+                'Access-Control-Allow-Headers' => 'Content-Type, Authorization, Accept',
+                'Access-Control-Allow-Credentials' => 'true',
+                'Access-Control-Expose-Headers' => 'Content-Disposition',
+                'Cache-Control' => 'public, max-age=3600',
+            ];
+
+            // Téléchargement ou affichage ?
+            if ($request->has('download')) {
+                $headers['Content-Disposition'] = 'attachment; filename="' . basename($decodedPath) . '"';
+            } else {
+                $headers['Content-Disposition'] = 'inline; filename="' . basename($decodedPath) . '"';
+            }
+
+            return response()->file($fullPath, $headers);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Erreur lors du chargement du fichier',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    })->where('path', '.*')->name('files.serve');
+
+    // Routes normales pour les fichiers (avec authentification)
+    Route::middleware(['auth:api'])->group(function () {
+        Route::get('/', [TaskfilesController::class, 'index']);
+        Route::post('/', [TaskfilesController::class, 'store']);
+        Route::get('/{id}', [TaskfilesController::class, 'show'])->where('id', '[0-9]+');
+        Route::get('/{id}/download', [TaskfilesController::class, 'download'])->where('id', '[0-9]+');
+        Route::get('/{id}/preview', [TaskfilesController::class, 'preview'])->where('id', '[0-9]+');
+        Route::delete('/{id}', [TaskfilesController::class, 'destroy'])->where('id', '[0-9]+');
+    });
 });
 
-// Routes spécifiques pour les fichiers d'une tâche
-Route::group([], function () {
+// Autres routes existantes...
+Route::middleware(['auth:api'])->group(function () {
     Route::get('tasks/{taskId}/files', [TaskfilesController::class, 'getByTask'])->where('taskId', '[0-9]+');
     Route::post('tasks/{taskId}/files', [TaskfilesController::class, 'store'])->where('taskId', '[0-9]+');
-    Route::get('tasks/{taskId}/files/statistics', [TaskfilesController::class, 'statistics'])->where('taskId', '[0-9]+');
 });
-
-// Route publique de santé
-Route::get('/files/health/public', [TaskfilesController::class, 'health']);

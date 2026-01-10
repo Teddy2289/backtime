@@ -5,12 +5,8 @@
     "version": "1.0.0",
     "keywords": ["taskfiles", "ddd", "module"],
     "priority": 1000,
-    "providers": [
-        "Modules\\Taskfiles\\Providers\\TaskfilesServiceProvider"
-    ],
+    "providers": ["Modules\\TaskFiles\\Providers\\TaskfilesServiceProvider"],
     "aliases": {},
-    "files": [
-        "Providers/TaskfilesServiceProvider.php"
-    ],
+    "files": ["Providers/TaskfilesServiceProvider.php"],
     "requires": []
 }

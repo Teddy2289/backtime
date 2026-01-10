@@ -9,12 +9,12 @@ use Modules\ProjectsTeams\Domain\Interfaces\ProjectsTeamsRepositoryInterface;
 use Modules\ProjectsTeams\Infrastructure\Repositories\ProjectsTeamsRepository;
 use Modules\ProjectsTeams\Presentation\Controllers\ProjectsteamsController;
 
-class ProjectsteamsServiceProvider extends ServiceProvider
+class ProjectsTeamsServiceProvider extends ServiceProvider
 {
     /**
      * @var string $moduleName
      */
-    protected string $moduleName = 'Projectsteams';
+    protected string $moduleName = 'ProjectsTeams';
 
     /**
      * @var string $moduleNameLower
@@ -38,8 +38,6 @@ class ProjectsteamsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // IMPORTANT: Si vous avez décidé de garder le namespace "Modules\Project"
-        // au lieu de "Modules\Projectsteams", vous devez ajuster ici
 
         // Si vous utilisez le namespace "Modules\Project" pour les classes métier
         if (class_exists('\Modules\Project\Domain\Interfaces\ProjectsTeamsRepositoryInterface::class')) {
@@ -67,7 +65,6 @@ class ProjectsteamsServiceProvider extends ServiceProvider
                 }
             );
         } else {
-            // Version alternative si vous décidez de tout mettre sous "Modules\Projectsteams"
             $this->app->bind(
                 ProjectsTeamsRepositoryInterface::class,
                 ProjectsTeamsRepository::class
