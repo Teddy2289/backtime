@@ -2,9 +2,9 @@
     "User": true,
     "Project": true,
     "Team": true,
-    "Projectsteams": true,
+    "ProjectsTeams": true,
     "Task": true,
-    "Tasktimelog": true,
-    "Taskfiles": true,
-    "Taskcomment": true
+    "TaskTimeLog": true,
+    "TaskFiles": true,
+    "TaskComment": true
 }

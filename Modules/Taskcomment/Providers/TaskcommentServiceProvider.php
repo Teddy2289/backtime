@@ -13,7 +13,7 @@ use Modules\Task\Infrastructure\Repositories\TaskRepository;
 use Modules\TaskComment\Domain\Interfaces\TaskCommentRepositoryInterface;
 use Modules\TaskComment\Infrastructure\Repositories\TaskCommentRepository;
 
-class TaskcommentServiceProvider extends ServiceProvider
+class TaskCommentServiceProvider extends ServiceProvider
 {
     protected $moduleName = 'Taskcomment';
     protected $moduleNameLower = 'taskcomment';

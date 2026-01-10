@@ -11,7 +11,7 @@ use Modules\TaskFiles\Domain\Interfaces\TaskFileRepositoryInterface;
 use Modules\TaskFiles\Infrastructure\Repositories\TaskFileRepository;
 use Modules\TaskFiles\Presentation\Controllers\TaskFilesController;
 
-class TaskfilesServiceProvider extends ServiceProvider
+class TaskFilesServiceProvider extends ServiceProvider
 {
     protected $moduleName = 'Taskfiles';
     protected $moduleNameLower = 'taskfiles';
