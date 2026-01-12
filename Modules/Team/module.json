@@ -1,0 +1,12 @@
+{
+    "name": "Team",
+    "alias": "team",
+    "description": "Team management module",
+    "version": "1.0.0",
+    "keywords": ["team", "ddd", "module"],
+    "priority": 1000,
+    "providers": ["Modules\\Team\\Providers\\TeamServiceProvider"],
+    "aliases": {},
+    "files": ["Providers/TeamServiceProvider.php"],
+    "requires": []
+}

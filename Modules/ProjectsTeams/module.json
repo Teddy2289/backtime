@@ -1,0 +1,14 @@
+{
+    "name": "ProjectsTeams",
+    "alias": "projectsTeams",
+    "description": "ProjecsTeams management module",
+    "version": "1.0.0",
+    "keywords": ["projectsteams", "ddd", "module"],
+    "priority": 1000,
+    "providers": [
+        "Modules\\ProjectsTeams\\Providers\\ProjectsTeamsServiceProvider"
+    ],
+    "aliases": {},
+    "files": ["Providers/ProjectsTeamsServiceProvider.php"],
+    "requires": []
+}

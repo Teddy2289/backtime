@@ -1,0 +1,10 @@
+{
+    "User": true,
+    "Project": true,
+    "Team": true,
+    "ProjectsTeams": true,
+    "Task": true,
+    "TaskTimeLog": true,
+    "TaskFiles": true,
+    "TaskComment": true
+}

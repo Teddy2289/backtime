@@ -1,0 +1,12 @@
+{
+    "name": "Taskfiles",
+    "alias": "taskfiles",
+    "description": "Taskfiles management module",
+    "version": "1.0.0",
+    "keywords": ["taskfiles", "ddd", "module"],
+    "priority": 1000,
+    "providers": ["Modules\\TaskFiles\\Providers\\TaskfilesServiceProvider"],
+    "aliases": {},
+    "files": ["Providers/TaskfilesServiceProvider.php"],
+    "requires": []
+}
