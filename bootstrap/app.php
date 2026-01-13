@@ -8,7 +8,6 @@ use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Http\Request;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
-
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__ . '/../routes/web.php',
@@ -17,34 +16,40 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // MIDDLEWARE GLOBAL (appliqué à toutes les routes)
+        // MIDDLEWARE GLOBAL
         $middleware->use([
-            \Illuminate\Http\Middleware\HandleCors::class, // OBLIGATOIRE pour CORS
+            \Illuminate\Http\Middleware\HandleCors::class,
             \Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance::class,
             \Illuminate\Http\Middleware\ValidatePostSize::class,
             \Illuminate\Foundation\Http\Middleware\TrimStrings::class,
             \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
         ]);
 
-        // Middleware du groupe "api"
+        // Middleware groupe 'web' - ajoutez StartSession ici
+        $middleware->group('web', [
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ]);
+
+        // Middleware groupe 'api' - PAS de StartSession ici
         $middleware->group('api', [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, // Commentez si pas utilisé
             \Illuminate\Routing\Middleware\ThrottleRequests::class . ':api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
 
-        // Alias de middlewares
+        // Alias
         $middleware->alias([
-            'user.middleware' => \Modules\User\Middleware\UserMiddleware::class,
-            'auth.api' => \App\Http\Middleware\Authenticate::class,
             'auth' => \App\Http\Middleware\Authenticate::class,
+            'auth.api' => \App\Http\Middleware\Authenticate::class,
             'refresh.token' => \App\Http\Middleware\RefreshToken::class,
             'cors' => \App\Http\Middleware\Cors::class,
         ]);
     })
-
     ->withExceptions(function (Exceptions $exceptions): void {
-        // Personnaliser les exceptions pour l'API
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             if ($request->is('api/*')) {
                 return response()->json([
@@ -54,14 +59,5 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 401);
             }
         });
-
-        $exceptions->render(function (RouteNotFoundException $e, Request $request) {
-            if ($request->is('api/*')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Route not found.',
-                    'error' => 'ROUTE_001'
-                ], 404);
-            }
-        });
-    })->create();
+    })
+    ->create();

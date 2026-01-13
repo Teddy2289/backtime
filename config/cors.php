@@ -1,7 +1,7 @@
 <?php
 return [
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'sanctum/acting-as', 'storage/*', 'files/*', 'download/*'],
+    'paths' => ['api/*'],
 
     'allowed_methods' => ['*'],
 
@@ -13,8 +13,7 @@ return [
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
-
+    'max_age' => 60 * 60 * 24,
     'supports_credentials' => false,
 
 ];
