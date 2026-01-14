@@ -30,6 +30,6 @@ cd /Users/mbl/Desktop/timer/backtime
     sed -i '' 's/class TaskcommentServiceProvider/class TaskCommentServiceProvider/' Modules/TaskComment/Providers/TaskCommentServiceProvider.php
 
 [ -f "Modules/TaskComment/Presentation/Controllers/TaskCommentController.php" ] && \
-    sed -i '' 's/class TaskcommentController/class TaskCommentController/' Modules/TaskComment/Presentation/Controllers/TaskCommentController.php
+    sed -i '' 's/class TaskCommentController/class TaskCommentController/' Modules/TaskComment/Presentation/Controllers/TaskCommentController.php
 
 echo "✅ Noms de classes corrigés!"

@@ -47,7 +47,7 @@ fi
 # TaskComment
 if [ -d "Modules/TaskComment" ]; then
     mv Modules/TaskComment/Providers/TaskcommentServiceProvider.php Modules/TaskComment/Providers/TaskCommentServiceProvider.php 2>/dev/null || true
-    mv Modules/TaskComment/Presentation/Controllers/TaskcommentController.php Modules/TaskComment/Presentation/Controllers/TaskCommentController.php 2>/dev/null || true
+    mv Modules/TaskComment/Presentation/Controllers/TaskCommentController.php Modules/TaskComment/Presentation/Controllers/TaskCommentController.php 2>/dev/null || true
 fi
 
 echo "✅ Correction terminée!"

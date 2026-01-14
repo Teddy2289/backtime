@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\TaskComment\Presentation\Controllers\TaskcommentController;
+use Modules\TaskComment\Presentation\Controllers\TaskCommentController;
 
 // Routes pour les commentaires
 Route::prefix('comments')->middleware(['auth:api'])->group(function () {

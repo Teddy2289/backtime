@@ -5,7 +5,7 @@ namespace Modules\TaskComment\Providers;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Modules\TaskComment\Application\Services\TaskCommentService;
-use Modules\TaskComment\Presentation\Controllers\TaskcommentController;
+use Modules\TaskComment\Presentation\Controllers\TaskCommentController;
 // AJOUTEZ CES USES
 use Modules\Task\Application\Services\TaskService;
 use Modules\Task\Domain\Interfaces\TaskRepositoryInterface;
@@ -55,9 +55,9 @@ class TaskCommentServiceProvider extends ServiceProvider
         }
 
         $this->app->bind(
-            TaskcommentController::class,
+            TaskCommentController::class,
             function ($app) {
-                return new TaskcommentController(
+                return new TaskCommentController(
                     $app->make(TaskCommentService::class),
                     $app->make(TaskService::class)
                 );
@@ -158,7 +158,7 @@ class TaskCommentServiceProvider extends ServiceProvider
             TaskCommentRepositoryInterface::class,
             TaskCommentService::class,
             TaskService::class,
-            TaskcommentController::class,
+            TaskCommentController::class,
         ];
     }
 
