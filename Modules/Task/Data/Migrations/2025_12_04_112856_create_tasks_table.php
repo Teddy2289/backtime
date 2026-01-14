@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->unsignedBigInteger('assigned_to')->nullable();
-            $table->enum('status', ['backlog', 'todo', 'doing', 'done'])->default('todo');
+            $table->enum('status', ['backlog', 'todo', 'doing', 'done', 'to_validate', 'in_progress'])->default('todo');
             $table->enum('priority', ['low', 'medium', 'high'])->default('medium');
             $table->date('start_date')->nullable();
             $table->date('due_date')->nullable();

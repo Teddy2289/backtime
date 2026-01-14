@@ -5,7 +5,7 @@ namespace Modules\TaskTimeLog\Providers;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Modules\Task\Application\Services\TaskService;
-use Modules\TaskTimeLog\Domain\Interfaces\TaskFileRepositoryInterface;
+use Modules\TaskFiles\Domain\Interfaces\TaskFileRepositoryInterface;
 use Modules\TaskTimeLog\Application\Services\TaskTimeLogService;
 use Modules\TaskTimeLog\Domain\Interfaces\TaskTimeLogRepositoryInterface;
 use Modules\TaskTimeLog\Infrastructure\Repositories\TaskTimeLogRepository;
@@ -165,5 +165,4 @@ class TaskTimeLogServiceProvider extends ServiceProvider
 
         return $paths;
     }
-
 }

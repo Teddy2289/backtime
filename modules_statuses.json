@@ -6,5 +6,8 @@
     "Task": true,
     "TaskTimeLog": true,
     "TaskFiles": true,
-    "TaskComment": true
+    "TaskComment": true,
+    "Taskcomment": true,
+    "Taskfiles": true,
+    "Tasktimelog": true
 }

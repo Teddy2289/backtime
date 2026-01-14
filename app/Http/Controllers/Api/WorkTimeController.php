@@ -152,6 +152,7 @@ class WorkTimeController extends Controller
             'data' => $workTime
         ], 400);
     }
+
     // Mettre en pause
     public function pause(Request $request)
     {
@@ -203,6 +204,7 @@ class WorkTimeController extends Controller
             'data' => $workTime->fresh()->load('sessions')
         ]);
     }
+
     // Reprendre le travail
     public function resume(Request $request)
     {
@@ -253,41 +255,33 @@ class WorkTimeController extends Controller
             'data' => $workTime->fresh()->load('sessions')
         ]);
     }
+
     // Terminer la journée
     public function endDay(Request $request)
     {
         $user = Auth::user();
         $today = Carbon::today();
 
-<<<<<<< HEAD
-<<<<<<< HEAD
         // Chercher la journée d'aujourd'hui (peut être déjà terminée)
-        $workTime = WorkTime::where('user_id', $user->id)
-            ->where('work_date', $today)
-=======
-        // Chercher une journée qui n'est pas déjà terminée
         $workTime = WorkTime::where('user_id', $user->id)
             ->where('work_date', $today)
             ->whereIn('status', [WorkTime::STATUS_IN_PROGRESS, WorkTime::STATUS_PAUSED])
->>>>>>> 463c393 (feat: Add status constants to WorkTime model and implement AdminDashboardService for admin metrics)
-=======
-        // Chercher la journée d'aujourd'hui (peut être déjà terminée)
-        $workTime = WorkTime::where('user_id', $user->id)
-            ->where('work_date', $today)
->>>>>>> 365514c (feat: Enhance WorkTime model with extra hours calculations and update WorkTimeController for overtime handling)
             ->first();
 
         if (!$workTime) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Aucune journée trouvée pour aujourd\'hui'
-            ], 404);
+            // Si pas de journée en cours, chercher n'importe quelle journée pour aujourd'hui
+            $workTime = WorkTime::where('user_id', $user->id)
+                ->where('work_date', $today)
+                ->first();
+
+            if (!$workTime) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Aucune journée trouvée pour aujourd\'hui'
+                ], 404);
+            }
         }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 365514c (feat: Enhance WorkTime model with extra hours calculations and update WorkTimeController for overtime handling)
         // Si la journée est déjà terminée, informer l'utilisateur qu'il peut la redémarrer
         if ($workTime->status === WorkTime::STATUS_COMPLETED) {
             return response()->json([
@@ -298,11 +292,6 @@ class WorkTimeController extends Controller
             ], 400);
         }
 
-<<<<<<< HEAD
-=======
->>>>>>> 463c393 (feat: Add status constants to WorkTime model and implement AdminDashboardService for admin metrics)
-=======
->>>>>>> 365514c (feat: Enhance WorkTime model with extra hours calculations and update WorkTimeController for overtime handling)
         // Terminer la dernière session de travail si elle existe
         $lastSession = $workTime->sessions()
             ->where('type', 'work')
@@ -334,10 +323,6 @@ class WorkTimeController extends Controller
         // Calculer les totaux AVANT de mettre à jour le statut
         $workTime->calculateTotalTime();
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 365514c (feat: Enhance WorkTime model with extra hours calculations and update WorkTimeController for overtime handling)
         // Calculer les heures supplémentaires
         $dailyTarget = $workTime->getDailyTargetAttribute();
         $extraHours = 0;
@@ -348,11 +333,6 @@ class WorkTimeController extends Controller
             $extraHours = $extraSeconds / 3600;
         }
 
-<<<<<<< HEAD
-=======
->>>>>>> 463c393 (feat: Add status constants to WorkTime model and implement AdminDashboardService for admin metrics)
-=======
->>>>>>> 365514c (feat: Enhance WorkTime model with extra hours calculations and update WorkTimeController for overtime handling)
         // Mettre à jour le statut
         $workTime->update([
             'status' => WorkTime::STATUS_COMPLETED,
@@ -364,28 +344,16 @@ class WorkTimeController extends Controller
 
         return response()->json([
             'success' => true,
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 365514c (feat: Enhance WorkTime model with extra hours calculations and update WorkTimeController for overtime handling)
             'message' => 'Journée terminée' . ($extraHours > 0 ? ' (+' . round($extraHours, 2) . 'h supplémentaires)' : ''),
             'data' => $workTime,
             'extra_hours' => round($extraHours, 2),
             'extra_seconds' => $extraSeconds,
             'daily_target_hours' => $dailyTarget / 3600,
             'worked_hours' => $workTime->net_seconds / 3600
-<<<<<<< HEAD
-=======
-            'message' => 'Journée terminée',
-            'data' => $workTime
->>>>>>> 463c393 (feat: Add status constants to WorkTime model and implement AdminDashboardService for admin metrics)
-=======
->>>>>>> 365514c (feat: Enhance WorkTime model with extra hours calculations and update WorkTimeController for overtime handling)
         ]);
     }
 
-    // Récupérer le statut actuel - CETTE MÉTHODE MANQUAIT
-    // Dans WorkTimeController.php
+    // Récupérer le statut actuel
     public function status()
     {
         $user = Auth::user();
@@ -429,6 +397,7 @@ class WorkTimeController extends Controller
 
         return response()->json($response);
     }
+
     // Dans WorkTimeController.php
     public function resumeDay(Request $request)
     {
@@ -497,6 +466,7 @@ class WorkTimeController extends Controller
             'data' => $workTime->fresh()->load('sessions')
         ]);
     }
+
     // Récupérer les statistiques hebdomadaires
     public function weeklyStats(Request $request)
     {

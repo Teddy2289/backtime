@@ -6,7 +6,7 @@
     "keywords": ["tasktimelog", "ddd", "module"],
     "priority": 1000,
     "providers": [
-        "Modules\\TaskTimelog\\Providers\\TaskTimeLogServiceProvider"
+        "Modules\\TaskTimeLog\\Providers\\TaskTimeLogServiceProvider"
     ],
     "aliases": {},
     "files": ["Providers/TaskTimeLogServiceProvider.php"],

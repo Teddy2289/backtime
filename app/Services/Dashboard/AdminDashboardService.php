@@ -51,16 +51,11 @@ class AdminDashboardService
     {
         $todayWorkTimes = WorkTime::with(['user', 'sessions'])
             ->whereDate('work_date', $today)
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 37ae8d8 ( Changes to be committed:)
             ->get()
             ->map(function ($workTime) {
                 // FORCER le recalcul avant de retourner les données
                 $workTime->calculateTotalTime();
                 $workTime->refresh();
-<<<<<<< HEAD
 
                 return [
                     'user_name' => $workTime->user->name ?? 'Utilisateur inconnu',
@@ -77,43 +72,14 @@ class AdminDashboardService
             return $wt['net_hours'];
         });
 
-        return [
-            'total_hours' => round($totalWorkTimeToday / 3600, 2),
-=======
-            ->get();
-=======
->>>>>>> 37ae8d8 ( Changes to be committed:)
-
-                return [
-                    'user_name' => $workTime->user->name ?? 'Utilisateur inconnu',
-                    'net_hours' => round($workTime->net_hours, 2),  // Arrondir à 2 décimales
-                    'progress_percentage' => $workTime->progress_percentage ?? 0,
-                    'is_within_schedule' => $workTime->is_within_schedule ?? false,
-                    'has_sessions' => $workTime->sessions->count() > 0,
-                    'active_sessions' => $workTime->sessions->whereNull('session_end')->count(),
-                ];
-            });
-
-        // Calculer les totaux après recalcul
-        $totalWorkTimeToday = $todayWorkTimes->sum(function ($wt) {
-            return $wt['net_hours'];
-        });
+        $averageWorkTimeToday = $todayWorkTimes->count() > 0
+            ? $totalWorkTimeToday / $todayWorkTimes->count()
+            : 0;
 
         return [
-            'total_hours' => round($totalWorkTimeToday / 3600, 2),
-<<<<<<< HEAD
-            'average_hours_per_user' => round($averageWorkTimeToday / 3600, 2),
->>>>>>> 463c393 (feat: Add status constants to WorkTime model and implement AdminDashboardService for admin metrics)
-=======
->>>>>>> 37ae8d8 ( Changes to be committed:)
-            'work_times' => $todayWorkTimes->map(function ($workTime) {
-                return [
-                    'user_name' => $workTime->user->name ?? 'Utilisateur inconnu',
-                    'net_hours' => $workTime->net_hours ?? 0,
-                    'progress_percentage' => $workTime->progress_percentage ?? 0,
-                    'is_within_schedule' => $workTime->is_within_schedule ?? false,
-                ];
-            }),
+            'total_hours' => round($totalWorkTimeToday, 2),
+            'average_hours_per_user' => round($averageWorkTimeToday, 2),
+            'work_times' => $todayWorkTimes,
         ];
     }
 

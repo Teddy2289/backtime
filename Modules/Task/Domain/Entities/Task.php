@@ -27,6 +27,7 @@ class Task extends Model
     public const STATUS_DOING = 'doing';
     public const STATUS_DONE = 'done';
     public const STATUS_IN_PROGRESS = 'in_progress';
+    public const STATUS_TO_VALIDATE = 'to_validate';
 
     protected $fillable = [
         'project_id',
@@ -48,6 +49,8 @@ class Task extends Model
             self::STATUS_TODO,
             self::STATUS_DOING,
             self::STATUS_DONE,
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_TO_VALIDATE
         ];
     }
 
@@ -149,7 +152,11 @@ class Task extends Model
     {
         return match ($this->status) {
             self::STATUS_DONE => 100,
+            self::STATUS_TO_VALIDATE => 90,
+            self::STATUS_BACKLOG => 0,
+            self::STATUS_TODO => 25,
             self::STATUS_DOING => 50,
+            self::STATUS_IN_PROGRESS => 75,
             default => 0,
         };
     }
@@ -164,7 +171,7 @@ class Task extends Model
             return false;
         }
 
-        if ($this->status === self::STATUS_DONE) {
+        if ($this->status === self::STATUS_DONE || $this->status === self::STATUS_TO_VALIDATE) {
             return false;
         }
 
@@ -258,11 +265,11 @@ class Task extends Model
     public function isUpcoming(): bool
     {
         if ($this->start_date) {
-            return $this->start_date->isFuture() && $this->status !== 'done';
+            return $this->start_date->isFuture() && $this->status !== 'done' && $this->status !== 'to_validate';
         }
 
         if ($this->due_date) {
-            return $this->due_date->isFuture() && $this->status !== 'done';
+            return $this->due_date->isFuture() && $this->status !== 'done' && $this->status !== 'to_validate';
         }
 
         return false;
