@@ -1,0 +1,97 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: VPS_HOST_BACK
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build assets (Vue.js compilation)
+        run: |
+          npm run build
+          echo "Vue.js assets built successfully"
+          ls -la public/build/
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, mysql
+          tools: composer
+
+      - name: Install Composer dependencies
+        run: |
+          composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Setup SSH with environment secrets
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to VPS with compiled assets
+        run: |
+          # Variables
+          SSH_HOST="${{ secrets.VPS_HOST }}"
+          SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
+          APP_PATH="/var/www/backend/backtime"
+
+          echo "Deploying to $SSH_USERNAME@$SSH_HOST:$APP_PATH"
+
+          # 1. Copier TOUS les fichiers sauf ceux exclus
+          rsync -avz --delete \
+            --exclude='.env' \
+            --exclude='.git' \
+            --exclude='storage' \
+            --exclude='node_modules' \
+            --exclude='vendor' \
+            --exclude='.idea' \
+            ./ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/"
+
+          # 2. Se connecter au VPS pour exécuter les commandes
+          ssh -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" "
+            cd $APP_PATH
+            
+            echo '=== Installation des dépendances Composer ==='
+            composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+            
+            echo '=== Installation des dépendances NPM ==='
+            npm ci
+            
+            echo '=== Construction des assets Vue.js ==='
+            npm run build
+            
+            echo '=== Gestion des permissions ==='
+            chmod -R 755 storage bootstrap/cache
+            chown -R ubuntu:www-data storage bootstrap/cache || true
+            
+            echo '=== Cache Laravel ==='
+            php artisan config:clear
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            
+            echo '=== Vérification des assets ==='
+            ls -la public/build/
+            
+            echo '=== Déploiement terminé avec succès ==='
+          "
