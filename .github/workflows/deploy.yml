@@ -2,9 +2,7 @@ name: Deploy to VPS
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: [main, master]
 
 jobs:
   deploy:
@@ -18,17 +16,59 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Clean npm cache
+        run: npm cache clean --force
 
-      - name: Build assets (Vue.js compilation)
+      - name: Fix and install dependencies
         run: |
+          # Déplacer @vitejs/plugin-vue de dependencies vers devDependencies
+          if [ -f package.json ]; then
+            # Installer jq pour manipuler le JSON
+            sudo apt-get update && sudo apt-get install -y jq
+            
+            # Lire le package.json
+            PACKAGE_JSON=$(cat package.json)
+            
+            # Extraire @vitejs/plugin-vue des dependencies
+            PLUGIN_VERSION=$(echo $PACKAGE_JSON | jq -r '.dependencies["@vitejs/plugin-vue"] // empty')
+            
+            if [ ! -z "$PLUGIN_VERSION" ]; then
+              # Retirer de dependencies
+              echo $PACKAGE_JSON | jq 'del(.dependencies["@vitejs/plugin-vue"])' > temp.json
+              
+              # Ajouter à devDependencies si pas déjà présent
+              mv temp.json package.json
+              npm pkg set devDependencies.@vitejs/plugin-vue="$PLUGIN_VERSION"
+            fi
+            
+            # Afficher le package.json corrigé
+            echo "=== package.json corrigé ==="
+            cat package.json
+          fi
+
+          # Installer avec legacy-peer-deps pour éviter les conflits
+          npm install --legacy-peer-deps --no-audit
+
+      - name: Build assets
+        run: |
+          echo "=== Building Vue.js assets ==="
           npm run build
-          echo "Vue.js assets built successfully"
-          ls -la public/build/
+
+          # Vérification
+          if [ -d "public/build" ]; then
+            echo "✅ Assets built successfully in public/build/:"
+            ls -la public/build/
+            echo "Total files: $(find public/build/ -type f | wc -l)"
+          else
+            echo "❌ ERROR: public/build directory not found!"
+            echo "Trying alternative build..."
+            npx vite build
+            ls -la public/ || true
+            exit 1
+          fi
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -41,23 +81,23 @@ jobs:
         run: |
           composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
-      - name: Setup SSH with environment secrets
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy to VPS with compiled assets
+      - name: Deploy to VPS
         run: |
-          # Variables
           SSH_HOST="${{ secrets.VPS_HOST }}"
           SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
           APP_PATH="/var/www/backend/backtime"
 
-          echo "Deploying to $SSH_USERNAME@$SSH_HOST:$APP_PATH"
+          echo "=== Deploying to $SSH_USERNAME@$SSH_HOST:$APP_PATH ==="
 
-          # 1. Copier TOUS les fichiers sauf ceux exclus
+          # 1. Copier les fichiers modifiés
+          echo "Copying files to VPS..."
           rsync -avz --delete \
             --exclude='.env' \
             --exclude='.git' \
@@ -65,33 +105,67 @@ jobs:
             --exclude='node_modules' \
             --exclude='vendor' \
             --exclude='.idea' \
+            --exclude='*.log' \
             ./ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/"
 
-          # 2. Se connecter au VPS pour exécuter les commandes
+          # 2. Exécuter les commandes sur le VPS
+          echo "Running commands on VPS..."
           ssh -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" "
+            set -e
             cd $APP_PATH
             
-            echo '=== Installation des dépendances Composer ==='
+            echo '1. Installing Composer dependencies...'
             composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
             
-            echo '=== Installation des dépendances NPM ==='
-            npm ci
+            echo '2. Installing Node.js dependencies...'
+            # Corriger le package.json sur le VPS aussi
+            if [ -f package.json ]; then
+              # S'assurer que @vitejs/plugin-vue est dans devDependencies
+              if npm list @vitejs/plugin-vue 2>/dev/null | grep -q dependencies; then
+                npm uninstall @vitejs/plugin-vue
+                npm install @vitejs/plugin-vue@^5.2.4 --save-dev --legacy-peer-deps
+              fi
+            fi
             
-            echo '=== Construction des assets Vue.js ==='
+            npm install --legacy-peer-deps --no-audit
+            
+            echo '3. Building Vue.js assets...'
             npm run build
             
-            echo '=== Gestion des permissions ==='
+            echo '4. Setting permissions...'
             chmod -R 755 storage bootstrap/cache
             chown -R ubuntu:www-data storage bootstrap/cache || true
             
-            echo '=== Cache Laravel ==='
+            echo '5. Clearing and caching...'
             php artisan config:clear
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
             
-            echo '=== Vérification des assets ==='
-            ls -la public/build/
+            echo '6. Verifying deployment...'
+            echo '✅ Node version:'
+            node --version
+            echo '✅ NPM version:'
+            npm --version
+            echo '✅ Built assets:'
+            ls -la public/build/ || echo 'No build directory'
             
-            echo '=== Déploiement terminé avec succès ==='
+            echo '=== 🎉 Deployment completed successfully! ==='
+          "
+
+      - name: Verify deployment
+        run: |
+          SSH_HOST="${{ secrets.VPS_HOST }}"
+          SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
+          APP_PATH="/var/www/backend/backtime"
+
+          echo "=== Verifying deployment ==="
+          ssh -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" "
+            cd $APP_PATH
+            echo 'Application path:'
+            pwd
+            echo 'Vue.js build exists:'
+            [ -d 'public/build' ] && echo '✅ Yes' || echo '❌ No'
+            echo 'Recent files modified:'
+            find . -type f -newer /tmp -name '*.js' -o -name '*.css' | head -10
           "
