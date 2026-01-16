@@ -9,14 +9,11 @@
 
         <div v-else-if="error" class="error-state">
             <p>{{ error }}</p>
-            <button @click="loadStats" class="retry-button">
-                Réessayer
-            </button>
+            <button @click="loadStats" class="retry-button">Réessayer</button>
         </div>
 
         <div v-else class="stats-content">
             <!-- Distribution par statut -->
-
 
             <!-- Statistiques rapides -->
             <div class="quick-stats">
@@ -25,7 +22,9 @@
                         <ExclamationTriangleIcon />
                     </div>
                     <div class="quick-stat-content">
-                        <div class="quick-stat-value">{{ taskStatsValue?.overdue_tasks || 0 }}</div>
+                        <div class="quick-stat-value">
+                            {{ taskStatsValue?.overdue_tasks || 0 }}
+                        </div>
                         <div class="quick-stat-label">En retard</div>
                     </div>
                 </div>
@@ -35,7 +34,9 @@
                         <CalendarDaysIcon />
                     </div>
                     <div class="quick-stat-content">
-                        <div class="quick-stat-value">{{ taskStatsValue?.upcoming_tasks || 0 }}</div>
+                        <div class="quick-stat-value">
+                            {{ taskStatsValue?.upcoming_tasks || 0 }}
+                        </div>
                         <div class="quick-stat-label">À venir</div>
                     </div>
                 </div>
@@ -45,7 +46,9 @@
                         <CheckCircleIcon />
                     </div>
                     <div class="quick-stat-content">
-                        <div class="quick-stat-value">{{ taskStatsValue?.completed_this_month || 0 }}</div>
+                        <div class="quick-stat-value">
+                            {{ taskStatsValue?.completed_this_month || 0 }}
+                        </div>
                         <div class="quick-stat-label">Terminées ce mois</div>
                     </div>
                 </div>
@@ -55,7 +58,9 @@
                         <ChartBarIcon />
                     </div>
                     <div class="quick-stat-content">
-                        <div class="quick-stat-value">{{ taskStatsValue?.completion_rate || 0 }}%</div>
+                        <div class="quick-stat-value">
+                            {{ taskStatsValue?.completion_rate || 0 }}%
+                        </div>
                         <div class="quick-stat-label">Taux d'achèvement</div>
                     </div>
                 </div>
@@ -65,14 +70,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'; // Ajoutez onMounted
-import { useDashboardStore } from '@/stores/dashboard.store';
+import { computed, onMounted } from "vue"; // Ajoutez onMounted
+import { useDashboardStore } from "@/stores/dashboard.store";
 import {
     ExclamationTriangleIcon,
     CalendarDaysIcon,
     CheckCircleIcon,
-    ChartBarIcon
-} from '@heroicons/vue/24/outline';
+    ChartBarIcon,
+} from "@heroicons/vue/24/outline";
 
 const dashboardStore = useDashboardStore();
 
@@ -80,9 +85,12 @@ const dashboardStore = useDashboardStore();
 const loadStats = async () => {
     try {
         await dashboardStore.fetchStats();
-        console.log('Statistiques des tâches chargées avec succès.', dashboardStore.taskStats);
+        console.log(
+            "Statistiques des tâches chargées avec succès.",
+            dashboardStore.taskStats
+        );
     } catch (error) {
-        console.error('Erreur lors du chargement des statistiques:', error);
+        console.error("Erreur lors du chargement des statistiques:", error);
     }
 };
 
@@ -96,17 +104,6 @@ onMounted(() => {
 const loading = computed(() => dashboardStore.loading);
 const error = computed(() => dashboardStore.error);
 const taskStatsValue = computed(() => dashboardStore.taskStats);
-
-const statusList = computed(() => {
-    if (!taskStatsValue.value?.status_distribution) return [];
-
-    return Object.entries(taskStatsValue.value.status_distribution).map(([key, data]: [string, any]) => ({
-        key,
-        label: data.label || key,
-        count: data.count || 0,
-        percentage: data.percentage || 0
-    }));
-});
 </script>
 
 <style scoped>

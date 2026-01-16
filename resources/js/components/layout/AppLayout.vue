@@ -227,8 +227,6 @@ import {
     CogIcon,
     UserCircleIcon,
     BellIcon,
-    CalendarIcon,
-    DocumentTextIcon,
     MagnifyingGlassIcon,
     ChevronDownIcon,
     ClipboardDocumentListIcon,

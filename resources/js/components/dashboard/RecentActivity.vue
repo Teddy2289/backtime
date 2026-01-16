@@ -14,8 +14,12 @@
         <div v-else class="activity-content">
             <!-- Tabs -->
             <div class="tabs">
-                <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
-                    :class="['tab-button', { active: activeTab === tab.key }]">
+                <button
+                    v-for="tab in tabs"
+                    :key="tab.key"
+                    @click="activeTab = tab.key"
+                    :class="['tab-button', { active: activeTab === tab.key }]"
+                >
                     {{ tab.label }}
                     <span class="tab-count">{{ getTabCount(tab.key) }}</span>
                 </button>
@@ -30,19 +34,31 @@
                     </div>
 
                     <div v-else class="activity-items">
-                        <div v-for="task in recentTasks" :key="task.id" class="activity-item">
+                        <div
+                            v-for="task in recentTasks"
+                            :key="task.id"
+                            class="activity-item"
+                        >
                             <div class="activity-icon">
                                 <ClipboardDocumentIcon />
                             </div>
                             <div class="activity-details">
                                 <div class="activity-title">
-                                    <span class="task-title">{{ task.title }}</span>
-                                    <span class="task-status" :class="`status-${task.status}`">
+                                    <span class="task-title">{{
+                                        task.title
+                                    }}</span>
+                                    <span
+                                        class="task-status"
+                                        :class="`status-${task.status}`"
+                                    >
                                         {{ getStatusLabel(task.status) }}
                                     </span>
                                 </div>
                                 <div class="activity-meta">
-                                    <span v-if="task.assigned_to" class="assigned-to">
+                                    <span
+                                        v-if="task.assigned_to"
+                                        class="assigned-to"
+                                    >
                                         <UserIcon class="meta-icon" />
                                         {{ task.assigned_to.name }}
                                     </span>
@@ -67,14 +83,24 @@
                     </div>
 
                     <div v-else class="activity-items">
-                        <div v-for="comment in recentComments" :key="comment.id" class="activity-item">
+                        <div
+                            v-for="comment in recentComments"
+                            :key="comment.id"
+                            class="activity-item"
+                        >
                             <div class="activity-icon">
                                 <ChatBubbleLeftRightIcon />
                             </div>
                             <div class="activity-details">
                                 <div class="activity-title">
-                                    <span class="user-name">{{ comment.user.name }}</span>
-                                    <span class="comment-edited" v-if="comment.is_edited">(modifié)</span>
+                                    <span class="user-name">{{
+                                        comment.user.name
+                                    }}</span>
+                                    <span
+                                        class="comment-edited"
+                                        v-if="comment.is_edited"
+                                        >(modifié)</span
+                                    >
                                 </div>
                                 <div class="activity-content">
                                     {{ comment.content }}
@@ -101,14 +127,25 @@
                     </div>
 
                     <div v-else class="activity-items">
-                        <div v-for="file in recentFiles" :key="file.id" class="activity-item">
-                            <div class="activity-icon file-icon" :class="{ 'image': file.is_image }">
+                        <div
+                            v-for="file in recentFiles"
+                            :key="file.id"
+                            class="activity-item"
+                        >
+                            <div
+                                class="activity-icon file-icon"
+                                :class="{ image: file.is_image }"
+                            >
                                 <component :is="getFileIcon(file)" />
                             </div>
                             <div class="activity-details">
                                 <div class="activity-title">
-                                    <span class="file-name">{{ file.file_name }}</span>
-                                    <span class="file-size">{{ file.file_size }}</span>
+                                    <span class="file-name">{{
+                                        file.file_name
+                                    }}</span>
+                                    <span class="file-size">{{
+                                        file.file_size
+                                    }}</span>
                                 </div>
                                 <div class="activity-meta">
                                     <span class="uploader">
@@ -137,8 +174,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useDashboardStore } from '@/stores/dashboard.store';
+import { ref, computed } from "vue";
+import { useDashboardStore } from "@/stores/dashboard.store";
 import {
     ClipboardDocumentIcon,
     ChatBubbleLeftRightIcon,
@@ -150,8 +187,7 @@ import {
     ArrowDownTrayIcon,
     PhotoIcon,
     DocumentIcon,
-    DocumentArrowDownIcon
-} from '@heroicons/vue/24/outline';
+} from "@heroicons/vue/24/outline";
 
 const dashboardStore = useDashboardStore();
 
@@ -160,32 +196,42 @@ const error = computed(() => dashboardStore.error);
 const recentActivity = computed(() => dashboardStore.recentActivity);
 
 const recentTasks = computed(() => recentActivity.value?.recent_tasks || []);
-const recentComments = computed(() => recentActivity.value?.recent_comments || []);
+const recentComments = computed(
+    () => recentActivity.value?.recent_comments || []
+);
 const recentFiles = computed(() => recentActivity.value?.recent_files || []);
 
-const activeTab = ref<'tasks' | 'comments' | 'files'>('tasks');
+const activeTab = ref<"tasks" | "comments" | "files">("tasks");
 
 const tabs = [
-    { key: 'tasks' as const, label: 'Tâches', icon: ClipboardDocumentIcon },
-    { key: 'comments' as const, label: 'Commentaires', icon: ChatBubbleLeftRightIcon },
-    { key: 'files' as const, label: 'Fichiers', icon: PaperClipIcon }
+    { key: "tasks" as const, label: "Tâches", icon: ClipboardDocumentIcon },
+    {
+        key: "comments" as const,
+        label: "Commentaires",
+        icon: ChatBubbleLeftRightIcon,
+    },
+    { key: "files" as const, label: "Fichiers", icon: PaperClipIcon },
 ];
 
 const getTabCount = (tab: string) => {
     switch (tab) {
-        case 'tasks': return recentTasks.value.length;
-        case 'comments': return recentComments.value.length;
-        case 'files': return recentFiles.value.length;
-        default: return 0;
+        case "tasks":
+            return recentTasks.value.length;
+        case "comments":
+            return recentComments.value.length;
+        case "files":
+            return recentFiles.value.length;
+        default:
+            return 0;
     }
 };
 
 const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-        'todo': 'À faire',
-        'doing': 'En cours',
-        'done': 'Terminé',
-        'backlog': 'Backlog'
+        todo: "À faire",
+        doing: "En cours",
+        done: "Terminé",
+        backlog: "Backlog",
     };
     return labels[status] || status;
 };

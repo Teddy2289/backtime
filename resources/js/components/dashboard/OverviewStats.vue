@@ -17,18 +17,29 @@
         </div>
 
         <!-- Affichez les statistiques seulement si elles existent -->
-        <div v-else-if="statsList.length > 0" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow" v-for="stat in statsList" :key="stat.label">
-               <div class="flex items-center gap-4">
-<div class="stat-icon" :style="{ backgroundColor: stat.color }">
-                    <component :is="stat.icon" class="icon" />
+        <div
+            v-else-if="statsList.length > 0"
+            class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
+        >
+            <div
+                class="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow"
+                v-for="stat in statsList"
+                :key="stat.label"
+            >
+                <div class="flex items-center gap-4">
+                    <div
+                        class="stat-icon"
+                        :style="{ backgroundColor: stat.color }"
+                    >
+                        <component :is="stat.icon" class="icon" />
+                    </div>
+                    <div class="stat-content">
+                        <p class="text-2xl font-bold text-gray-900">
+                            {{ stat.value }}
+                        </p>
+                        <p class="text-sm text-gray-600">{{ stat.label }}</p>
+                    </div>
                 </div>
-                <div class="stat-content">
-                    <p class="text-2xl font-bold text-gray-900">{{ stat.value }}</p>
-                    <p class="text-sm text-gray-600">{{ stat.label }}</p>
-                </div>
-               </div>
-                
             </div>
         </div>
 
@@ -40,18 +51,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'; // Ajoutez onMounted
-import { useDashboardStore } from '@/stores/dashboard.store';
+import { computed, onMounted } from "vue"; // Ajoutez onMounted
+import { useDashboardStore } from "@/stores/dashboard.store";
 import {
     UserGroupIcon,
     ClipboardDocumentCheckIcon,
     FolderOpenIcon,
     UsersIcon,
-    ChatBubbleLeftRightIcon,
-    PaperClipIcon,
-    ClockIcon,
-    ExclamationTriangleIcon
-} from '@heroicons/vue/24/outline';
+} from "@heroicons/vue/24/outline";
 
 const dashboardStore = useDashboardStore();
 
@@ -69,29 +76,29 @@ const statsList = computed(() => {
 
     return [
         {
-            label: 'Utilisateurs',
+            label: "Utilisateurs",
             value: overview.total_users || 0,
             icon: UserGroupIcon,
-            color: '#e0f2fe'
+            color: "#e0f2fe",
         },
         {
-            label: 'Tâches',
+            label: "Tâches",
             value: overview.total_tasks || 0,
             icon: ClipboardDocumentCheckIcon,
-            color: '#f0fdf4'
+            color: "#f0fdf4",
         },
         {
-            label: 'Projets',
+            label: "Projets",
             value: overview.total_projects || 0,
             icon: FolderOpenIcon,
-            color: '#fef3c7'
+            color: "#fef3c7",
         },
         {
-            label: 'Équipes',
+            label: "Équipes",
             value: overview.total_teams || 0,
             icon: UsersIcon,
-            color: '#fce7f3'
-        }
+            color: "#fce7f3",
+        },
     ];
 });
 </script>
