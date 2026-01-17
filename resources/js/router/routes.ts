@@ -146,18 +146,6 @@ export const routes: RouteRecordRaw[] = [
         },
     },
 
-    // Notifications
-    {
-        path: "/notifications",
-        name: "notifications",
-        component: () => import("@/views/notifications/Index.vue"),
-        meta: {
-            layout: "AppLayout",
-            requiresAuth: true,
-            title: "Notifications",
-        },
-    },
-
     // Routes spécifiques Admin
     {
         path: "/admin",
@@ -176,40 +164,10 @@ export const routes: RouteRecordRaw[] = [
                 meta: { title: "User Management" },
             },
             {
-                path: "users/create",
-                name: "admin.users.create",
-                component: () => import("@/views/admin/users/Create.vue"),
-                meta: { title: "Create User" },
-            },
-            {
-                path: "users/stats",
-                name: "admin.users.stats",
-                component: () => import("@/views/admin/users/Stats.vue"),
-                meta: { title: "User Statistics" },
-            },
-            {
                 path: "users/:id/edit",
                 name: "admin.users.edit",
                 component: () => import("@/views/admin/users/edit.vue"),
                 meta: { title: "Edit User" },
-            },
-            {
-                path: "roles",
-                name: "admin.roles",
-                component: () => import("@/views/admin/roles/Index.vue"),
-                meta: { title: "Roles & Permissions" },
-            },
-            {
-                path: "security",
-                name: "admin.security",
-                component: () => import("@/views/admin/security/Index.vue"),
-                meta: { title: "Security Settings" },
-            },
-            {
-                path: "settings",
-                name: "admin.settings",
-                component: () => import("@/views/admin/settings/Index.vue"),
-                meta: { title: "System Settings" },
             },
         ],
     },
