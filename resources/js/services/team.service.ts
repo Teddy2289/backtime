@@ -1,7 +1,7 @@
 import { api } from "../services/api";
 
 export interface Team {
-    id: string;
+    id: number;
     name: string;
     description: string | null;
     owner_id: string;
@@ -10,14 +10,14 @@ export interface Team {
     updated_at: string;
     members_count?: number;
     owner?: {
-        id: string;
+        id: number;
         name: string;
         email: string;
     };
 }
 
 export interface TeamMember {
-    id: string;
+    id: number;
     name: string;
     email: string;
     role?: string;
@@ -57,38 +57,38 @@ class TeamService {
     private protectedUrl = "/teamsCrud";
 
     // === Opérations CRUD ===
-async createTeam(data: {
-    name: string;
-    description?: string;
-    is_public?: boolean;
-    owner_id?: string | number; // Ajouter cette ligne
-}): Promise<Team> {
-    const response = await api.post(this.protectedUrl, data);
-    return response.data.data;
-}
+    async createTeam(data: {
+        name: string;
+        description?: string;
+        is_public?: boolean;
+        owner_id?: string | number; // Ajouter cette ligne
+    }): Promise<Team> {
+        const response = await api.post(this.protectedUrl, data);
+        return response.data.data;
+    }
 
     async updateTeam(
-        id: string,
+        id: number,
         data: {
             name?: string;
             description?: string;
             is_public?: boolean;
-        }
+        },
     ): Promise<Team> {
         const response = await api.put(`${this.protectedUrl}/${id}`, data);
         return response.data.data;
     }
 
-    async deleteTeam(id: string): Promise<void> {
+    async deleteTeam(id: number): Promise<void> {
         await api.delete(`${this.protectedUrl}/${id}`);
     }
 
     // team.service.ts - getTeamMembers méthode corrigée
 
-    async getTeamMembers(teamId: string): Promise<TeamMember[]> {
+    async getTeamMembers(teamId: number): Promise<TeamMember[]> {
         try {
             const response = await api.get(
-                `${this.protectedUrl}/${teamId}/members`
+                `${this.protectedUrl}/${teamId}/members`,
             );
             const apiResponse = response.data;
 
@@ -147,7 +147,7 @@ async createTeam(data: {
     }
     async getTeamStatistics(teamId: string): Promise<TeamStatistics> {
         const response = await api.get(
-            `${this.protectedUrl}/${teamId}/statistics`
+            `${this.protectedUrl}/${teamId}/statistics`,
         );
 
         // Même logique: extraire response.data.data
@@ -158,7 +158,7 @@ async createTeam(data: {
     }
 
     async getTeams(
-        filters: TeamFilters = {}
+        filters: TeamFilters = {},
     ): Promise<PaginatedResponse<Team>> {
         const params = {
             page: filters.page || 1,
@@ -232,13 +232,13 @@ async createTeam(data: {
         const apiResponse = response.data;
         return apiResponse.data; // Extrait les données de l'équipe
     }
-    async addMember(teamId: string, userId: string): Promise<void> {
+    async addMember(teamId: number, userId: number): Promise<void> {
         await api.post(`${this.protectedUrl}/${teamId}/members`, {
             user_id: userId,
         });
     }
 
-    async removeMember(teamId: string, userId: string): Promise<void> {
+    async removeMember(teamId: number, userId: number): Promise<void> {
         await api.delete(`${this.protectedUrl}/${teamId}/members/${userId}`);
     }
 
@@ -263,21 +263,21 @@ async createTeam(data: {
             `${this.protectedUrl}/${teamId}/transfer-ownership`,
             {
                 new_owner_id: newOwnerId,
-            }
+            },
         );
         return response.data.data;
     }
 
     async checkOwnership(teamId: string): Promise<{ is_owner: boolean }> {
         const response = await api.get(
-            `${this.protectedUrl}/${teamId}/check-ownership`
+            `${this.protectedUrl}/${teamId}/check-ownership`,
         );
         return response.data.data;
     }
 
-    async checkMembership(teamId: string): Promise<{ is_member: boolean }> {
+    async checkMembership(teamId: number): Promise<{ is_member: boolean }> {
         const response = await api.get(
-            `${this.protectedUrl}/${teamId}/check-membership`
+            `${this.protectedUrl}/${teamId}/check-membership`,
         );
         return response.data.data;
     }
@@ -288,7 +288,7 @@ async createTeam(data: {
             owner_id?: string;
             is_public?: boolean;
         },
-        perPage: number = 15
+        perPage: number = 15,
     ): Promise<PaginatedResponse<Team>> {
         const params = {
             per_page: perPage,
@@ -303,7 +303,7 @@ async createTeam(data: {
     async advancedSearch(criteria: any): Promise<PaginatedResponse<Team>> {
         const response = await api.post(
             `${this.protectedUrl}/search/advanced`,
-            criteria
+            criteria,
         );
         return response.data;
     }

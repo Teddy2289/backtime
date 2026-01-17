@@ -230,7 +230,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
 import { XMarkIcon, DocumentDuplicateIcon } from "@heroicons/vue/24/outline";
 import { getRoleLabel } from "@/enums/user-role";
 import type { User } from "@/types/User";

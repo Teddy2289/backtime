@@ -1,5 +1,5 @@
 export interface User {
-    id: number | string;
+    id: number;
     name: string;
     email: string;
     role: string;
@@ -10,7 +10,7 @@ export interface User {
     created_at: string;
     updated_at: string;
     deleted_at?: string | null;
-    last_login_at?: string | null;
+    last_login_at?: string;
 }
 
 export interface UsersResponse {

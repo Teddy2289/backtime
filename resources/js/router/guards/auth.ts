@@ -1,42 +1,41 @@
 import type { NavigationGuard } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
-export const authGuard: NavigationGuard = async (to, from, next) => {
+export const authGuard: NavigationGuard = async (to) => {
     const authStore = useAuthStore();
+
     const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
     const guestOnly = to.matched.some((record) => record.meta.guestOnly);
+
     const requiredRole =
         typeof to.meta.requiredRole === "string"
             ? to.meta.requiredRole
             : undefined;
 
-    // Si la route nécessite une authentification
+    // 🔒 Route protégée → utilisateur non connecté
     if (requiresAuth && !authStore.isAuthenticated) {
-        next({ name: "login" });
-        return;
+        return { name: "login" };
     }
 
-    // Si la route est réservée aux invités
+    // 🚫 Route invité → utilisateur connecté
     if (guestOnly && authStore.isAuthenticated) {
-        next({ name: "dashboard" });
-        return;
+        return { name: "dashboard" };
     }
 
-    // Vérification des rôles
+    // 🎭 Vérification du rôle
     if (requiredRole && !authStore.hasRole(requiredRole)) {
-        next({ name: "dashboard" });
-        return;
+        return { name: "dashboard" };
     }
 
-    // Vérifier si le token est valide pour les routes protégées
+    // 🔑 Vérification du token
     if (requiresAuth) {
         const isValid = await authStore.checkToken();
+
         if (!isValid) {
             authStore.clearAuthData();
-            next({ name: "login" });
-            return;
+            return { name: "login" };
         }
     }
 
-    next();
+    return true;
 };

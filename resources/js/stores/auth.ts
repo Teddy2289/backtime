@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed, watch } from "vue";
+import { ref, computed } from "vue";
 import type { Ref } from "vue";
 import { UserRole } from "@/enums/user-role";
 import type { User, ProfileData } from "@/types/auth";
@@ -12,6 +12,16 @@ export const useAuthStore = defineStore("auth", () => {
     const token: Ref<string | null> = ref(localStorage.getItem("token"));
     const roles: Ref<string[]> = ref([]);
     const permissions: Ref<string[]> = ref([]);
+
+    // Helper pour extraire les données de la réponse
+    const extractData = <T>(response: any): T => {
+        // Si c'est une structure ApiResponse
+        if (response && typeof response === "object" && "data" in response) {
+            return response.data;
+        }
+        // Sinon, retourner la réponse directement
+        return response;
+    };
 
     // Getters
     const isAuthenticated = computed(() => !!token.value);
@@ -28,17 +38,14 @@ export const useAuthStore = defineStore("auth", () => {
     };
 
     const isAdmin = computed(() => user.value?.role === UserRole.ADMIN);
-
-    console.log("user.value?.role", user.value?.role);
-
     const isManager = computed(() => hasRole(UserRole.MANAGER));
     const isRegularUser = computed(() => hasRole(UserRole.USER));
     const avatarUrl = computed(() => user.value?.avatar_url || null);
 
     // Actions
     const setAuthData = (data: any): void => {
-        // réponse API = { success, message, data: { access_token, user } }
-        const payload = data.data;
+        // Extraire les données de la réponse
+        const payload = extractData<any>(data);
 
         token.value = payload.access_token;
         user.value = payload.user;
@@ -92,7 +99,8 @@ export const useAuthStore = defineStore("auth", () => {
 
     const refreshToken = async () => {
         try {
-            const data = await authService.refreshToken();
+            const response = await authService.refreshToken();
+            const data = extractData<{ access_token: string }>(response);
             token.value = data.access_token;
             authService.setToken(data.access_token);
             return data;
@@ -102,24 +110,24 @@ export const useAuthStore = defineStore("auth", () => {
         }
     };
 
-    const fetchUser = async () => {
+    const fetchUser = async (): Promise<User> => {
         try {
-            const data = await authService.getMe();
-            user.value = data.data;
-            return data.data;
+            const response = await authService.getMe();
+            const userData = extractData<User>(response);
+            user.value = userData;
+            return userData;
         } catch (error: any) {
             clearAuthData();
             throw error;
         }
     };
 
-    const fetchProfile = async () => {
+    const fetchProfile = async (): Promise<ProfileData> => {
         try {
             const response = await authService.getProfile();
+            const profile = extractData<ProfileData>(response);
 
-            const profile = response.data;
-
-            user.value = profile;
+            user.value = profile as User;
             roles.value = profile?.role ? [profile.role] : [];
             permissions.value = profile?.permissions || [];
 
@@ -162,27 +170,29 @@ export const useAuthStore = defineStore("auth", () => {
         }
     };
 
-    const updateProfile = async (profileData: any) => {
+    const updateProfile = async (profileData: any): Promise<User> => {
         try {
-            const data = await authService.updateProfile(profileData);
-            user.value = data;
-            return data;
+            const response = await authService.updateProfile(profileData);
+            const userData = extractData<User>(response);
+            user.value = userData;
+            return userData;
         } catch (error: any) {
             throw error;
         }
     };
 
-    const uploadAvatar = async (avatarFile: File) => {
+    const uploadAvatar = async (avatarFile: File): Promise<User> => {
         try {
-            const data = await authService.uploadAvatar(avatarFile);
-            user.value = { ...user.value, ...data.data };
-            return data;
+            const response = await authService.uploadAvatar(avatarFile);
+            const avatarData = extractData<User>(response);
+            user.value = { ...user.value, ...avatarData };
+            return avatarData;
         } catch (error: any) {
             throw error;
         }
     };
 
-    const removeAvatar = async () => {
+    const removeAvatar = async (): Promise<void> => {
         try {
             await authService.removeAvatar();
             if (user.value) {

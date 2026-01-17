@@ -2,7 +2,6 @@ import { defineStore } from "pinia";
 import { taskService } from "@/services/task.service";
 import type {
     Task,
-    PaginatedTasks,
     TaskFilter,
     CreateTaskData,
     UpdateTaskData,

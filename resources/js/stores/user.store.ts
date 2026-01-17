@@ -1,12 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { userService } from "@/services/user.service";
-import type {
-    User,
-    UsersResponse,
-    PaginationMeta,
-    UserFilters,
-} from "@/types/User";
+import type { User, PaginationMeta, UserFilters } from "@/types/User";
 
 export const useUserStore = defineStore("user", () => {
     // State

@@ -32,6 +32,8 @@ export interface Task {
     };
     files?: any[];
     comments?: any[];
+    total_worked_time?: number;
+    time_logs?: any[];
 }
 
 export interface PaginatedTasks {
@@ -104,48 +106,4 @@ export interface UpdateTaskData {
     parent_task_id?: number | null;
     story_points?: number | null;
     is_confidential?: boolean;
-}
-// Types complémentaires
-interface User {
-    id: number;
-    name: string;
-    email: string;
-    avatar?: string;
-    initials?: string;
-}
-
-interface Project {
-    id: number;
-    name: string;
-    description?: string;
-}
-
-interface TimeLog {
-    id: number;
-    task_id: number;
-    user_id: number;
-    start_time: string;
-    end_time?: string;
-    duration: number;
-    description?: string;
-}
-
-interface Comment {
-    id: number;
-    task_id: number;
-    user_id: number;
-    content: string;
-    created_at: string;
-}
-
-interface TaskFile {
-    id: number;
-    task_id: number;
-    filename: string;
-    original_name: string;
-    path: string;
-    size: number;
-    mime_type: string;
-    uploaded_by: number;
-    created_at: string;
 }

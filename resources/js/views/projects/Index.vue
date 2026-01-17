@@ -10,9 +10,20 @@
                     </p>
                 </div>
                 <button @click="showCreateModal = true" class="create-button">
-                    <svg class="button-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    <svg
+                        class="button-icon"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 4v16m8-8H4"
+                        />
                     </svg>
                     Nouveau projet
                 </button>
@@ -22,27 +33,58 @@
         <!-- Filters -->
         <div class="filters-container">
             <div class="search-wrapper">
-                <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <svg
+                    class="search-icon"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
                 </svg>
-                <input v-model="filters.search" @input="debouncedSearch" placeholder="Rechercher un projet..."
-                    class="search-input" />
+                <input
+                    v-model="filters.search"
+                    @input="debouncedSearch"
+                    placeholder="Rechercher un projet..."
+                    class="search-input"
+                />
             </div>
 
             <div class="filter-group">
-                <select v-model="filters.status" @change="handleFilterChange" class="filter-select">
+                <select
+                    v-model="filters.status"
+                    @change="handleFilterChange"
+                    class="filter-select"
+                >
                     <option value="">Tous les statuts</option>
-                    <option v-for="status in statusOptions" :key="status.value" :value="status.value">
+                    <option
+                        v-for="status in statusOptions"
+                        :key="status.value"
+                        :value="status.value"
+                    >
                         {{ status.label }}
                     </option>
                 </select>
             </div>
 
             <div class="filter-group">
-                <select v-model="filters.team_id" @change="handleFilterChange" class="filter-select">
+                <select
+                    v-model="filters.team_id"
+                    @change="handleFilterChange"
+                    class="filter-select"
+                >
                     <option value="">Toutes les équipes</option>
-                    <option v-for="team in teams" :key="team.id" :value="team.id">
+                    <option
+                        v-for="team in teams"
+                        :key="team.id"
+                        :value="team.id"
+                    >
                         {{ team.name }}
                     </option>
                 </select>
@@ -51,28 +93,53 @@
 
         <!-- Statistics -->
         <div v-if="statistics && !loading" class="statistics-grid">
-            <div class="stat-card" v-for="stat in [
-                { key: 'total', label: 'Total', icon: 'folder', color: '#31b6b8' },
-                { key: 'active', label: 'Actifs', icon: 'check', color: '#10b981' },
-                { key: 'on_hold', label: 'En attente', icon: 'clock', color: '#f59e0b' },
-                { key: 'completed', label: 'Terminés', icon: 'x-circle', color: '#ef4444' }
-            ]" :key="stat.key">
-                <div class="stat-icon" :style="{ backgroundColor: `${stat.color}20` }">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        :style="{ color: stat.color }">
-                        <path v-if="stat.icon === 'folder'" stroke-linecap="round" stroke-linejoin="round"
+            <div class="stat-card" v-for="stat in displayStats" :key="stat.key">
+                <div
+                    class="stat-icon"
+                    :style="{ backgroundColor: `${stat.color}20` }"
+                >
+                    <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        :style="{ color: stat.color }"
+                    >
+                        <path
+                            v-if="stat.icon === 'folder'"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
                             stroke-width="2"
-                            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                        <path v-if="stat.icon === 'check'" stroke-linecap="round" stroke-linejoin="round"
-                            stroke-width="2" d="M5 13l4 4L19 7" />
-                        <path v-if="stat.icon === 'clock'" stroke-linecap="round" stroke-linejoin="round"
-                            stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        <path v-if="stat.icon === 'x-circle'" stroke-linecap="round" stroke-linejoin="round"
-                            stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                        />
+                        <path
+                            v-if="stat.icon === 'check'"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M5 13l4 4L19 7"
+                        />
+                        <path
+                            v-if="stat.icon === 'clock'"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                        <path
+                            v-if="stat.icon === 'x-circle'"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                     </svg>
                 </div>
                 <div class="stat-content">
-                    <p class="stat-value">{{ statistics[stat.key] }}</p>
+                    <p class="stat-value">
+                        {{ statistics[stat.key] }}
+                    </p>
                     <p class="stat-label">{{ stat.label }}</p>
                 </div>
             </div>
@@ -86,7 +153,14 @@
 
         <!-- Error State -->
         <div v-else-if="error" class="error-state">
-            <svg class="error-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <svg
+                class="error-icon"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+            >
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -102,15 +176,28 @@
 
         <!-- Empty State -->
         <div v-else-if="!loading && projects.length === 0" class="empty-state">
-            <svg class="empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            <svg
+                class="empty-icon"
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                />
             </svg>
             <h3 class="empty-title">Aucun projet trouvé</h3>
             <p class="empty-message">
-                {{ filters.search || filters.status || filters.team_id ?
-                    'Essayez de modifier vos filtres de recherche' :
-                    'Commencez par créer votre premier projet' }}
+                {{
+                    filters.search || filters.status || filters.team_id
+                        ? "Essayez de modifier vos filtres de recherche"
+                        : "Commencez par créer votre premier projet"
+                }}
             </p>
             <button @click="showCreateModal = true" class="empty-action-button">
                 Créer un projet
@@ -156,22 +243,43 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="project in projects" :key="project.id" class="table-row" :class="{
-                            'row-overdue': isOverdue(project.end_date),
-                            'row-completed': project.status === 'completed',
-                            'row-cancelled': project.status === 'cancelled'
-                        }" @click="showDetail(project)">
+                        <tr
+                            v-for="project in projects"
+                            :key="project.id"
+                            class="table-row"
+                            :class="{
+                                'row-overdue': isOverdue(project.end_date),
+                                'row-completed': project.status === 'completed',
+                                'row-cancelled': project.status === 'cancelled',
+                            }"
+                            @click="showDetail(project)"
+                        >
                             <!-- Project Info -->
                             <td class="table-cell project-info-cell">
                                 <div class="project-info">
                                     <div class="project-title-wrapper">
-                                        <h3 class="project-title-table">{{ project.name }}</h3>
-                                        <span class="project-id-table">#{{ project.id }}</span>
+                                        <h3 class="project-title-table">
+                                            {{ project.name }}
+                                        </h3>
+                                        <span class="project-id-table"
+                                            >#{{ project.id }}</span
+                                        >
                                     </div>
-                                    <p v-if="project.description" class="project-description-table">
-                                        {{ truncateDescription(project.description, 60) }}
+                                    <p
+                                        v-if="project.description"
+                                        class="project-description-table"
+                                    >
+                                        {{
+                                            truncateDescription(
+                                                project.description,
+                                                60,
+                                            )
+                                        }}
                                     </p>
-                                    <p v-else class="project-description-placeholder-table">
+                                    <p
+                                        v-else
+                                        class="project-description-placeholder-table"
+                                    >
                                         Aucune description
                                     </p>
                                 </div>
@@ -180,14 +288,27 @@
                             <!-- Status -->
                             <td class="table-cell status-cell">
                                 <div class="status-wrapper">
-                                    <span class="status-badge-table" :class="`status-${project.status}`">
+                                    <span
+                                        class="status-badge-table"
+                                        :class="`status-${project.status}`"
+                                    >
                                         {{ getStatusLabel(project.status) }}
                                     </span>
-                                    <div v-if="isOverdue(project.end_date)" class="overdue-indicator">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor">
+                                    <div
+                                        v-if="isOverdue(project.end_date)"
+                                        class="overdue-indicator"
+                                    >
+                                        <svg
+                                            width="12"
+                                            height="12"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                        >
                                             <circle cx="12" cy="12" r="10" />
-                                            <polyline points="12 6 12 12 16 14" />
+                                            <polyline
+                                                points="12 6 12 12 16 14"
+                                            />
                                         </svg>
                                         <span>En retard</span>
                                     </div>
@@ -198,23 +319,51 @@
                             <td class="table-cell dates-cell">
                                 <div class="dates-wrapper">
                                     <div class="date-item">
-                                        <svg class="date-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        <svg
+                                            class="date-icon"
+                                            width="14"
+                                            height="14"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                            />
                                         </svg>
                                         <span class="date-label">Début:</span>
-                                        <span class="date-value">{{ formatDate(project.start_date) }}</span>
+                                        <span class="date-value">{{
+                                            formatDate(project.start_date)
+                                        }}</span>
                                     </div>
                                     <div class="date-item">
-                                        <svg class="date-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        <svg
+                                            class="date-icon"
+                                            width="14"
+                                            height="14"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                            />
                                         </svg>
                                         <span class="date-label">Fin:</span>
-                                        <span class="date-value"
-                                            :class="{ 'overdue-date': isOverdue(project.end_date) }">
+                                        <span
+                                            class="date-value"
+                                            :class="{
+                                                'overdue-date': isOverdue(
+                                                    project.end_date,
+                                                ),
+                                            }"
+                                        >
                                             {{ formatDate(project.end_date) }}
                                         </span>
                                     </div>
@@ -228,27 +377,41 @@
                                         {{ getInitials(project.team.name) }}
                                     </div>
                                     <div class="team-details">
-                                        <span class="team-name">{{ project.team.name }}</span>
-                                        <span v-if="project.team_members_count" class="team-members">
-                                            {{ project.team_members_count }} membre(s)
+                                        <span class="team-name">{{
+                                            project.team.name
+                                        }}</span>
+                                        <span
+                                            v-if="project.team_members"
+                                            class="team-members"
+                                        >
+                                            {{ project.team_members }} membre(s)
                                         </span>
                                     </div>
                                 </div>
-                                <div v-else class="no-team">
-                                    Aucune équipe
-                                </div>
+                                <div v-else class="no-team">Aucune équipe</div>
                             </td>
 
                             <!-- Progress -->
                             <td class="table-cell progress-cell">
                                 <div class="progress-wrapper">
                                     <div class="progress-bar">
-                                        <div class="progress-fill" :style="{ width: `${project.progress || 0}%` }">
-                                        </div>
+                                        <div
+                                            class="progress-fill"
+                                            :style="{
+                                                width: `${
+                                                    project.progress || 0
+                                                }%`,
+                                            }"
+                                        ></div>
                                     </div>
-                                    <span class="progress-text">{{ project.progress || 0 }}%</span>
+                                    <span class="progress-text"
+                                        >{{ project.progress || 0 }}%</span
+                                    >
                                 </div>
-                                <div v-if="project.tasks_count" class="tasks-count">
+                                <div
+                                    v-if="project.tasks_count"
+                                    class="tasks-count"
+                                >
                                     {{ project.tasks_count }} tâche(s)
                                 </div>
                             </td>
@@ -256,20 +419,44 @@
                             <!-- Actions -->
                             <td class="table-cell actions-cell">
                                 <div class="actions-wrapper" @click.stop>
-                                    <button @click.stop="editProject(project)"
-                                        class="action-button-table edit-button-table" title="Modifier">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    <button
+                                        @click.stop="editProject(project)"
+                                        class="action-button-table edit-button-table"
+                                        title="Modifier"
+                                    >
+                                        <svg
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                            />
                                         </svg>
                                     </button>
-                                    <button @click.stop="confirmDelete(project)"
-                                        class="action-button-table delete-button-table" title="Supprimer">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    <button
+                                        @click.stop="confirmDelete(project)"
+                                        class="action-button-table delete-button-table"
+                                        title="Supprimer"
+                                    >
+                                        <svg
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                            />
                                         </svg>
                                     </button>
                                 </div>
@@ -281,55 +468,106 @@
         </div>
 
         <!-- Pagination -->
-        <div v-if="pagination && pagination.last_page > 1" class="pagination-container">
-            <button :disabled="pagination.current_page === 1" @click="goToPage(pagination.current_page - 1)"
-                class="pagination-button prev-button">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        <div
+            v-if="pagination && pagination.last_page > 1"
+            class="pagination-container"
+        >
+            <button
+                :disabled="pagination.current_page === 1"
+                @click="goToPage(pagination.current_page - 1)"
+                class="pagination-button prev-button"
+            >
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 19l-7-7 7-7"
+                    />
                 </svg>
                 Précédent
             </button>
 
             <div class="pagination-info">
-                Page <span class="current-page">{{ pagination.current_page }}</span>
+                Page
+                <span class="current-page">{{ pagination.current_page }}</span>
                 sur {{ pagination.last_page }}
             </div>
 
-            <button :disabled="pagination.current_page === pagination.last_page"
-                @click="goToPage(pagination.current_page + 1)" class="pagination-button next-button">
+            <button
+                :disabled="pagination.current_page === pagination.last_page"
+                @click="goToPage(pagination.current_page + 1)"
+                class="pagination-button next-button"
+            >
                 Suivant
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 5l7 7-7 7"
+                    />
                 </svg>
             </button>
         </div>
 
         <!-- Create/Edit Modal -->
-        <ProjectModal v-if="showCreateModal || showEditModal" :show="showCreateModal || showEditModal"
-            :project="editingProject" :teams="teams" @close="closeModal" @saved="handleProjectSaved" />
+        <ProjectModal
+            v-if="showCreateModal || showEditModal"
+            :show="showCreateModal || showEditModal"
+            :project="editingProject"
+            :teams="teams"
+            @close="closeModal"
+            @saved="handleProjectSaved"
+        />
 
         <!-- Detail Modal -->
-        <ProjectDetailModal v-if="selectedProject" :show="!!selectedProject" :project="selectedProject"
-            @close="selectedProject = null" @edit="editProject(selectedProject)" @deleted="handleProjectDeleted" />
+        <ProjectDetailModal
+            v-if="selectedProject"
+            :show="!!selectedProject"
+            :project="selectedProject"
+            @close="selectedProject = null"
+            @edit="editProject(selectedProject)"
+            @deleted="handleProjectDeleted"
+        />
 
         <!-- Delete Confirmation -->
-        <ConfirmModal v-if="projectToDelete" :show="!!projectToDelete" title="Supprimer le projet"
+        <ConfirmModal
+            v-if="projectToDelete"
+            :show="!!projectToDelete"
+            title="Supprimer le projet"
             message="Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible."
-            confirm-text="Supprimer" cancel-text="Annuler" variant="danger" @confirm="deleteProject"
-            @cancel="projectToDelete = null" />
+            confirm-text="Supprimer"
+            cancel-text="Annuler"
+            variant="danger"
+            @confirm="deleteProject"
+            @cancel="projectToDelete = null"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { storeToRefs } from 'pinia';
-import { useProjectTeamStore } from '@/stores/projectsTeams.store';
-import { useTeamStore } from '@/stores/team.store';
-import type { ProjectTeam } from '@/types/projectsTeams';
-import ProjectModal from '@/components/projects/ProjectModal.vue';
-import ProjectDetailModal from '@/components/projects/ProjectDetailModal.vue';
-import ConfirmModal from '@/components/projects/ConfirmModal.vue';
-import debounce from 'lodash/debounce';
+import { ref, computed, onMounted, watch } from "vue";
+import { storeToRefs } from "pinia";
+import { useProjectTeamStore } from "@/stores/projectsTeams.store";
+import { useTeamStore } from "@/stores/team.store";
+import type { ProjectStatistics, ProjectTeam } from "@/types/projectsTeams";
+import ProjectModal from "@/components/projects/ProjectModal.vue";
+import ProjectDetailModal from "@/components/projects/ProjectDetailModal.vue";
+import ConfirmModal from "@/components/projects/ConfirmModal.vue";
+import debounce from "lodash/debounce";
 
 // Stores
 const projectStore = useProjectTeamStore();
@@ -340,7 +578,7 @@ const {
     pagination: storePagination,
     statistics: storeStatistics,
     loading: storeLoading,
-    error: storeError
+    error: storeError,
 } = storeToRefs(projectStore);
 
 const { teams: storeTeams } = storeToRefs(teamStore);
@@ -353,15 +591,15 @@ const selectedProject = ref<ProjectTeam | null>(null);
 const projectToDelete = ref<ProjectTeam | null>(null);
 
 const filters = ref({
-    search: '',
-    status: '',
+    search: "",
+    status: "",
     team_id: undefined as number | undefined,
-    order_by: 'created_at',
-    order_direction: 'desc' as 'asc' | 'desc',
-    start_date_from: '',
-    start_date_to: '',
-    end_date_from: '',
-    end_date_to: '',
+    order_by: "created_at",
+    order_direction: "desc" as "asc" | "desc",
+    start_date_from: "",
+    start_date_to: "",
+    end_date_from: "",
+    end_date_to: "",
     page: 1,
     per_page: 12,
 });
@@ -375,69 +613,89 @@ const error = computed(() => storeError.value);
 const teams = computed(() => storeTeams.value);
 
 const statusOptions = [
-    { value: 'active', label: 'Actif' },
-    { value: 'completed', label: 'Terminé' },
-    { value: 'on_hold', label: 'En attente' },
-    { value: 'cancelled', label: 'Annulé' },
+    { value: "active", label: "Actif" },
+    { value: "completed", label: "Terminé" },
+    { value: "on_hold", label: "En attente" },
+    { value: "cancelled", label: "Annulé" },
 ];
+
+type DisplayStatKeys =
+    | "total"
+    | "active"
+    | "on_hold"
+    | "completed"
+    | "cancelled"
+    | "upcoming_end";
+
+interface StatItem {
+    key: DisplayStatKeys;
+    label: string;
+    icon: string;
+    color: string;
+    formatter?: (value: number) => string;
+}
+
+const props = defineProps<{
+    statistics: ProjectStatistics;
+    loading: boolean;
+}>();
+
+// Stats à afficher avec typage correct
+const displayStats = computed<StatItem[]>(() => [
+    { key: "total", label: "Total", icon: "folder", color: "#31b6b8" },
+    { key: "active", label: "Actifs", icon: "check", color: "#10b981" },
+    { key: "on_hold", label: "En attente", icon: "clock", color: "#f59e0b" },
+    { key: "completed", label: "Terminés", icon: "x-circle", color: "#ef4444" },
+]);
 
 // Méthodes utilitaires
 const getStatusLabel = (status: string): string => {
-    const option = statusOptions.find(opt => opt.value === status);
+    const option = statusOptions.find((opt) => opt.value === status);
     return option?.label || status.charAt(0).toUpperCase() + status.slice(1);
 };
 
-const getPriorityFromStatus = (status: string): string => {
-    const priorityMap: Record<string, string> = {
-        'active': 'medium',
-        'completed': 'low',
-        'on_hold': 'medium',
-        'cancelled': 'high'
-    };
-    return priorityMap[status] || 'medium';
-};
-
-const getPriorityLabel = (status: string): string => {
-    const priorityMap: Record<string, string> = {
-        'active': 'Actif',
-        'completed': 'Terminé',
-        'on_hold': 'En attente',
-        'cancelled': 'Annulé'
-    };
-    return priorityMap[status] || status;
-};
-
 const getInitials = (name: string): string => {
-    if (!name) return '??';
-    return name.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 2);
+    if (!name) return "??";
+    return name
+        .split(" ")
+        .map((word) => word[0])
+        .join("")
+        .toUpperCase()
+        .substring(0, 2);
 };
 
 const formatDate = (date: string | null): string => {
-    if (!date) return 'Non définie';
+    if (!date) return "Non définie";
     try {
-        return new Date(date).toLocaleDateString('fr-FR', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
+        return new Date(date).toLocaleDateString("fr-FR", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
         });
     } catch {
-        return 'Date invalide';
+        return "Date invalide";
     }
 };
 
 const isOverdue = (date: string | null): boolean => {
     if (!date) return false;
     try {
-        return new Date(date) < new Date() && new Date(date).toDateString() !== new Date().toDateString();
+        return (
+            new Date(date) < new Date() &&
+            new Date(date).toDateString() !== new Date().toDateString()
+        );
     } catch {
         return false;
     }
 };
 
-const truncateDescription = (description: string, maxLength: number = 100): string => {
-    if (!description) return '';
+const truncateDescription = (
+    description: string,
+    maxLength: number = 100,
+): string => {
+    if (!description) return "";
     return description.length > maxLength
-        ? description.substring(0, maxLength) + '...'
+        ? description.substring(0, maxLength) + "..."
         : description;
 };
 
@@ -461,7 +719,7 @@ const applyFilters = async () => {
             await projectStore.fetchStatistics();
         }
     } catch (err) {
-        console.error('Erreur lors de l\'application des filtres:', err);
+        console.error("Erreur lors de l'application des filtres:", err);
     }
 };
 
@@ -492,7 +750,7 @@ const deleteProject = async () => {
         await projectStore.deleteProject(projectToDelete.value.id);
         projectToDelete.value = null;
     } catch (error) {
-        console.error('Échec de la suppression du projet:', error);
+        console.error("Échec de la suppression du projet:", error);
     }
 };
 
@@ -525,14 +783,14 @@ onMounted(async () => {
             teamStore.fetchTeams(),
         ]);
     } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
+        console.error("Erreur lors du chargement des données:", error);
     }
 });
 
 // Watch
 watch(
     () => filters.value.page,
-    () => applyFilters()
+    () => applyFilters(),
 );
 </script>
 

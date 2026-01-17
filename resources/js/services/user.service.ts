@@ -1,5 +1,5 @@
 import { api } from "@/services/api";
-import type { User, UsersResponse, PaginationMeta } from "@/types/User";
+import type { User, PaginationMeta } from "@/types/User";
 
 export class UserService {
     // Récupérer tous les utilisateurs avec pagination
@@ -45,39 +45,37 @@ export class UserService {
     }
 
     // Mettre à jour un utilisateur
-async updateUser(
-    id: string | number,
-    userData: any
-): Promise<{ data: User; message: string }> {
-    // Vérifier si un fichier avatar est présent
-    if (userData.avatar && userData.avatar instanceof File) {
-        // Option 1: Uploader l'avatar séparément
-        await this.uploadAvatar(id, userData.avatar);
-        
-        // Ensuite mettre à jour les autres données
-        const { avatar, ...restData } = userData;
-        return await api.put(`/users/${id}`, restData);
+    async updateUser(
+        id: string | number,
+        userData: any
+    ): Promise<{ data: User; message: string }> {
+        // Vérifier si un fichier avatar est présent
+        if (userData.avatar && userData.avatar instanceof File) {
+            // Option 1: Uploader l'avatar séparément
+            await this.uploadAvatar(id, userData.avatar);
+
+            // Ensuite mettre à jour les autres données
+            const { avatar, ...restData } = userData;
+            return await api.put(`/users/${id}`, restData);
+        }
+
+        // Si pas de fichier, envoyer en JSON normal
+        return await api.put(`/users/${id}`, userData);
     }
 
-    // Si pas de fichier, envoyer en JSON normal
-    return await api.put(`/users/${id}`, userData);
-}
-
-async uploadAvatar(
-    userId: string | number,
-    avatarFile: File
-): Promise<{ data: User; message: string }> {
-    const formData = new FormData();
-    formData.append('avatar', avatarFile);
-    return await api.upload(`/users/${userId}/avatar`, formData);
-}
+    async uploadAvatar(
+        userId: string | number,
+        avatarFile: File
+    ): Promise<{ data: User; message: string }> {
+        const formData = new FormData();
+        formData.append("avatar", avatarFile);
+        return await api.upload(`/users/${userId}/avatar`, formData);
+    }
 
     // Supprimer un utilisateur
     async deleteUser(id: string | number): Promise<{ message: string }> {
         return await api.delete(`/users/${id}`);
     }
-
-
 }
 
 export const userService = new UserService();

@@ -768,16 +768,6 @@ const formData = reactive({
     email_verified: false,
 });
 
-// Form Errors
-const errors = reactive({
-    name: "",
-    email: "",
-    role: "",
-    password: "",
-    password_confirmation: "",
-    avatar: "",
-});
-
 // Computed
 const roleLabel = computed(() => {
     if (authStore.user?.role) {
@@ -831,7 +821,6 @@ const editUser = (user: User) => {
 };
 
 interface FormData {
-    [key: string]: string | boolean;
     name: string;
     email: string;
     role: string;
@@ -842,7 +831,7 @@ interface FormData {
 }
 
 const resetForm = (): void => {
-    (Object.keys(formData) as Array<keyof FormData>).forEach((key) => {
+    (Object.keys(formData) as (keyof FormData)[]).forEach((key) => {
         if (key === "role") {
             formData[key] = "user";
         } else if (key === "email_verified") {
@@ -852,7 +841,7 @@ const resetForm = (): void => {
         }
     });
 
-    (Object.keys(errors) as Array<keyof typeof errors>).forEach((key) => {
+    (Object.keys(errors) as (keyof typeof errors)[]).forEach((key) => {
         errors[key] = "";
     });
 
@@ -874,16 +863,31 @@ const togglePasswordField = () => {
         formData.password_confirmation = "";
     }
 };
+const errors = reactive<FormErrors>({
+    name: "",
+    email: "",
+    role: "",
+    password: "",
+    password_confirmation: "",
+    avatar: "",
+});
 
+interface FormErrors {
+    name: string;
+    email: string;
+    role: string;
+    password: string;
+    password_confirmation: string;
+    avatar: string;
+}
 const validateForm = (): boolean => {
     let isValid = true;
 
     // Clear errors
-    Object.keys(errors).forEach((key) => {
+    (Object.keys(errors) as (keyof FormErrors)[]).forEach((key) => {
         errors[key] = "";
     });
 
-    // Name validation
     if (!formData.name.trim()) {
         errors.name = "Le nom est requis";
         isValid = false;
@@ -892,7 +896,6 @@ const validateForm = (): boolean => {
         isValid = false;
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email.trim()) {
         errors.email = "L'email est requis";
@@ -902,13 +905,11 @@ const validateForm = (): boolean => {
         isValid = false;
     }
 
-    // Role validation
     if (!formData.role) {
         errors.role = "Le rôle est requis";
         isValid = false;
     }
 
-    // Password validation for create
     if (!isEditMode.value) {
         if (!formData.password) {
             errors.password = "Le mot de passe est requis";
@@ -924,7 +925,6 @@ const validateForm = (): boolean => {
         }
     }
 
-    // Password validation for edit (if changing password)
     if (isEditMode.value && showPasswordField.value && formData.password) {
         if (formData.password.length < 8) {
             errors.password =
@@ -986,11 +986,8 @@ const submitForm = async () => {
 
         // Handle validation errors from API
         if (err.response?.data?.errors) {
-            const apiErrors = err.response.data.errors;
-            Object.keys(apiErrors).forEach((key) => {
-                if (key in errors) {
-                    errors[key] = apiErrors[key][0];
-                }
+            (Object.keys(errors) as (keyof FormErrors)[]).forEach((key) => {
+                errors[key] = "";
             });
         }
     } finally {

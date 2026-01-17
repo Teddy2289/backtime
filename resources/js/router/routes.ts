@@ -1,6 +1,5 @@
 import type { RouteRecordRaw } from "vue-router";
 import { UserRole } from "@/enums/user-role";
-import { useTaskStore } from "@/stores/task.store";
 
 export const routes: RouteRecordRaw[] = [
     // Routes publiques
@@ -95,7 +94,7 @@ export const routes: RouteRecordRaw[] = [
             title: "Task Detail",
         },
         // 🌟 SUPPRIMEZ LE beforeEnter ou simplifiez-le :
-        beforeEnter: (to, from, next) => {
+        beforeEnter: (to, _from, next) => {
             const taskId = parseInt(to.params.id as string);
 
             if (isNaN(taskId)) {

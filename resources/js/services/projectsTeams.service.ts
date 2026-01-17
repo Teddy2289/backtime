@@ -9,54 +9,105 @@ import type {
     AssignableUser,
 } from "@/types/projectsTeams";
 
+// Interfaces pour les réponses API
+interface ApiResponse<T> {
+    data: T;
+}
+
+interface PaginatedApiResponse<T> {
+    data: T[];
+    meta: {
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        from?: number;
+        to?: number;
+    };
+}
+
+// Type guards pour vérifier la structure des réponses
+function isPaginatedResponse<T>(
+    response: unknown
+): response is PaginatedApiResponse<T> {
+    return (
+        !!response &&
+        typeof response === "object" &&
+        "data" in response &&
+        Array.isArray((response as any).data) &&
+        "meta" in response &&
+        typeof (response as any).meta === "object" &&
+        "current_page" in (response as any).meta
+    );
+}
+
+function isWrappedResponse<T>(response: unknown): response is ApiResponse<T> {
+    return !!response && typeof response === "object" && "data" in response;
+}
+
 class ProjectsTeamsService {
     private basePath = "/projectsTeams";
 
-    async getProjects(
-        params?: ProjectTeamFilter
-    ): Promise<PaginatedProjectsTeams> {
-        try {
-            // IMPORTANT: Utilisez l'intercepteur d'api qui gère déjà response.data
-            const response = await api.get<any>(this.basePath, { params });
+    // Helper pour extraire les données de la réponse
+    private unwrapResponse<T>(response: unknown): T {
+        if (isWrappedResponse<T>(response)) {
+            return response.data;
+        }
+        return response as T;
+    }
 
-            // Si l'API retourne { data: [...], meta: {...} }
-            if (response && typeof response === "object") {
-                // Vérifiez si c'est la structure Laravel typique
-                if (response.data && Array.isArray(response.data)) {
-                    return {
-                        data: response.data,
-                        current_page: response.meta?.current_page || 1,
-                        last_page: response.meta?.last_page || 1,
-                        per_page: response.meta?.per_page || 15,
-                        total: response.meta?.total || response.data.length,
-                        from: response.meta?.from || 1,
-                        to: response.meta?.to || response.data.length,
-                    };
-                }
+    private unwrapPaginatedResponse<T>(
+        response: unknown
+    ): PaginatedApiResponse<T> {
+        if (isPaginatedResponse<T>(response)) {
+            return response;
+        }
 
-                // Si response est déjà un tableau (sans wrapper)
-                if (Array.isArray(response)) {
-                    return {
-                        data: response,
-                        current_page: 1,
-                        last_page: 1,
-                        per_page: response.length,
-                        total: response.length,
-                        from: 1,
-                        to: response.length,
-                    };
-                }
-            }
-
-            // Fallback
+        // Si c'est déjà un tableau
+        if (Array.isArray(response)) {
             return {
-                data: [],
+                data: response as T[],
+                meta: {
+                    current_page: 1,
+                    last_page: 1,
+                    per_page: response.length,
+                    total: response.length,
+                    from: 1,
+                    to: response.length,
+                },
+            };
+        }
+
+        // Fallback
+        return {
+            data: [] as T[],
+            meta: {
                 current_page: 1,
                 last_page: 1,
                 per_page: 15,
                 total: 0,
                 from: 0,
                 to: 0,
+            },
+        };
+    }
+
+    async getProjects(
+        params?: ProjectTeamFilter
+    ): Promise<PaginatedProjectsTeams> {
+        try {
+            const response = await api.get<unknown>(this.basePath, { params });
+            const paginatedResponse =
+                this.unwrapPaginatedResponse<ProjectTeam>(response);
+
+            return {
+                data: paginatedResponse.data,
+                current_page: paginatedResponse.meta.current_page,
+                last_page: paginatedResponse.meta.last_page,
+                per_page: paginatedResponse.meta.per_page,
+                total: paginatedResponse.meta.total,
+                from: paginatedResponse.meta.from || 1,
+                to: paginatedResponse.meta.to || paginatedResponse.data.length,
             };
         } catch (error) {
             console.error("❌ ProjectsTeamsService.getProjects error:", error);
@@ -66,8 +117,8 @@ class ProjectsTeamsService {
 
     async getProjectById(id: number): Promise<ProjectTeam> {
         try {
-            // api.get extrait déjà data, donc on reçoit directement l'objet ProjectTeam
-            return await api.get<ProjectTeam>(`${this.basePath}/${id}`);
+            const response = await api.get<unknown>(`${this.basePath}/${id}`);
+            return this.unwrapResponse<ProjectTeam>(response);
         } catch (error) {
             console.error(
                 `ProjectsTeamsService.getProjectById(${id}) error:`,
@@ -77,12 +128,12 @@ class ProjectsTeamsService {
         }
     }
 
-    // Get project with team details
     async getProjectWithTeam(id: number): Promise<ProjectTeam> {
         try {
-            return await api.get<ProjectTeam>(
+            const response = await api.get<unknown>(
                 `${this.basePath}/${id}/with-team`
             );
+            return this.unwrapResponse<ProjectTeam>(response);
         } catch (error) {
             console.error(
                 `ProjectsTeamsService.getProjectWithTeam(${id}) error:`,
@@ -92,23 +143,26 @@ class ProjectsTeamsService {
         }
     }
 
-    // Create new project
     async createProject(data: CreateProjectTeamData): Promise<ProjectTeam> {
         try {
-            return await api.post<ProjectTeam>(this.basePath, data);
+            const response = await api.post<unknown>(this.basePath, data);
+            return this.unwrapResponse<ProjectTeam>(response);
         } catch (error) {
             console.error("ProjectsTeamsService.createProject error:", error);
             throw error;
         }
     }
 
-    // Update project
     async updateProject(
         id: number,
         data: UpdateProjectTeamData
     ): Promise<ProjectTeam> {
         try {
-            return await api.put<ProjectTeam>(`${this.basePath}/${id}`, data);
+            const response = await api.put<unknown>(
+                `${this.basePath}/${id}`,
+                data
+            );
+            return this.unwrapResponse<ProjectTeam>(response);
         } catch (error) {
             console.error(
                 `ProjectsTeamsService.updateProject(${id}) error:`,
@@ -118,7 +172,6 @@ class ProjectsTeamsService {
         }
     }
 
-    // Delete project
     async deleteProject(id: number): Promise<void> {
         try {
             await api.delete<void>(`${this.basePath}/${id}`);
@@ -131,7 +184,6 @@ class ProjectsTeamsService {
         }
     }
 
-    // Restore project
     async restoreProject(id: number): Promise<void> {
         try {
             await api.put<void>(`${this.basePath}/${id}/restore`);
@@ -144,72 +196,27 @@ class ProjectsTeamsService {
         }
     }
 
-    // Get projects by team - adapté comme getProjects
     async getProjectsByTeam(
         teamId: number,
         params?: ProjectTeamFilter
     ): Promise<PaginatedProjectsTeams> {
         try {
-            const response = await api.get<any>(
+            const response = await api.get<unknown>(
                 `${this.basePath}/team/${teamId}`,
                 { params }
             );
 
-            console.log("getProjectsByTeam - Raw response:", response);
-
-            // Même logique que getProjects
-            if (response && typeof response === "object") {
-                if (
-                    response.data !== undefined &&
-                    response.meta !== undefined
-                ) {
-                    return {
-                        data: response.data,
-                        current_page: response.meta.current_page,
-                        last_page: response.meta.last_page,
-                        per_page: response.meta.per_page,
-                        total: response.meta.total,
-                        from: response.meta.from,
-                        to: response.meta.to,
-                    };
-                }
-
-                if (Array.isArray(response)) {
-                    return {
-                        data: response,
-                        current_page: 1,
-                        last_page: 1,
-                        per_page: response.length,
-                        total: response.length,
-                        from: 1,
-                        to: response.length,
-                    };
-                }
-
-                if (
-                    response.data !== undefined &&
-                    Array.isArray(response.data)
-                ) {
-                    return {
-                        data: response.data,
-                        current_page: 1,
-                        last_page: 1,
-                        per_page: response.data.length,
-                        total: response.data.length,
-                        from: 1,
-                        to: response.data.length,
-                    };
-                }
-            }
+            const paginatedResponse =
+                this.unwrapPaginatedResponse<ProjectTeam>(response);
 
             return {
-                data: [],
-                current_page: 1,
-                last_page: 1,
-                per_page: 15,
-                total: 0,
-                from: 0,
-                to: 0,
+                data: paginatedResponse.data,
+                current_page: paginatedResponse.meta.current_page,
+                last_page: paginatedResponse.meta.last_page,
+                per_page: paginatedResponse.meta.per_page,
+                total: paginatedResponse.meta.total,
+                from: paginatedResponse.meta.from || 1,
+                to: paginatedResponse.meta.to || paginatedResponse.data.length,
             };
         } catch (error) {
             console.error(
@@ -220,53 +227,35 @@ class ProjectsTeamsService {
         }
     }
 
-    // Search projects
     async searchProjects(
         query: string,
         params?: ProjectTeamFilter
     ): Promise<ProjectTeam[]> {
         try {
-            const response = await api.get<ProjectTeam[]>(
-                `${this.basePath}/search`,
-                {
-                    params: { query, ...params },
-                }
-            );
+            const response = await api.get<unknown>(`${this.basePath}/search`, {
+                params: { query, ...params },
+            });
 
-            // api.get extrait déjà data, on vérifie la structure
-            if (response && typeof response === "object") {
-                if (Array.isArray(response)) {
-                    return response;
-                }
-                if (response.data && Array.isArray(response.data)) {
-                    return response.data;
-                }
-            }
-
-            return [];
+            const unwrapped = this.unwrapResponse<
+                ProjectTeam[] | ProjectTeam[]
+            >(response);
+            return Array.isArray(unwrapped) ? unwrapped : [];
         } catch (error) {
             console.error("ProjectsTeamsService.searchProjects error:", error);
             throw error;
         }
     }
 
-    // Get projects by status
     async getProjectsByStatus(status: string): Promise<ProjectTeam[]> {
         try {
-            const response = await api.get<ProjectTeam[]>(
+            const response = await api.get<unknown>(
                 `${this.basePath}/status/${status}`
             );
 
-            if (response && typeof response === "object") {
-                if (Array.isArray(response)) {
-                    return response;
-                }
-                if (response.data && Array.isArray(response.data)) {
-                    return response.data;
-                }
-            }
-
-            return [];
+            const unwrapped = this.unwrapResponse<
+                ProjectTeam[] | ProjectTeam[]
+            >(response);
+            return Array.isArray(unwrapped) ? unwrapped : [];
         } catch (error) {
             console.error(
                 `ProjectsTeamsService.getProjectsByStatus(${status}) error:`,
@@ -276,26 +265,19 @@ class ProjectsTeamsService {
         }
     }
 
-    // Get upcoming projects
     async getUpcomingProjects(days: number = 7): Promise<ProjectTeam[]> {
         try {
-            const response = await api.get<ProjectTeam[]>(
+            const response = await api.get<unknown>(
                 `${this.basePath}/upcoming`,
                 {
                     params: { days },
                 }
             );
 
-            if (response && typeof response === "object") {
-                if (Array.isArray(response)) {
-                    return response;
-                }
-                if (response.data && Array.isArray(response.data)) {
-                    return response.data;
-                }
-            }
-
-            return [];
+            const unwrapped = this.unwrapResponse<
+                ProjectTeam[] | ProjectTeam[]
+            >(response);
+            return Array.isArray(unwrapped) ? unwrapped : [];
         } catch (error) {
             console.error(
                 "ProjectsTeamsService.getUpcomingProjects error:",
@@ -305,52 +287,33 @@ class ProjectsTeamsService {
         }
     }
 
-    // Get statistics
     async getStatistics(teamId?: number): Promise<ProjectStatistics> {
         try {
-            const response = await api.get<ProjectStatistics>(
+            const response = await api.get<unknown>(
                 `${this.basePath}/statistics`,
                 {
                     params: teamId ? { team_id: teamId } : {},
                 }
             );
 
-            // api.get extrait déjà data
-            if (response && typeof response === "object") {
-                if (response.data) {
-                    return response.data;
-                }
-                return response;
-            }
-
-            throw new Error("Invalid response format");
+            return this.unwrapResponse<ProjectStatistics>(response);
         } catch (error) {
             console.error("ProjectsTeamsService.getStatistics error:", error);
             throw error;
         }
     }
 
-    // Update project status
     async updateProjectStatus(
         id: number,
         status: string
     ): Promise<ProjectTeam> {
         try {
-            const response = await api.put<ProjectTeam>(
+            const response = await api.put<unknown>(
                 `${this.basePath}/${id}/status`,
-                {
-                    status,
-                }
+                { status }
             );
 
-            if (response && typeof response === "object") {
-                if (response.data) {
-                    return response.data;
-                }
-                return response;
-            }
-
-            throw new Error("Invalid response format");
+            return this.unwrapResponse<ProjectTeam>(response);
         } catch (error) {
             console.error(
                 `ProjectsTeamsService.updateProjectStatus(${id}) error:`,
@@ -360,21 +323,13 @@ class ProjectsTeamsService {
         }
     }
 
-    // Quick status actions
     async completeProject(id: number): Promise<ProjectTeam> {
         try {
-            const response = await api.put<ProjectTeam>(
+            const response = await api.put<unknown>(
                 `${this.basePath}/${id}/complete`
             );
 
-            if (response && typeof response === "object") {
-                if (response.data) {
-                    return response.data;
-                }
-                return response;
-            }
-
-            throw new Error("Invalid response format");
+            return this.unwrapResponse<ProjectTeam>(response);
         } catch (error) {
             console.error(
                 `ProjectsTeamsService.completeProject(${id}) error:`,
@@ -386,18 +341,11 @@ class ProjectsTeamsService {
 
     async putProjectOnHold(id: number): Promise<ProjectTeam> {
         try {
-            const response = await api.put<ProjectTeam>(
+            const response = await api.put<unknown>(
                 `${this.basePath}/${id}/on-hold`
             );
 
-            if (response && typeof response === "object") {
-                if (response.data) {
-                    return response.data;
-                }
-                return response;
-            }
-
-            throw new Error("Invalid response format");
+            return this.unwrapResponse<ProjectTeam>(response);
         } catch (error) {
             console.error(
                 `ProjectsTeamsService.putProjectOnHold(${id}) error:`,
@@ -409,18 +357,11 @@ class ProjectsTeamsService {
 
     async cancelProject(id: number): Promise<ProjectTeam> {
         try {
-            const response = await api.put<ProjectTeam>(
+            const response = await api.put<unknown>(
                 `${this.basePath}/${id}/cancel`
             );
 
-            if (response && typeof response === "object") {
-                if (response.data) {
-                    return response.data;
-                }
-                return response;
-            }
-
-            throw new Error("Invalid response format");
+            return this.unwrapResponse<ProjectTeam>(response);
         } catch (error) {
             console.error(
                 `ProjectsTeamsService.cancelProject(${id}) error:`,
@@ -432,18 +373,11 @@ class ProjectsTeamsService {
 
     async reactivateProject(id: number): Promise<ProjectTeam> {
         try {
-            const response = await api.put<ProjectTeam>(
+            const response = await api.put<unknown>(
                 `${this.basePath}/${id}/reactivate`
             );
 
-            if (response && typeof response === "object") {
-                if (response.data) {
-                    return response.data;
-                }
-                return response;
-            }
-
-            throw new Error("Invalid response format");
+            return this.unwrapResponse<ProjectTeam>(response);
         } catch (error) {
             console.error(
                 `ProjectsTeamsService.reactivateProject(${id}) error:`,
@@ -453,23 +387,14 @@ class ProjectsTeamsService {
         }
     }
 
-    // Get team members for a project
     async getProjectTeamUsers(projectId: number): Promise<any[]> {
         try {
-            const response = await api.get<any[]>(
+            const response = await api.get<unknown>(
                 `${this.basePath}/${projectId}/team-users`
             );
 
-            if (response && typeof response === "object") {
-                if (Array.isArray(response)) {
-                    return response;
-                }
-                if (response.data && Array.isArray(response.data)) {
-                    return response.data;
-                }
-            }
-
-            return [];
+            const unwrapped = this.unwrapResponse<any[] | any[]>(response);
+            return Array.isArray(unwrapped) ? unwrapped : [];
         } catch (error) {
             console.error(
                 `ProjectsTeamsService.getProjectTeamUsers(${projectId}) error:`,
@@ -479,23 +404,16 @@ class ProjectsTeamsService {
         }
     }
 
-    // Get assignable users
     async getAssignableUsers(projectId: number): Promise<AssignableUser[]> {
         try {
-            const response = await api.get<AssignableUser[]>(
+            const response = await api.get<unknown>(
                 `${this.basePath}/${projectId}/assignable-users`
             );
 
-            if (response && typeof response === "object") {
-                if (Array.isArray(response)) {
-                    return response;
-                }
-                if (response.data && Array.isArray(response.data)) {
-                    return response.data;
-                }
-            }
-
-            return [];
+            const unwrapped = this.unwrapResponse<
+                AssignableUser[] | AssignableUser[]
+            >(response);
+            return Array.isArray(unwrapped) ? unwrapped : [];
         } catch (error) {
             console.error(
                 `ProjectsTeamsService.getAssignableUsers(${projectId}) error:`,
@@ -505,24 +423,16 @@ class ProjectsTeamsService {
         }
     }
 
-    // Check if project belongs to team
     async checkTeamMembership(
         projectId: number,
         teamId: number
     ): Promise<{ belongs: boolean }> {
         try {
-            const response = await api.get<{ belongs: boolean }>(
+            const response = await api.get<unknown>(
                 `${this.basePath}/${projectId}/check-team/${teamId}`
             );
 
-            if (response && typeof response === "object") {
-                if (response.data) {
-                    return response.data;
-                }
-                return response;
-            }
-
-            throw new Error("Invalid response format");
+            return this.unwrapResponse<{ belongs: boolean }>(response);
         } catch (error) {
             console.error(
                 `ProjectsTeamsService.checkTeamMembership(${projectId}, ${teamId}) error:`,
@@ -532,19 +442,10 @@ class ProjectsTeamsService {
         }
     }
 
-    // Health check
     async healthCheck(): Promise<any> {
         try {
-            const response = await api.get<any>(`${this.basePath}/health`);
-
-            if (response && typeof response === "object") {
-                if (response.data) {
-                    return response.data;
-                }
-                return response;
-            }
-
-            throw new Error("Invalid response format");
+            const response = await api.get<unknown>(`${this.basePath}/health`);
+            return this.unwrapResponse<any>(response);
         } catch (error) {
             console.error("ProjectsTeamsService.healthCheck error:", error);
             throw error;

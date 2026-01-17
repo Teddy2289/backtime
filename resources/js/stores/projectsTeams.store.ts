@@ -5,7 +5,6 @@ import type {
     ProjectTeamFilter,
     CreateProjectTeamData,
     UpdateProjectTeamData,
-    PaginatedProjectsTeams,
     ProjectStatistics,
     AssignableUser,
 } from "@/types/projectsTeams";
@@ -296,7 +295,7 @@ export const useProjectTeamStore = defineStore("projectsTeams", {
                 await projectsTeamsService.restoreProject(id);
 
                 // Fetch the project again to add to list
-                const project = await this.fetchProject(id);
+                // const project = await this.fetchProject(id);
 
                 // Update pagination total
                 if (this.pagination) {
