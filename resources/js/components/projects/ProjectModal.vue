@@ -2,7 +2,13 @@
     <div class="modal-overlay" @click="closeModal">
         <div class="modal-content" @click.stop>
             <div class="modal-header">
-                <h2>{{ isEditMode ? 'Modifier le Projet' : 'Créer un Nouveau Projet' }}</h2>
+                <h2>
+                    {{
+                        isEditMode
+                            ? "Modifier le Projet"
+                            : "Créer un Nouveau Projet"
+                    }}
+                </h2>
                 <button @click="$emit('close')" class="btn-close">×</button>
             </div>
 
@@ -10,9 +16,18 @@
                 <!-- Message d'Erreur -->
                 <div v-if="error" class="error-banner">
                     <div class="error-content">
-                        <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                            class="error-icon"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
                         </svg>
                         <span>{{ error }}</span>
                     </div>
@@ -22,10 +37,22 @@
                 <div class="form-group">
                     <label for="team_id" class="required">Équipe</label>
                     <div class="select-wrapper">
-                        <select id="team_id" v-model="formData.team_id" required :disabled="isEditMode || teamsLoading"
-                            :class="{ 'error': errors.team_id, 'disabled': isEditMode || teamsLoading }">
+                        <select
+                            id="team_id"
+                            v-model="formData.team_id"
+                            required
+                            :disabled="isEditMode || teamsLoading"
+                            :class="{
+                                error: errors.team_id,
+                                disabled: isEditMode || teamsLoading,
+                            }"
+                        >
                             <option value="">Sélectionner une équipe</option>
-                            <option v-for="team in availableTeams" :key="team.id" :value="team.id">
+                            <option
+                                v-for="team in availableTeams"
+                                :key="team.id"
+                                :value="team.id"
+                            >
                                 {{ team.name }}
                             </option>
                         </select>
@@ -37,7 +64,14 @@
                     <div v-if="teamsError" class="error-message">
                         {{ teamsError }}
                     </div>
-                    <div v-if="!availableTeams.length && !teamsLoading && !teamsError" class="hint">
+                    <div
+                        v-if="
+                            !availableTeams.length &&
+                            !teamsLoading &&
+                            !teamsError
+                        "
+                        class="hint"
+                    >
                         Aucune équipe disponible. Créez d'abord une équipe.
                     </div>
                     <div v-if="errors.team_id" class="error-message">
@@ -48,8 +82,15 @@
                 <!-- Nom du Projet -->
                 <div class="form-group">
                     <label for="name" class="required">Nom du Projet</label>
-                    <input id="name" v-model="formData.name" type="text" placeholder="Entrez le nom du projet" required
-                        :class="{ 'error': errors.name }" @input="clearError('name')" />
+                    <input
+                        id="name"
+                        v-model="formData.name"
+                        type="text"
+                        placeholder="Entrez le nom du projet"
+                        required
+                        :class="{ error: errors.name }"
+                        @input="clearError('name')"
+                    />
                     <div v-if="errors.name" class="error-message">
                         {{ errors.name }}
                     </div>
@@ -59,15 +100,23 @@
                 <div class="form-group">
                     <label for="description">Description</label>
                     <div class="textarea-wrapper">
-                        <textarea id="description" v-model="formData.description"
-                            placeholder="Décrivez les détails du projet..." rows="4"
-                            @input="updateDescriptionCount"></textarea>
-                        <div class="char-count" :class="{ 'limit': descriptionCount > 1000 }">
+                        <textarea
+                            id="description"
+                            v-model="formData.description"
+                            placeholder="Décrivez les détails du projet..."
+                            rows="4"
+                            @input="updateDescriptionCount"
+                        ></textarea>
+                        <div
+                            class="char-count"
+                            :class="{ limit: descriptionCount > 1000 }"
+                        >
                             {{ descriptionCount }}/1000
                         </div>
                     </div>
                     <div class="hint">
-                        Le Markdown est pris en charge. Utilisez **gras**, *italique* et `code`.
+                        Le Markdown est pris en charge. Utilisez **gras**,
+                        *italique* et `code`.
                     </div>
                 </div>
 
@@ -76,10 +125,20 @@
                     <div class="form-group">
                         <label for="start_date">Date de Début</label>
                         <div class="date-input">
-                            <input id="start_date" v-model="formData.start_date" type="date" :min="minStartDate"
-                                :max="formData.end_date" />
-                            <button v-if="formData.start_date" @click="clearDate('start_date')" type="button"
-                                class="btn-clear-date" title="Effacer la date">
+                            <input
+                                id="start_date"
+                                v-model="formData.start_date"
+                                type="date"
+                                :min="minStartDate"
+                                :max="formData.end_date"
+                            />
+                            <button
+                                v-if="formData.start_date"
+                                @click="clearDate('start_date')"
+                                type="button"
+                                class="btn-clear-date"
+                                title="Effacer la date"
+                            >
                                 ×
                             </button>
                         </div>
@@ -91,10 +150,19 @@
                     <div class="form-group">
                         <label for="end_date">Date de Fin</label>
                         <div class="date-input">
-                            <input id="end_date" v-model="formData.end_date" type="date"
-                                :min="formData.start_date || minStartDate" />
-                            <button v-if="formData.end_date" @click="clearDate('end_date')" type="button"
-                                class="btn-clear-date" title="Effacer la date">
+                            <input
+                                id="end_date"
+                                v-model="formData.end_date"
+                                type="date"
+                                :min="formData.start_date || minStartDate"
+                            />
+                            <button
+                                v-if="formData.end_date"
+                                @click="clearDate('end_date')"
+                                type="button"
+                                class="btn-clear-date"
+                                title="Effacer la date"
+                            >
                                 ×
                             </button>
                         </div>
@@ -108,12 +176,18 @@
                 <div class="form-group">
                     <label for="status">Statut</label>
                     <div class="status-buttons">
-                        <button v-for="status in statusOptions" :key="status.value" type="button"
-                            @click="formData.status = status.value" :class="[
+                        <button
+                            v-for="status in statusOptions"
+                            :key="status.value"
+                            type="button"
+                            @click="formData.status = status.value"
+                            :class="[
                                 'status-btn',
                                 `status-${status.value}`,
-                                { 'active': formData.status === status.value }
-                            ]" :title="status.description">
+                                { active: formData.status === status.value },
+                            ]"
+                            :title="status.description"
+                        >
                             {{ status.label }}
                         </button>
                     </div>
@@ -124,8 +198,14 @@
 
                 <!-- Options Avancées -->
                 <div class="form-group advanced-section">
-                    <button type="button" @click="showAdvanced = !showAdvanced" class="btn-toggle-advanced">
-                        <span class="toggle-icon">{{ showAdvanced ? '▼' : '▶' }}</span>
+                    <button
+                        type="button"
+                        @click="showAdvanced = !showAdvanced"
+                        class="btn-toggle-advanced"
+                    >
+                        <span class="toggle-icon">{{
+                            showAdvanced ? "▼" : "▶"
+                        }}</span>
                         Options Avancées
                     </button>
 
@@ -133,39 +213,63 @@
                         <!-- Public/Privé -->
                         <div class="form-group">
                             <label class="checkbox-label">
-                                <input v-model="formData.is_public" type="checkbox" class="checkbox" />
+                                <input
+                                    v-model="formData.is_public"
+                                    type="checkbox"
+                                    class="checkbox"
+                                />
                                 <span class="checkbox-custom"></span>
                                 Projet Public
                             </label>
                             <div class="hint">
-                                Rendre ce projet visible à tous les membres de l'équipe
+                                Rendre ce projet visible à tous les membres de
+                                l'équipe
                             </div>
                         </div>
 
                         <!-- Notifications -->
                         <div class="form-group">
                             <label class="checkbox-label">
-                                <input v-model="formData.send_notifications" type="checkbox" class="checkbox" />
+                                <input
+                                    v-model="formData.send_notifications"
+                                    type="checkbox"
+                                    class="checkbox"
+                                />
                                 <span class="checkbox-custom"></span>
                                 Envoyer les Notifications
                             </label>
                             <div class="hint">
-                                Notifier les membres de l'équipe des mises à jour du projet
+                                Notifier les membres de l'équipe des mises à
+                                jour du projet
                             </div>
                         </div>
 
                         <!-- Modèle -->
                         <div class="form-group">
                             <label for="template_id">Utiliser un Modèle</label>
-                            <select id="template_id" v-model="formData.template_id">
-                                <option :value="null">Aucun (Projet Vide)</option>
-                                <option value="software">Développement Logiciel</option>
-                                <option value="marketing">Campagne Marketing</option>
-                                <option value="research">Projet de Recherche</option>
-                                <option value="event">Organisation d'Événement</option>
+                            <select
+                                id="template_id"
+                                v-model="formData.template_id"
+                            >
+                                <option :value="null">
+                                    Aucun (Projet Vide)
+                                </option>
+                                <option value="software">
+                                    Développement Logiciel
+                                </option>
+                                <option value="marketing">
+                                    Campagne Marketing
+                                </option>
+                                <option value="research">
+                                    Projet de Recherche
+                                </option>
+                                <option value="event">
+                                    Organisation d'Événement
+                                </option>
                             </select>
                             <div class="hint">
-                                Sélectionnez un modèle pour pré-remplir les tâches et la structure
+                                Sélectionnez un modèle pour pré-remplir les
+                                tâches et la structure
                             </div>
                         </div>
                     </div>
@@ -173,13 +277,29 @@
 
                 <!-- Actions -->
                 <div class="form-actions">
-                    <button type="button" @click="$emit('close')" class="btn btn-secondary" :disabled="loading">
+                    <button
+                        type="button"
+                        @click="$emit('close')"
+                        class="btn btn-secondary"
+                        :disabled="loading"
+                    >
                         Annuler
                     </button>
-                    <button type="submit" class="btn btn-primary" :disabled="loading">
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                        :disabled="loading"
+                    >
                         <span v-if="loading" class="loading-spinner"></span>
-                        {{ loading ? (isEditMode ? 'Enregistrement...' : 'Création...') : (isEditMode ? 'Enregistrer les Modifications' :
-                            'Créer le Projet') }}
+                        {{
+                            loading
+                                ? isEditMode
+                                    ? "Enregistrement..."
+                                    : "Création..."
+                                : isEditMode
+                                ? "Enregistrer les Modifications"
+                                : "Créer le Projet"
+                        }}
                     </button>
                 </div>
             </form>
@@ -188,10 +308,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
-import { useProjectTeamStore } from '@/stores/projectsTeams.store';
-import { useTeamStore } from '@/stores/team.store';
-import type { ProjectTeam, CreateProjectTeamData, UpdateProjectTeamData } from '@/types/projectsTeams';
+import { ref, computed, watch, onMounted } from "vue";
+import { useProjectTeamStore } from "@/stores/projectsTeams.store";
+import { useTeamStore } from "@/stores/team.store";
+import type {
+    ProjectTeam,
+    CreateProjectTeamData,
+    UpdateProjectTeamData,
+} from "@/types/projectsTeams";
 
 const props = defineProps<{
     show: boolean;
@@ -199,8 +323,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: 'close'): void;
-    (e: 'saved'): void;
+    (e: "close"): void;
+    (e: "saved"): void;
 }>();
 
 // Stores
@@ -218,35 +342,55 @@ const teamsError = ref<string | null>(null);
 const errors = ref<Record<string, string>>({});
 
 // Form data
-const formData = ref<CreateProjectTeamData & {
-    is_public?: boolean;
-    send_notifications?: boolean;
-    template_id?: string | null;
-}>({
+const formData = ref<
+    CreateProjectTeamData & {
+        is_public?: boolean;
+        send_notifications?: boolean;
+        template_id?: string | null;
+    }
+>({
     team_id: 0,
-    name: '',
-    description: '',
-    start_date: '',
-    end_date: '',
-    status: 'active',
+    name: "",
+    description: "",
+    start_date: "",
+    end_date: "",
+    status: "active",
     is_public: false,
     send_notifications: true,
     template_id: null,
 });
 
-const statusOptions = [
-    { value: 'active', label: 'Active', description: 'Project is in progress' },
-    { value: 'planned', label: 'Planned', description: 'Project is scheduled' },
-    { value: 'on_hold', label: 'On Hold', description: 'Project is paused' },
-    { value: 'completed', label: 'Completed', description: 'Project is finished' },
-    { value: 'cancelled', label: 'Cancelled', description: 'Project was cancelled' }
-];
+interface StatusOption {
+    value: "active" | "completed" | "on_hold" | "cancelled" | undefined;
+    label: string;
+    description: string;
+}
 
+const statusOptions: StatusOption[] = [
+    { value: "active", label: "Active", description: "This project is active" },
+    {
+        value: "completed",
+        label: "Completed",
+        description: "This project is completed",
+    },
+    {
+        value: "on_hold",
+        label: "On Hold",
+        description: "This project is on hold",
+    },
+    {
+        value: "cancelled",
+        label: "Cancelled",
+        description: "This project is cancelled",
+    },
+];
 // Computed
 const isEditMode = computed(() => !!props.project);
 const availableTeams = computed(() => teamStore.teams || []);
-const descriptionCount = computed(() => formData.value.description?.length || 0);
-const minStartDate = computed(() => new Date().toISOString().split('T')[0]);
+const descriptionCount = computed(
+    () => formData.value.description?.length || 0
+);
+const minStartDate = computed(() => new Date().toISOString().split("T")[0]);
 
 // Methods
 const fetchTeams = async () => {
@@ -259,8 +403,11 @@ const fetchTeams = async () => {
         teamsError.value = null;
         await teamStore.fetchTeams({ per_page: 100 });
     } catch (err: any) {
-        console.error('Error loading teams:', err);
-        teamsError.value = err.response?.data?.message || err.message || 'Failed to load teams';
+        console.error("Error loading teams:", err);
+        teamsError.value =
+            err.response?.data?.message ||
+            err.message ||
+            "Failed to load teams";
     } finally {
         teamsLoading.value = false;
     }
@@ -268,12 +415,15 @@ const fetchTeams = async () => {
 
 const resetForm = () => {
     formData.value = {
-        team_id: availableTeams.value.length > 0 ? Number(availableTeams.value[0].id) : 0,
-        name: '',
-        description: '',
-        start_date: '',
-        end_date: '',
-        status: 'active',
+        team_id:
+            availableTeams.value.length > 0
+                ? Number(availableTeams.value[0].id)
+                : 0,
+        name: "",
+        description: "",
+        start_date: "",
+        end_date: "",
+        status: "active",
         is_public: false,
         send_notifications: true,
         template_id: null,
@@ -288,19 +438,22 @@ const validateForm = (): boolean => {
 
     // Team validation
     if (!formData.value.team_id || formData.value.team_id === 0) {
-        newErrors.team_id = 'Team is required';
+        newErrors.team_id = "Team is required";
     }
 
     // Name validation
     if (!formData.value.name.trim()) {
-        newErrors.name = 'Project name is required';
+        newErrors.name = "Project name is required";
     } else if (formData.value.name.trim().length > 255) {
-        newErrors.name = 'Project name must be less than 255 characters';
+        newErrors.name = "Project name must be less than 255 characters";
     }
 
     // Description validation
-    if (formData.value.description && formData.value.description.length > 1000) {
-        newErrors.description = 'Description must be less than 1000 characters';
+    if (
+        formData.value.description &&
+        formData.value.description.length > 1000
+    ) {
+        newErrors.description = "Description must be less than 1000 characters";
     }
 
     // Date validation
@@ -309,7 +462,7 @@ const validateForm = (): boolean => {
         const endDate = new Date(formData.value.end_date);
 
         if (endDate < startDate) {
-            newErrors.end_date = 'End date must be after start date';
+            newErrors.end_date = "End date must be after start date";
         }
     }
 
@@ -325,14 +478,15 @@ const clearError = (field: string) => {
 
 const updateDescriptionCount = () => {
     if (descriptionCount.value > 1000) {
-        errors.value.description = 'Description must be less than 1000 characters';
+        errors.value.description =
+            "Description must be less than 1000 characters";
     } else {
-        clearError('description');
+        clearError("description");
     }
 };
 
-const clearDate = (field: 'start_date' | 'end_date') => {
-    formData.value[field] = '';
+const clearDate = (field: "start_date" | "end_date") => {
+    formData.value[field] = "";
     clearError(field);
 };
 
@@ -349,27 +503,35 @@ const submitForm = async () => {
         // Prepare data
         const formDataToSend = {
             ...formData.value,
-            team_id: Number(formData.value.team_id)
+            team_id: Number(formData.value.team_id),
         };
 
-        console.log('Submitting project data:', formDataToSend);
+        console.log("Submitting project data:", formDataToSend);
 
         if (isEditMode.value && props.project) {
-            await projectStore.updateProject(props.project.id, formDataToSend as UpdateProjectTeamData);
+            await projectStore.updateProject(
+                props.project.id,
+                formDataToSend as UpdateProjectTeamData
+            );
         } else {
-            await projectStore.createProject(formDataToSend as CreateProjectTeamData);
+            await projectStore.createProject(
+                formDataToSend as CreateProjectTeamData
+            );
         }
 
-        emit('saved');
+        emit("saved");
         closeModal();
     } catch (err: any) {
-        console.error('Error submitting form:', err);
+        console.error("Error submitting form:", err);
 
         // Handle API errors
         if (err.response?.data?.errors) {
             errors.value = err.response.data.errors;
         } else {
-            error.value = err.response?.data?.message || err.message || 'An error occurred';
+            error.value =
+                err.response?.data?.message ||
+                err.message ||
+                "An error occurred";
         }
     } finally {
         loading.value = false;
@@ -377,9 +539,9 @@ const submitForm = async () => {
 };
 
 const closeModal = (e?: MouseEvent) => {
-    if (!e || (e.target as HTMLElement).classList.contains('modal-overlay')) {
+    if (!e || (e.target as HTMLElement).classList.contains("modal-overlay")) {
         resetForm();
-        emit('close');
+        emit("close");
     }
 };
 
@@ -388,13 +550,12 @@ watch(
     () => props.project,
     (project) => {
         if (project) {
-            console.log('Loading project data:', project);
             formData.value = {
                 team_id: project.team_id ? Number(project.team_id) : 0,
                 name: project.name,
-                description: project.description || '',
-                start_date: project.start_date || '',
-                end_date: project.end_date || '',
+                description: project.description || "",
+                start_date: project.start_date || "",
+                end_date: project.end_date || "",
                 status: project.status,
                 is_public: project.is_public || false,
                 send_notifications: true,
@@ -560,7 +721,7 @@ label {
 }
 
 label.required::after {
-    content: ' *';
+    content: " *";
     color: #e74c3c;
 }
 
@@ -659,7 +820,7 @@ select.disabled {
 }
 
 .loading-indicator::before {
-    content: '';
+    content: "";
     width: 12px;
     height: 12px;
     border: 2px solid #f3f3f3;
@@ -830,13 +991,13 @@ select.disabled {
     transition: all 0.2s;
 }
 
-.checkbox:checked+.checkbox-custom {
+.checkbox:checked + .checkbox-custom {
     background: #3498db;
     border-color: #3498db;
 }
 
-.checkbox:checked+.checkbox-custom::after {
-    content: '✓';
+.checkbox:checked + .checkbox-custom::after {
+    content: "✓";
     color: white;
     font-size: 12px;
     font-weight: bold;

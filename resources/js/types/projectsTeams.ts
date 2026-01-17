@@ -9,6 +9,7 @@ export interface ProjectTeam {
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
+    is_public?: boolean;
     team?: {
         id: number;
         name: string;

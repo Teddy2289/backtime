@@ -8,12 +8,22 @@
             </div>
 
             <div class="search-section">
-                <input v-model="searchQuery" type="text" placeholder="Search users..." class="search-input" />
+                <input
+                    v-model="searchQuery"
+                    type="text"
+                    placeholder="Search users..."
+                    class="search-input"
+                />
             </div>
 
             <div class="users-list">
-                <div v-for="user in filteredUsers" :key="user.id" class="user-item"
-                    :class="{ 'selected': selectedUser?.id === user.id }" @click="selectUser(user)">
+                <div
+                    v-for="user in filteredUsers"
+                    :key="user.id"
+                    class="user-item"
+                    :class="{ selected: selectedUser?.id === user.id }"
+                    @click="selectUser(user)"
+                >
                     <div class="user-avatar">
                         <span v-if="user.avatar">
                             <img :src="user.avatar" :alt="user.name" />
@@ -27,7 +37,10 @@
                         <span class="user-email">{{ user.email }}</span>
                     </div>
                     <div class="user-select">
-                        <div v-if="selectedUser?.id === user.id" class="selected-icon">
+                        <div
+                            v-if="selectedUser?.id === user.id"
+                            class="selected-icon"
+                        >
                             ✓
                         </div>
                     </div>
@@ -42,7 +55,11 @@
                 <button @click="$emit('close')" class="btn btn-secondary">
                     Cancel
                 </button>
-                <button @click="assign" class="btn btn-primary" :disabled="!selectedUser">
+                <button
+                    @click="assign"
+                    class="btn btn-primary"
+                    :disabled="!selectedUser"
+                >
                     Assign
                 </button>
             </div>
@@ -51,16 +68,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { taskService } from '@/services/task.service';
+import { ref, computed, onMounted } from "vue";
+import { projectsTeamsService } from "@/services/../services/projectsTeams.service";
 
 interface Props {
     projectId: number;
 }
 
 interface Emits {
-    (e: 'close'): void;
-    (e: 'assign', userId: number): void;
+    (e: "close"): void;
+    (e: "assign", userId: number): void;
 }
 
 const props = defineProps<Props>();
@@ -68,7 +85,7 @@ const emit = defineEmits<Emits>();
 
 const users = ref<any[]>([]);
 const selectedUser = ref<any>(null);
-const searchQuery = ref('');
+const searchQuery = ref("");
 const loading = ref(false);
 
 onMounted(async () => {
@@ -78,9 +95,11 @@ onMounted(async () => {
 const loadUsers = async () => {
     try {
         loading.value = true;
-        users.value = await taskService.getAssignableUsers(props.projectId);
+        users.value = await projectsTeamsService.getAssignableUsers(
+            props.projectId
+        );
     } catch (err) {
-        console.error('Failed to load users:', err);
+        console.error("Failed to load users:", err);
     } finally {
         loading.value = false;
     }
@@ -92,9 +111,10 @@ const filteredUsers = computed(() => {
     }
 
     const query = searchQuery.value.toLowerCase();
-    return users.value.filter(user =>
-        user.name.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query)
+    return users.value.filter(
+        (user) =>
+            user.name.toLowerCase().includes(query) ||
+            user.email.toLowerCase().includes(query)
     );
 });
 
@@ -104,22 +124,22 @@ const selectUser = (user: any) => {
 
 const assign = () => {
     if (selectedUser.value) {
-        emit('assign', selectedUser.value.id);
+        emit("assign", selectedUser.value.id);
     }
 };
 
 const closeModal = (e: MouseEvent) => {
-    if ((e.target as HTMLElement).classList.contains('modal-overlay')) {
-        emit('close');
+    if ((e.target as HTMLElement).classList.contains("modal-overlay")) {
+        emit("close");
     }
 };
 
 const getInitials = (name: string) => {
-    if (!name) return '??';
+    if (!name) return "??";
     return name
-        .split(' ')
-        .map(part => part[0])
-        .join('')
+        .split(" ")
+        .map((part) => part[0])
+        .join("")
         .toUpperCase()
         .substring(0, 2);
 };

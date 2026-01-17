@@ -11,8 +11,15 @@
                 <!-- Titre -->
                 <div class="form-group">
                     <label for="title" class="required">Task Title</label>
-                    <input id="title" v-model="form.title" type="text" placeholder="Enter task title" required
-                        :class="{ 'error': errors.title }" @input="clearError('title')" />
+                    <input
+                        id="title"
+                        v-model="form.title"
+                        type="text"
+                        placeholder="Enter task title"
+                        required
+                        :class="{ error: errors.title }"
+                        @input="clearError('title')"
+                    />
                     <div v-if="errors.title" class="error-message">
                         {{ errors.title }}
                     </div>
@@ -22,10 +29,19 @@
                 <div class="form-group">
                     <label for="project_id" class="required">Project</label>
                     <div class="select-wrapper">
-                        <select id="project_id" v-model="form.project_id" required
-                            :class="{ 'error': errors.project_id }" @change="onProjectChange">
+                        <select
+                            id="project_id"
+                            v-model="form.project_id"
+                            required
+                            :class="{ error: errors.project_id }"
+                            @change="onProjectChange"
+                        >
                             <option value="">Select a project</option>
-                            <option v-for="project in projects" :key="project.id" :value="project.id">
+                            <option
+                                v-for="project in projects"
+                                :key="project.id"
+                                :value="project.id"
+                            >
                                 {{ project.name }}
                             </option>
                         </select>
@@ -40,14 +56,23 @@
                 <div class="form-group">
                     <label for="description">Description</label>
                     <div class="textarea-wrapper">
-                        <textarea id="description" v-model="form.description" placeholder="Describe the task details..."
-                            rows="4" @input="updateDescriptionCount"></textarea>
-                        <div class="char-count" :class="{ 'limit': descriptionCount > 1000 }">
+                        <textarea
+                            id="description"
+                            v-model="form.description"
+                            placeholder="Describe the task details..."
+                            rows="4"
+                            @input="updateDescriptionCount"
+                        ></textarea>
+                        <div
+                            class="char-count"
+                            :class="{ limit: descriptionCount > 1000 }"
+                        >
                             {{ descriptionCount }}/1000
                         </div>
                     </div>
                     <div class="hint">
-                        Markdown is supported. Use **bold**, *italic*, and `code` formatting.
+                        Markdown is supported. Use **bold**, *italic*, and
+                        `code` formatting.
                     </div>
                 </div>
 
@@ -56,24 +81,45 @@
                     <label for="assigned_to">Assign To</label>
                     <div class="assignee-selector">
                         <div class="select-wrapper">
-                            <select id="assigned_to" v-model="form.assigned_to"
-                                :disabled="!form.project_id || teamMembersLoading"
-                                :class="{ 'error': errors.assigned_to }">
+                            <select
+                                id="assigned_to"
+                                v-model="form.assigned_to"
+                                :disabled="
+                                    !form.project_id || teamMembersLoading
+                                "
+                                :class="{ error: errors.assigned_to }"
+                            >
                                 <option :value="null">Unassigned</option>
-                                <option v-for="member in teamMembers" :key="member.id" :value="member.id">
-                                    {{ member.name }} ({{ member.role || 'member' }})
+                                <option
+                                    v-for="member in teamMembers"
+                                    :key="member.id"
+                                    :value="member.id"
+                                >
+                                    {{ member.name }} ({{
+                                        member.role || "member"
+                                    }})
                                 </option>
                             </select>
                             <div class="select-arrow">▼</div>
                         </div>
-                        <div v-if="teamMembersLoading" class="loading-indicator">
+                        <div
+                            v-if="teamMembersLoading"
+                            class="loading-indicator"
+                        >
                             Loading team members...
                         </div>
                     </div>
                     <div v-if="errors.assigned_to" class="error-message">
                         {{ errors.assigned_to }}
                     </div>
-                    <div v-if="form.project_id && teamMembers.length === 0 && !teamMembersLoading" class="hint">
+                    <div
+                        v-if="
+                            form.project_id &&
+                            teamMembers.length === 0 &&
+                            !teamMembersLoading
+                        "
+                        class="hint"
+                    >
                         No team members found for this project.
                     </div>
                 </div>
@@ -83,12 +129,18 @@
                     <div class="form-group">
                         <label for="status">Status</label>
                         <div class="status-buttons">
-                            <button v-for="status in statusOptions" :key="status.value" type="button"
-                                @click="form.status = status.value" :class="[
+                            <button
+                                v-for="status in statusOptions"
+                                :key="status.value"
+                                type="button"
+                                @click="form.status = status.value"
+                                :class="[
                                     'status-btn',
                                     `status-${status.value}`,
-                                    { 'active': form.status === status.value }
-                                ]" :title="status.description">
+                                    { active: form.status === status.value },
+                                ]"
+                                :title="status.description"
+                            >
                                 {{ status.label }}
                             </button>
                         </div>
@@ -97,12 +149,21 @@
                     <div class="form-group">
                         <label for="priority">Priority</label>
                         <div class="priority-buttons">
-                            <button v-for="priority in priorityOptions" :key="priority.value" type="button"
-                                @click="form.priority = priority.value" :class="[
+                            <button
+                                v-for="priority in priorityOptions"
+                                :key="priority.value"
+                                type="button"
+                                @click="form.priority = priority.value"
+                                :class="[
                                     'priority-btn',
                                     `priority-${priority.value}`,
-                                    { 'active': form.priority === priority.value }
-                                ]" :title="priority.description">
+                                    {
+                                        active:
+                                            form.priority === priority.value,
+                                    },
+                                ]"
+                                :title="priority.description"
+                            >
                                 {{ priority.label }}
                             </button>
                         </div>
@@ -114,10 +175,20 @@
                     <div class="form-group">
                         <label for="start_date">Start Date</label>
                         <div class="date-input">
-                            <input id="start_date" v-model="form.start_date" type="date" :min="minStartDate"
-                                :max="form.due_date" />
-                            <button v-if="form.start_date" @click="clearDate('start_date')" type="button"
-                                class="btn-clear-date" title="Clear date">
+                            <input
+                                id="due_date"
+                                v-model="form.due_date"
+                                type="date"
+                                :min="form.start_date || minStartDate"
+                                :max="form.due_date || undefined"
+                            />
+                            <button
+                                v-if="form.start_date"
+                                @click="clearDate('start_date')"
+                                type="button"
+                                class="btn-clear-date"
+                                title="Clear date"
+                            >
                                 ×
                             </button>
                         </div>
@@ -126,10 +197,19 @@
                     <div class="form-group">
                         <label for="due_date">Due Date</label>
                         <div class="date-input">
-                            <input id="due_date" v-model="form.due_date" type="date"
-                                :min="form.start_date || minStartDate" />
-                            <button v-if="form.due_date" @click="clearDate('due_date')" type="button"
-                                class="btn-clear-date" title="Clear date">
+                            <input
+                                id="due_date"
+                                v-model="form.due_date"
+                                type="date"
+                                :min="form.start_date || minStartDate"
+                            />
+                            <button
+                                v-if="form.due_date"
+                                @click="clearDate('due_date')"
+                                type="button"
+                                class="btn-clear-date"
+                                title="Clear date"
+                            >
                                 ×
                             </button>
                         </div>
@@ -140,12 +220,23 @@
                 <div class="form-group">
                     <label for="estimated_time">Estimated Time</label>
                     <div class="time-input-group">
-                        <input id="estimated_time" v-model.number="form.estimated_time" type="number" min="0" step="0.5"
-                            placeholder="0" />
+                        <input
+                            id="estimated_time"
+                            v-model.number="form.estimated_time"
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            placeholder="0"
+                        />
                         <div class="time-unit">hours</div>
                         <div class="time-presets">
-                            <button v-for="preset in timePresets" :key="preset" type="button"
-                                @click="form.estimated_time = preset" class="time-preset-btn">
+                            <button
+                                v-for="preset in timePresets"
+                                :key="preset"
+                                type="button"
+                                @click="form.estimated_time = preset"
+                                class="time-preset-btn"
+                            >
                                 {{ preset }}h
                             </button>
                         </div>
@@ -160,19 +251,39 @@
                     <label>Tags</label>
                     <div class="tags-input">
                         <div class="tags-container">
-                            <span v-for="(tag, index) in form.tags" :key="index" class="tag">
+                            <span
+                                v-for="(tag, index) in form.tags"
+                                :key="index"
+                                class="tag"
+                            >
                                 {{ tag }}
-                                <button @click="removeTag(index)" type="button" class="tag-remove" title="Remove tag">
+                                <button
+                                    @click="removeTag(index)"
+                                    type="button"
+                                    class="tag-remove"
+                                    title="Remove tag"
+                                >
                                     ×
                                 </button>
                             </span>
-                            <input v-model="newTag" type="text" placeholder="Add tag..." @keydown.enter.prevent="addTag"
-                                @keydown.esc="newTag = ''" class="tag-input" />
+                            <input
+                                v-model="newTag"
+                                type="text"
+                                placeholder="Add tag..."
+                                @keydown.enter.prevent="addTag"
+                                @keydown.esc="newTag = ''"
+                                class="tag-input"
+                            />
                         </div>
                         <div class="tags-hint">
                             Press Enter to add tag. Common tags:
-                            <button v-for="commonTag in commonTags" :key="commonTag" @click="addCommonTag(commonTag)"
-                                type="button" class="common-tag-btn">
+                            <button
+                                v-for="commonTag in commonTags"
+                                :key="commonTag"
+                                @click="addCommonTag(commonTag)"
+                                type="button"
+                                class="common-tag-btn"
+                            >
                                 {{ commonTag }}
                             </button>
                         </div>
@@ -181,8 +292,14 @@
 
                 <!-- Options avancées -->
                 <div class="form-group advanced-section">
-                    <button type="button" @click="showAdvanced = !showAdvanced" class="btn-toggle-advanced">
-                        <span class="toggle-icon">{{ showAdvanced ? '▼' : '▶' }}</span>
+                    <button
+                        type="button"
+                        @click="showAdvanced = !showAdvanced"
+                        class="btn-toggle-advanced"
+                    >
+                        <span class="toggle-icon">{{
+                            showAdvanced ? "▼" : "▶"
+                        }}</span>
                         Advanced Options
                     </button>
 
@@ -190,10 +307,18 @@
                         <!-- Parent Task -->
                         <div class="form-group">
                             <label for="parent_task_id">Parent Task</label>
-                            <select id="parent_task_id" v-model="form.parent_task_id" :disabled="!form.project_id">
+                            <select
+                                id="parent_task_id"
+                                v-model="form.parent_task_id"
+                                :disabled="!form.project_id"
+                            >
                                 <option :value="null">None (Main Task)</option>
-                                <option v-for="task in availableParentTasks" :key="task.id" :value="task.id"
-                                    :disabled="task.id === props.task.id">
+                                <option
+                                    v-for="task in availableParentTasks"
+                                    :key="task.id"
+                                    :value="task.id"
+                                    :disabled="task.id === props.task.id"
+                                >
                                     #{{ task.id }} {{ task.title }}
                                 </option>
                             </select>
@@ -203,11 +328,19 @@
                         <div class="form-group">
                             <label for="story_points">Story Points</label>
                             <div class="story-points">
-                                <button v-for="points in storyPointsOptions" :key="points" type="button"
-                                    @click="form.story_points = points" :class="[
+                                <button
+                                    v-for="points in storyPointsOptions"
+                                    :key="points"
+                                    type="button"
+                                    @click="form.story_points = points"
+                                    :class="[
                                         'story-point-btn',
-                                        { 'active': form.story_points === points }
-                                    ]">
+                                        {
+                                            active:
+                                                form.story_points === points,
+                                        },
+                                    ]"
+                                >
                                     {{ points }}
                                 </button>
                             </div>
@@ -216,19 +349,28 @@
                         <!-- Confidential -->
                         <div class="form-group">
                             <label class="checkbox-label">
-                                <input v-model="form.is_confidential" type="checkbox" class="checkbox" />
+                                <input
+                                    v-model="form.is_confidential"
+                                    type="checkbox"
+                                    class="checkbox"
+                                />
                                 <span class="checkbox-custom"></span>
                                 Confidential Task
                             </label>
                             <div class="hint">
-                                Only assigned users and admins can view this task
+                                Only assigned users and admins can view this
+                                task
                             </div>
                         </div>
 
                         <!-- Notifications -->
                         <div class="form-group">
                             <label class="checkbox-label">
-                                <input v-model="form.send_notifications" type="checkbox" class="checkbox" />
+                                <input
+                                    v-model="form.send_notifications"
+                                    type="checkbox"
+                                    class="checkbox"
+                                />
                                 <span class="checkbox-custom"></span>
                                 Send Notifications
                             </label>
@@ -241,11 +383,17 @@
                         <div class="form-group danger-zone">
                             <label class="danger-label">Danger Zone</label>
                             <div class="danger-actions">
-                                <button type="button" @click="confirmDelete" class="btn btn-danger" :disabled="loading">
+                                <button
+                                    type="button"
+                                    @click="confirmDelete"
+                                    class="btn btn-danger"
+                                    :disabled="loading"
+                                >
                                     Delete Task
                                 </button>
                                 <div class="hint">
-                                    This action cannot be undone. All task data will be permanently deleted.
+                                    This action cannot be undone. All task data
+                                    will be permanently deleted.
                                 </div>
                             </div>
                         </div>
@@ -254,12 +402,21 @@
 
                 <!-- Actions -->
                 <div class="form-actions">
-                    <button type="button" @click="$emit('close')" class="btn btn-secondary" :disabled="loading">
+                    <button
+                        type="button"
+                        @click="$emit('close')"
+                        class="btn btn-secondary"
+                        :disabled="loading"
+                    >
                         Cancel
                     </button>
-                    <button type="submit" class="btn btn-primary" :disabled="loading">
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                        :disabled="loading"
+                    >
                         <span v-if="loading" class="loading-spinner"></span>
-                        {{ loading ? 'Saving...' : 'Save Changes' }}
+                        {{ loading ? "Saving..." : "Save Changes" }}
                     </button>
                 </div>
             </form>
@@ -268,46 +425,52 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { taskService } from '@/services/task.service';
-import { projectsTeamsService } from '@/services/projectsTeams.service';
-import { useTaskStore } from '@/stores/task.store';
-import type { UpdateTaskData, Task } from '@/types/task';
+import { ref, computed, onMounted, watch } from "vue";
+import { taskService } from "@/services/task.service";
+import { projectsTeamsService } from "@/services/projectsTeams.service";
+import { useTaskStore } from "@/stores/task.store";
+import type { UpdateTaskData, Task } from "@/types/task";
 
 interface Props {
     task: Task;
 }
 
 interface Emits {
-    (e: 'close'): void;
-    (e: 'updated', task: Task): void;
-    (e: 'deleted', taskId: number): void;
+    (e: "close"): void;
+    (e: "updated", task: Task): void;
+    (e: "deleted", taskId: number): void;
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 // État du formulaire
-const form = ref<UpdateTaskData & {
-    parent_task_id?: number | null;
-    story_points?: number;
-    is_confidential?: boolean;
-    send_notifications?: boolean;
-}>({
-    title: props.task.title || '',
+const form = ref<
+    UpdateTaskData & {
+        parent_task_id?: number | null;
+        story_points?: number;
+        is_confidential?: boolean;
+        send_notifications?: boolean;
+    }
+>({
+    title: props.task.title || "",
     project_id: props.task.project_id,
-    description: props.task.description || '',
+    description: props.task.description || "",
     assigned_to: props.task.assigned_to || undefined,
-    status: props.task.status || 'todo',
-    priority: props.task.priority || 'medium',
-    start_date: props.task.start_date ? formatDateForInput(props.task.start_date) : '',
-    due_date: props.task.due_date ? formatDateForInput(props.task.due_date) : '',
+    status: props.task.status || "todo",
+    priority: props.task.priority || "medium",
+    start_date: props.task.start_date
+        ? formatDateForInput(props.task.start_date)
+        : "",
+    due_date: props.task.due_date
+        ? formatDateForInput(props.task.due_date)
+        : "",
     estimated_time: props.task.estimated_time || undefined,
     tags: Array.isArray(props.task.tags) ? props.task.tags : [],
     parent_task_id: props.task.parent_task_id || null,
     story_points: props.task.story_points || undefined,
     is_confidential: props.task.is_confidential || false,
-    send_notifications: true
+    send_notifications: true,
 });
 
 // Données
@@ -319,36 +482,45 @@ const availableParentTasks = ref<any[]>([]);
 const loading = ref(false);
 const teamMembersLoading = ref(false);
 const showAdvanced = ref(false);
-const newTag = ref('');
+const newTag = ref("");
 const errors = ref<Record<string, string>>({});
 
 // Options
 const statusOptions = [
-    { value: 'backlog', label: 'Backlog', description: 'Not yet started' },
-    { value: 'todo', label: 'Todo', description: 'Ready to start' },
-    { value: 'doing', label: 'Doing', description: 'In progress' },
-    { value: 'done', label: 'Done', description: 'Completed' }
+    { value: "backlog", label: "Backlog", description: "Not yet started" },
+    { value: "todo", label: "Todo", description: "Ready to start" },
+    { value: "doing", label: "Doing", description: "In progress" },
+    { value: "done", label: "Done", description: "Completed" },
 ];
 
 const priorityOptions = [
-    { value: 'low', label: 'Low', description: 'Low priority' },
-    { value: 'medium', label: 'Medium', description: 'Normal priority' },
-    { value: 'high', label: 'High', description: 'High priority' }
+    { value: "low", label: "Low", description: "Low priority" },
+    { value: "medium", label: "Medium", description: "Normal priority" },
+    { value: "high", label: "High", description: "High priority" },
 ];
 
 const timePresets = [0.5, 1, 2, 4, 8, 16, 24];
-const commonTags = ['urgent', 'bug', 'feature', 'improvement', 'design', 'backend', 'frontend', 'testing'];
+const commonTags = [
+    "urgent",
+    "bug",
+    "feature",
+    "improvement",
+    "design",
+    "backend",
+    "frontend",
+    "testing",
+];
 const storyPointsOptions = [1, 2, 3, 5, 8, 13, 21];
 
 // Computed
 const descriptionCount = computed(() => form.value.description?.length || 0);
-const minStartDate = computed(() => new Date().toISOString().split('T')[0]);
+const minStartDate = computed(() => new Date().toISOString().split("T")[0]);
 
 // Fonction utilitaire pour formater les dates
 function formatDateForInput(dateString: string): string {
-    if (!dateString) return '';
+    if (!dateString) return "";
     const date = new Date(dateString);
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split("T")[0];
 }
 
 // Chargement initial
@@ -361,50 +533,52 @@ onMounted(async () => {
 });
 
 // Watch project changes
-watch(() => form.value.project_id, async (newProjectId) => {
-    if (newProjectId) {
-        await loadTeamMembers(newProjectId);
-        await loadParentTasks(newProjectId);
-    } else {
-        teamMembers.value = [];
-        availableParentTasks.value = [];
+watch(
+    () => form.value.project_id,
+    async (newProjectId) => {
+        if (newProjectId) {
+            await loadTeamMembers(newProjectId);
+            await loadParentTasks(newProjectId);
+        } else {
+            teamMembers.value = [];
+            availableParentTasks.value = [];
+        }
     }
-});
+);
 
 // Methods
 const loadProjects = async () => {
     try {
         const response = await projectsTeamsService.getProjects({
-            per_page: 100
+            per_page: 100,
         });
 
         if (response && response.data) {
             projects.value = response.data.map((project: any) => ({
                 id: project.id,
                 name: project.name,
-                team_id: project.team_id || project.team?.id
+                team_id: project.team_id || project.team?.id,
             }));
         }
 
         if (projects.value.length === 0) {
-            console.warn('No projects found, using sample data');
+            console.warn("No projects found, using sample data");
             projects.value = [
-                { id: 1, name: 'Website Redesign', team_id: 1 },
-                { id: 2, name: 'Mobile App Development', team_id: 2 },
-                { id: 3, name: 'API Integration', team_id: 3 },
-                { id: 4, name: 'Marketing Campaign', team_id: 4 }
+                { id: 1, name: "Website Redesign", team_id: 1 },
+                { id: 2, name: "Mobile App Development", team_id: 2 },
+                { id: 3, name: "API Integration", team_id: 3 },
+                { id: 4, name: "Marketing Campaign", team_id: 4 },
             ];
         }
 
-        console.log('Projects loaded:', projects.value);
-
+        console.log("Projects loaded:", projects.value);
     } catch (error) {
-        console.error('Failed to load projects:', error);
+        console.error("Failed to load projects:", error);
         projects.value = [
-            { id: 1, name: 'Website Redesign', team_id: 1 },
-            { id: 2, name: 'Mobile App Development', team_id: 2 },
-            { id: 3, name: 'API Integration', team_id: 3 },
-            { id: 4, name: 'Marketing Campaign', team_id: 4 }
+            { id: 1, name: "Website Redesign", team_id: 1 },
+            { id: 2, name: "Mobile App Development", team_id: 2 },
+            { id: 3, name: "API Integration", team_id: 3 },
+            { id: 4, name: "Marketing Campaign", team_id: 4 },
         ];
     }
 };
@@ -412,31 +586,34 @@ const loadProjects = async () => {
 const loadTeamMembers = async (projectId: number) => {
     try {
         teamMembersLoading.value = true;
-        errors.value.assigned_to = '';
+        errors.value.assigned_to = "";
 
         // Utilisez projectsTeamsService pour récupérer les membres
-        const members = await projectsTeamsService.getProjectTeamUsers(projectId);
+        const members = await projectsTeamsService.getProjectTeamUsers(
+            projectId
+        );
 
         // Formatage des données
-        teamMembers.value = members.map(member => ({
+        teamMembers.value = members.map((member) => ({
             id: member.id,
             name: member.name,
             email: member.email,
-            role: member.role || 'member',
+            role: member.role || "member",
             avatar: member.avatar,
             avatar_url: member.avatar_url,
-            initials: member.initials
+            initials: member.initials,
         }));
 
-        console.log('Team members loaded:', teamMembers.value);
-
+        console.log("Team members loaded:", teamMembers.value);
     } catch (error: any) {
-        console.error('Failed to load team members:', error);
+        console.error("Failed to load team members:", error);
         teamMembers.value = [];
-        errors.value.assigned_to = 'Failed to load team members';
+        errors.value.assigned_to = "Failed to load team members";
 
         if (error.response?.data?.message) {
-            showError(`Failed to load team members: ${error.response.data.message}`);
+            showError(
+                `Failed to load team members: ${error.response.data.message}`
+            );
         }
     } finally {
         teamMembersLoading.value = false;
@@ -447,14 +624,15 @@ const loadParentTasks = async (projectId: number) => {
     try {
         const response = await taskService.getTasksByProject(projectId, {
             per_page: 50,
-            status: 'backlog,todo,doing',
-            exclude_id: props.task.id // Exclure la tâche courante
+            status: "backlog,todo,doing",
+            exclude_id: props.task.id, // Exclure la tâche courante
         });
 
-        availableParentTasks.value = Array.isArray(response.data) ? response.data : [];
-
+        availableParentTasks.value = Array.isArray(response.data)
+            ? response.data
+            : [];
     } catch (error) {
-        console.error('Failed to load parent tasks:', error);
+        console.error("Failed to load parent tasks:", error);
         availableParentTasks.value = [];
     }
 };
@@ -470,7 +648,7 @@ const updateTask = async () => {
 
         // Préparer les données pour l'update
         const updateData: UpdateTaskData = {
-            title: form.value.title.trim(),
+            title: form.value.title?.trim() || "",
             project_id: form.value.project_id!,
             description: form.value.description?.trim() || undefined,
             assigned_to: form.value.assigned_to || undefined,
@@ -479,30 +657,32 @@ const updateTask = async () => {
             start_date: form.value.start_date || undefined,
             due_date: form.value.due_date || undefined,
             estimated_time: form.value.estimated_time || undefined,
-            tags: form.value.tags.length > 0 ? form.value.tags : undefined,
+            tags: form.value.tags?.length ? form.value.tags : [],
             parent_task_id: form.value.parent_task_id || undefined,
             story_points: form.value.story_points || undefined,
-            is_confidential: form.value.is_confidential
+            is_confidential: form.value.is_confidential,
         };
 
         // Mettre à jour via le store
         const taskStore = useTaskStore();
-        const updatedTask = await taskStore.updateTask(props.task.id, updateData);
+        const updatedTask = await taskStore.updateTask(
+            props.task.id,
+            updateData
+        );
 
         // Émettre l'événement
-        emit('updated', updatedTask);
+        emit("updated", updatedTask);
 
         // Fermer le modal
-        emit('close');
-
+        emit("close");
     } catch (error: any) {
-        console.error('Failed to update task:', error);
+        console.error("Failed to update task:", error);
 
         // Gérer les erreurs d'API
         if (error.response?.data?.errors) {
             errors.value = error.response.data.errors;
         } else {
-            showError('Failed to update task. Please try again.');
+            showError("Failed to update task. Please try again.");
         }
     } finally {
         loading.value = false;
@@ -513,20 +693,22 @@ const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
     // Title validation
-    if (!form.value.title.trim()) {
-        newErrors.title = 'Title is required';
-    } else if (form.value.title.trim().length > 255) {
-        newErrors.title = 'Title must be less than 255 characters';
+    if (form.value.title?.trim()) {
+        if (form.value.title.trim().length > 255) {
+            newErrors.title = "Title must be less than 255 characters";
+        }
+    } else {
+        newErrors.title = "Title is required";
     }
 
     // Project validation
     if (!form.value.project_id) {
-        newErrors.project_id = 'Project is required';
+        newErrors.project_id = "Project is required";
     }
 
     // Description validation
     if (form.value.description && form.value.description.length > 1000) {
-        newErrors.description = 'Description must be less than 1000 characters';
+        newErrors.description = "Description must be less than 1000 characters";
     }
 
     // Date validation
@@ -535,13 +717,16 @@ const validateForm = (): boolean => {
         const dueDate = new Date(form.value.due_date);
 
         if (dueDate < startDate) {
-            newErrors.due_date = 'Due date must be after start date';
+            newErrors.due_date = "Due date must be after start date";
         }
     }
 
     // Estimated time validation
-    if (form.value.estimated_time !== undefined && form.value.estimated_time < 0) {
-        newErrors.estimated_time = 'Estimated time cannot be negative';
+    if (
+        form.value.estimated_time !== undefined &&
+        form.value.estimated_time < 0
+    ) {
+        newErrors.estimated_time = "Estimated time cannot be negative";
     }
 
     errors.value = newErrors;
@@ -557,7 +742,7 @@ const clearError = (field: string) => {
 const onProjectChange = () => {
     // Réinitialiser l'assignation lorsque le projet change
     form.value.assigned_to = undefined;
-    clearError('assigned_to');
+    clearError("assigned_to");
 };
 
 const addTag = () => {
@@ -567,7 +752,7 @@ const addTag = () => {
             form.value.tags = [];
         }
         form.value.tags.push(tag);
-        newTag.value = '';
+        newTag.value = "";
     }
 };
 
@@ -586,20 +771,25 @@ const removeTag = (index: number) => {
     }
 };
 
-const clearDate = (field: 'start_date' | 'due_date') => {
-    form.value[field] = '';
+const clearDate = (field: "start_date" | "due_date") => {
+    form.value[field] = "";
 };
 
 const updateDescriptionCount = () => {
     if (descriptionCount.value > 1000) {
-        errors.value.description = 'Description must be less than 1000 characters';
+        errors.value.description =
+            "Description must be less than 1000 characters";
     } else {
-        clearError('description');
+        clearError("description");
     }
 };
 
 const confirmDelete = async () => {
-    if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+    if (
+        !confirm(
+            "Are you sure you want to delete this task? This action cannot be undone."
+        )
+    ) {
         return;
     }
 
@@ -609,22 +799,21 @@ const confirmDelete = async () => {
         await taskStore.deleteTask(props.task.id);
 
         // Émettre l'événement de suppression
-        emit('deleted', props.task.id);
+        emit("deleted", props.task.id);
 
         // Fermer le modal
-        emit('close');
-
+        emit("close");
     } catch (error) {
-        console.error('Failed to delete task:', error);
-        showError('Failed to delete task. Please try again.');
+        console.error("Failed to delete task:", error);
+        showError("Failed to delete task. Please try again.");
     } finally {
         loading.value = false;
     }
 };
 
 const closeModal = (e: MouseEvent) => {
-    if ((e.target as HTMLElement).classList.contains('modal-overlay')) {
-        emit('close');
+    if ((e.target as HTMLElement).classList.contains("modal-overlay")) {
+        emit("close");
     }
 };
 
@@ -744,7 +933,7 @@ label {
 }
 
 label.required::after {
-    content: ' *';
+    content: " *";
     color: #e74c3c;
 }
 
@@ -1177,13 +1366,13 @@ input.error:focus {
     transition: all 0.2s;
 }
 
-.checkbox:checked+.checkbox-custom {
+.checkbox:checked + .checkbox-custom {
     background: #3498db;
     border-color: #3498db;
 }
 
-.checkbox:checked+.checkbox-custom::after {
-    content: '✓';
+.checkbox:checked + .checkbox-custom::after {
+    content: "✓";
     color: white;
     font-size: 12px;
     font-weight: bold;

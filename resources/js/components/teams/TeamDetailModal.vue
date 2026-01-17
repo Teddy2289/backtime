@@ -189,15 +189,6 @@ const loadDetails = async () => {
         members.value = await teamStore.fetchTeamMembers(props.team.id)
         console.log('Membres chargés:', members.value)
         
-        // Essayez de charger les statistiques (si la route existe)
-        try {
-            const stats = await teamStore.fetchTeamStatistics(props.team.id)
-            statistics.value = stats
-            console.log('Statistiques chargées:', stats)
-        } catch (error) {
-            console.warn('Statistiques non disponibles:', error)
-            statistics.value = null
-        }
     } catch (error) {
         console.error('Erreur lors du chargement des détails:', error)
         members.value = []

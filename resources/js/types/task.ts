@@ -21,6 +21,9 @@ export interface Task {
     created_at: string;
     updated_at: string;
     deleted_at?: string;
+    parent_task_id?: number;
+    story_points?: number;
+    is_confidential: boolean;
 
     // Relations optionnelles
     project?: {
@@ -88,6 +91,7 @@ export interface CreateTaskData {
 }
 
 export interface UpdateTaskData {
+    project_id?: number;
     title?: string;
     description?: string;
     assigned_to?: number | null;
@@ -97,8 +101,10 @@ export interface UpdateTaskData {
     due_date?: string | null;
     estimated_time?: number;
     tags?: string[];
+    parent_task_id?: number | null;
+    story_points?: number | null;
+    is_confidential?: boolean;
 }
-
 // Types complémentaires
 interface User {
     id: number;
