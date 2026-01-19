@@ -6,9 +6,9 @@
     "keywords": ["taskcomment", "ddd", "module"],
     "priority": 1000,
     "providers": [
-        "Modules\\TaskComment\\Providers\\TaskcommentServiceProvider"
+        "Modules\\TaskComment\\Providers\\TaskCommentServiceProvider"
     ],
     "aliases": {},
-    "files": ["Providers/TaskcommentServiceProvider.php"],
+    "files": ["Providers/TaskCommentServiceProvider.php"],
     "requires": []
 }
