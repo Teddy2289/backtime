@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\TaskTimeLog\Presentation\Controllers\TasktimelogController;
+use Modules\TaskTimeLog\Presentation\Controllers\TaskTimeLogController;
 
 // Ajoutez ceci dans votre fichier de routes
 Route::prefix('time-logs')->middleware(['api', 'auth:api'])->group(function () {
