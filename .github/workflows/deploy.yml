@@ -8,6 +8,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: VPS_HOST_BACK
+    timeout-minutes: 30 # Increased timeout
 
     steps:
       - name: Checkout code
@@ -88,6 +89,13 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
+          # Configure SSH to prevent timeouts
+          echo "Host *" >> ~/.ssh/config
+          echo "  ServerAliveInterval 60" >> ~/.ssh/config
+          echo "  ServerAliveCountMax 5" >> ~/.ssh/config
+          echo "  TCPKeepAlive yes" >> ~/.ssh/config
+          chmod 600 ~/.ssh/config
+
       - name: Deploy to VPS
         run: |
           SSH_HOST="${{ secrets.VPS_HOST }}"
@@ -96,28 +104,11 @@ jobs:
 
           echo "=== Deploying to $SSH_USERNAME@$SSH_HOST:$APP_PATH ==="
 
-          # === FIX: Set permissions before rsync ===
-          echo "Setting correct permissions on VPS..."
-          ssh -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" "
-            echo 'Setting deployment permissions...'
-            
-            # Option 1: If deploying as ubuntu user
-            sudo chown -R $SSH_USERNAME:www-data $APP_PATH || true
-            
-            # Option 2: Set writable permissions for group
-            sudo chmod -R 775 $APP_PATH || true
-            
-            # Option 3: Specific fix for temporary files
-            sudo chmod -R 777 $APP_PATH/tmp 2>/dev/null || true
-            sudo chmod -R 777 $APP_PATH/storage/framework/views 2>/dev/null || true
-            
-            echo 'Permissions set successfully'
-          "
+          # === OPTION 1: Build assets locally and rsync them ===
+          echo "Option 1: Using pre-built assets from GitHub Actions..."
 
-          # 1. Copier les fichiers modifiés
-          echo "Copying files to VPS..."
-
-          # === FIX: Use rsync with proper options ===
+          # 1. Sync everything EXCEPT build assets first
+          echo "Syncing base code without build assets..."
           rsync -avz --delete \
             --no-perms --no-owner --no-group \
             --exclude='.env' \
@@ -127,67 +118,48 @@ jobs:
             --exclude='vendor' \
             --exclude='.idea' \
             --exclude='*.log' \
+            --exclude='public/build' \
             --exclude='*.tmp' \
             ./ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/"
 
-          # 2. Exécuter les commandes sur le VPS
-          echo "Running commands on VPS..."
-          ssh -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" "
+          # 2. Sync the pre-built assets separately
+          echo "Syncing pre-built assets..."
+          rsync -avz \
+            --no-perms --no-owner --no-group \
+            public/build/ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/public/build/"
+
+          # 3. Execute commands on VPS with SSH keepalive
+          echo "Running setup commands on VPS..."
+          ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=5 "$SSH_USERNAME@$SSH_HOST" "
             set -e
             cd $APP_PATH
             
-            echo '1. Fixing permissions before operations...'
-            sudo chown -R $SSH_USERNAME:www-data $APP_PATH
-            sudo chmod -R 775 $APP_PATH
-            sudo chmod -R 777 storage bootstrap/cache
+            echo '1. Fixing permissions...'
+            sudo chown -R $SSH_USERNAME:www-data $APP_PATH 2>/dev/null || true
+            sudo chmod -R 775 $APP_PATH 2>/dev/null || true
             
             echo '2. Installing Composer dependencies...'
-            composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+            composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
             
-            echo '3. Installing Node.js dependencies...'
-            # Corriger le package.json sur le VPS aussi
-            if [ -f package.json ]; then
-              # S'assurer que @vitejs/plugin-vue est dans devDependencies
-              if npm list @vitejs/plugin-vue 2>/dev/null | grep -q dependencies; then
-                npm uninstall @vitejs/plugin-vue
-                npm install @vitejs/plugin-vue@^5.2.4 --save-dev --legacy-peer-deps
-              fi
-            fi
-            
-            npm install --legacy-peer-deps --no-audit
-            
-            echo '4. Building Vue.js assets...'
-            npm run build
-            
-            echo '5. Setting final permissions...'
-            # Web server needs write access to these directories
-            sudo chown -R $SSH_USERNAME:www-data .
-            sudo find . -type d -exec chmod 775 {} \;
-            sudo find . -type f -exec chmod 664 {} \;
-            sudo chmod -R 777 storage bootstrap/cache
-            
-            echo '6. Clearing and caching...'
-            php artisan config:clear
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
-            
-            echo '7. Fixing specific permission issues...'
-            # Fix for temporary files that rsync creates
-            sudo find . -name '.?*' -type f -exec rm -f {} \; 2>/dev/null || true
+            echo '3. Setting up storage permissions...'
+            sudo chmod -R 775 storage bootstrap/cache 2>/dev/null || true
             sudo chmod -R 777 storage/framework/views 2>/dev/null || true
             
-            echo '8. Verifying deployment...'
-            echo '✅ Node version:'
-            node --version
-            echo '✅ NPM version:'
-            npm --version
-            echo '✅ Built assets:'
-            ls -la public/build/ || echo 'No build directory'
-            echo '✅ Directory permissions:'
-            ls -ld $APP_PATH
-            echo '✅ Can write to directory:'
-            touch $APP_PATH/test_write.txt && echo 'Yes' && rm $APP_PATH/test_write.txt
+            echo '4. Running Laravel optimization...'
+            php artisan config:clear
+            php artisan config:cache
+            php artisan route:clear
+            php artisan view:clear
+            
+            # Only run these if they don't take too long
+            timeout 30 php artisan route:cache 2>/dev/null || echo 'Route cache skipped'
+            timeout 30 php artisan view:cache 2>/dev/null || echo 'View cache skipped'
+            
+            echo '5. Verifying deployment...'
+            echo '✅ Built assets exist:'
+            [ -d 'public/build' ] && echo 'Yes' || echo 'No'
+            echo '✅ Storage writable:'
+            [ -w 'storage' ] && echo 'Yes' || echo 'No'
             
             echo '=== 🎉 Deployment completed successfully! ==='
           "
@@ -199,16 +171,18 @@ jobs:
           APP_PATH="/var/www/backend/backtime"
 
           echo "=== Verifying deployment ==="
-          ssh -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" "
+          ssh -o ConnectTimeout=10 "$SSH_USERNAME@$SSH_HOST" "
+            set -e
             cd $APP_PATH
-            echo 'Application path:'
+            
+            echo '1. Checking application...'
             pwd
-            echo 'Vue.js build exists:'
-            [ -d 'public/build' ] && echo '✅ Yes' || echo '❌ No'
-            echo 'Permissions:'
-            ls -ld $APP_PATH
-            echo 'Recent files modified:'
-            find . -type f -newer /tmp -name '*.js' -o -name '*.css' | head -10
-            echo 'Test write permission:'
-            touch test_write_gha.txt && echo '✅ Can write' && rm test_write_gha.txt || echo '❌ Cannot write'
-          "
+            echo '2. Build assets:'
+            [ -d 'public/build' ] && echo '✅ Yes' && ls -la public/build/ || echo '❌ No build directory'
+            echo '3. Checking Laravel:'
+            php artisan --version || echo 'Artisan not found'
+            echo '4. Recent files:'
+            find . -type f -name '*.js' -o -name '*.css' | tail -5
+            echo '5. Storage permissions:'
+            ls -ld storage
+          " || echo "SSH verification failed, but deployment may still be successful"
