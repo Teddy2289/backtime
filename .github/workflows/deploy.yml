@@ -96,9 +96,30 @@ jobs:
 
           echo "=== Deploying to $SSH_USERNAME@$SSH_HOST:$APP_PATH ==="
 
+          # === FIX: Set permissions before rsync ===
+          echo "Setting correct permissions on VPS..."
+          ssh -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" "
+            echo 'Setting deployment permissions...'
+            
+            # Option 1: If deploying as ubuntu user
+            sudo chown -R $SSH_USERNAME:www-data $APP_PATH || true
+            
+            # Option 2: Set writable permissions for group
+            sudo chmod -R 775 $APP_PATH || true
+            
+            # Option 3: Specific fix for temporary files
+            sudo chmod -R 777 $APP_PATH/tmp 2>/dev/null || true
+            sudo chmod -R 777 $APP_PATH/storage/framework/views 2>/dev/null || true
+            
+            echo 'Permissions set successfully'
+          "
+
           # 1. Copier les fichiers modifiés
           echo "Copying files to VPS..."
+
+          # === FIX: Use rsync with proper options ===
           rsync -avz --delete \
+            --no-perms --no-owner --no-group \
             --exclude='.env' \
             --exclude='.git' \
             --exclude='storage' \
@@ -106,6 +127,7 @@ jobs:
             --exclude='vendor' \
             --exclude='.idea' \
             --exclude='*.log' \
+            --exclude='*.tmp' \
             ./ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/"
 
           # 2. Exécuter les commandes sur le VPS
@@ -114,10 +136,15 @@ jobs:
             set -e
             cd $APP_PATH
             
-            echo '1. Installing Composer dependencies...'
+            echo '1. Fixing permissions before operations...'
+            sudo chown -R $SSH_USERNAME:www-data $APP_PATH
+            sudo chmod -R 775 $APP_PATH
+            sudo chmod -R 777 storage bootstrap/cache
+            
+            echo '2. Installing Composer dependencies...'
             composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
             
-            echo '2. Installing Node.js dependencies...'
+            echo '3. Installing Node.js dependencies...'
             # Corriger le package.json sur le VPS aussi
             if [ -f package.json ]; then
               # S'assurer que @vitejs/plugin-vue est dans devDependencies
@@ -129,26 +156,38 @@ jobs:
             
             npm install --legacy-peer-deps --no-audit
             
-            echo '3. Building Vue.js assets...'
+            echo '4. Building Vue.js assets...'
             npm run build
             
-            echo '4. Setting permissions...'
-            chmod -R 755 storage bootstrap/cache
-            chown -R ubuntu:www-data storage bootstrap/cache || true
+            echo '5. Setting final permissions...'
+            # Web server needs write access to these directories
+            sudo chown -R $SSH_USERNAME:www-data .
+            sudo find . -type d -exec chmod 775 {} \;
+            sudo find . -type f -exec chmod 664 {} \;
+            sudo chmod -R 777 storage bootstrap/cache
             
-            echo '5. Clearing and caching...'
+            echo '6. Clearing and caching...'
             php artisan config:clear
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
             
-            echo '6. Verifying deployment...'
+            echo '7. Fixing specific permission issues...'
+            # Fix for temporary files that rsync creates
+            sudo find . -name '.?*' -type f -exec rm -f {} \; 2>/dev/null || true
+            sudo chmod -R 777 storage/framework/views 2>/dev/null || true
+            
+            echo '8. Verifying deployment...'
             echo '✅ Node version:'
             node --version
             echo '✅ NPM version:'
             npm --version
             echo '✅ Built assets:'
             ls -la public/build/ || echo 'No build directory'
+            echo '✅ Directory permissions:'
+            ls -ld $APP_PATH
+            echo '✅ Can write to directory:'
+            touch $APP_PATH/test_write.txt && echo 'Yes' && rm $APP_PATH/test_write.txt
             
             echo '=== 🎉 Deployment completed successfully! ==='
           "
@@ -166,6 +205,10 @@ jobs:
             pwd
             echo 'Vue.js build exists:'
             [ -d 'public/build' ] && echo '✅ Yes' || echo '❌ No'
+            echo 'Permissions:'
+            ls -ld $APP_PATH
             echo 'Recent files modified:'
             find . -type f -newer /tmp -name '*.js' -o -name '*.css' | head -10
+            echo 'Test write permission:'
+            touch test_write_gha.txt && echo '✅ Can write' && rm test_write_gha.txt || echo '❌ Cannot write'
           "
