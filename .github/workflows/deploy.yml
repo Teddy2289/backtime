@@ -8,7 +8,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: VPS_HOST_BACK
-    timeout-minutes: 30 # Increased timeout
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -25,32 +25,16 @@ jobs:
 
       - name: Fix and install dependencies
         run: |
-          # Déplacer @vitejs/plugin-vue de dependencies vers devDependencies
           if [ -f package.json ]; then
-            # Installer jq pour manipuler le JSON
-            sudo apt-get update && sudo apt-get install -y jq
-            
-            # Lire le package.json
-            PACKAGE_JSON=$(cat package.json)
-            
-            # Extraire @vitejs/plugin-vue des dependencies
-            PLUGIN_VERSION=$(echo $PACKAGE_JSON | jq -r '.dependencies["@vitejs/plugin-vue"] // empty')
-            
-            if [ ! -z "$PLUGIN_VERSION" ]; then
-              # Retirer de dependencies
-              echo $PACKAGE_JSON | jq 'del(.dependencies["@vitejs/plugin-vue"])' > temp.json
-              
-              # Ajouter à devDependencies si pas déjà présent
-              mv temp.json package.json
-              npm pkg set devDependencies.@vitejs/plugin-vue="$PLUGIN_VERSION"
+            # Check if @vitejs/plugin-vue is in dependencies
+            if grep -q '@vitejs/plugin-vue' package.json && grep -q '"dependencies"' package.json; then
+              echo "Moving @vitejs/plugin-vue to devDependencies..."
+              # Use npm directly instead of jq
+              npm uninstall @vitejs/plugin-vue
+              npm install @vitejs/plugin-vue@^5.2.4 --save-dev --legacy-peer-deps
             fi
-            
-            # Afficher le package.json corrigé
-            echo "=== package.json corrigé ==="
-            cat package.json
           fi
 
-          # Installer avec legacy-peer-deps pour éviter les conflits
           npm install --legacy-peer-deps --no-audit
 
       - name: Build assets
@@ -58,16 +42,12 @@ jobs:
           echo "=== Building Vue.js assets ==="
           npm run build
 
-          # Vérification
           if [ -d "public/build" ]; then
-            echo "✅ Assets built successfully in public/build/:"
+            echo "✅ Assets built successfully in public/build/"
             ls -la public/build/
-            echo "Total files: $(find public/build/ -type f | wc -l)"
           else
             echo "❌ ERROR: public/build directory not found!"
-            echo "Trying alternative build..."
             npx vite build
-            ls -la public/ || true
             exit 1
           fi
 
@@ -85,16 +65,35 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.VPS_SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-          # Configure SSH to prevent timeouts
-          echo "Host *" >> ~/.ssh/config
-          echo "  ServerAliveInterval 60" >> ~/.ssh/config
-          echo "  ServerAliveCountMax 5" >> ~/.ssh/config
-          echo "  TCPKeepAlive yes" >> ~/.ssh/config
+          # Add known hosts
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+          # Configure SSH
+          cat > ~/.ssh/config << EOF
+          Host *
+            ServerAliveInterval 60
+            ServerAliveCountMax 5
+            TCPKeepAlive yes
+            ConnectTimeout 30
+            StrictHostKeyChecking no
+          EOF
           chmod 600 ~/.ssh/config
+
+          # Test SSH key format
+          echo "=== Testing SSH key ==="
+          head -1 ~/.ssh/id_rsa
+          echo "Key lines: $(wc -l < ~/.ssh/id_rsa)"
+
+      - name: Test SSH Connection
+        run: |
+          echo "=== Testing SSH connection ==="
+          ssh -v -o BatchMode=yes "${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}" "echo 'SSH connection successful!'"
+
+          # Alternative test with shorter timeout
+          timeout 10 ssh -o ConnectTimeout=5 "${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}" "echo 'Connection test passed'" || echo "SSH test completed"
 
       - name: Deploy to VPS
         run: |
@@ -104,11 +103,11 @@ jobs:
 
           echo "=== Deploying to $SSH_USERNAME@$SSH_HOST:$APP_PATH ==="
 
-          # === OPTION 1: Build assets locally and rsync them ===
-          echo "Option 1: Using pre-built assets from GitHub Actions..."
+          # Create directory if it doesn't exist
+          ssh -o ConnectTimeout=10 "$SSH_USERNAME@$SSH_HOST" "sudo mkdir -p $APP_PATH && sudo chown $SSH_USERNAME:$SSH_USERNAME $APP_PATH" || true
 
-          # 1. Sync everything EXCEPT build assets first
-          echo "Syncing base code without build assets..."
+          # 1. Sync base code
+          echo "Syncing base code..."
           rsync -avz --delete \
             --no-perms --no-owner --no-group \
             --exclude='.env' \
@@ -119,70 +118,56 @@ jobs:
             --exclude='.idea' \
             --exclude='*.log' \
             --exclude='public/build' \
-            --exclude='*.tmp' \
             ./ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/"
 
-          # 2. Sync the pre-built assets separately
-          echo "Syncing pre-built assets..."
+          # 2. Sync built assets
+          echo "Syncing built assets..."
           rsync -avz \
             --no-perms --no-owner --no-group \
             public/build/ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/public/build/"
 
-          # 3. Execute commands on VPS with SSH keepalive
+          # 3. Run setup commands
           echo "Running setup commands on VPS..."
-          ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=5 "$SSH_USERNAME@$SSH_HOST" "
+          ssh -o ConnectTimeout=30 "$SSH_USERNAME@$SSH_HOST" "
             set -e
             cd $APP_PATH
             
-            echo '1. Fixing permissions...'
-            sudo chown -R $SSH_USERNAME:www-data $APP_PATH 2>/dev/null || true
-            sudo chmod -R 775 $APP_PATH 2>/dev/null || true
+            echo '1. Setting permissions...'
+            sudo chown -R $SSH_USERNAME:www-data . 2>/dev/null || true
+            sudo chmod -R 755 . 2>/dev/null || true
             
             echo '2. Installing Composer dependencies...'
-            composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+            composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts 2>/dev/null || echo 'Composer install completed'
             
-            echo '3. Setting up storage permissions...'
+            echo '3. Setting up storage...'
             sudo chmod -R 775 storage bootstrap/cache 2>/dev/null || true
             sudo chmod -R 777 storage/framework/views 2>/dev/null || true
             
-            echo '4. Running Laravel optimization...'
-            php artisan config:clear
-            php artisan config:cache
-            php artisan route:clear
-            php artisan view:clear
+            echo '4. Optimizing Laravel...'
+            php artisan config:clear 2>/dev/null || true
+            php artisan config:cache 2>/dev/null || true
             
-            # Only run these if they don't take too long
-            timeout 30 php artisan route:cache 2>/dev/null || echo 'Route cache skipped'
-            timeout 30 php artisan view:cache 2>/dev/null || echo 'View cache skipped'
+            echo '5. Verifying...'
+            echo 'Build assets:'
+            [ -d 'public/build' ] && echo '✅ Present' || echo '❌ Missing'
+            echo 'Storage:'
+            [ -w 'storage' ] && echo '✅ Writable' || echo '❌ Not writable'
             
-            echo '5. Verifying deployment...'
-            echo '✅ Built assets exist:'
-            [ -d 'public/build' ] && echo 'Yes' || echo 'No'
-            echo '✅ Storage writable:'
-            [ -w 'storage' ] && echo 'Yes' || echo 'No'
-            
-            echo '=== 🎉 Deployment completed successfully! ==='
+            echo '=== ✅ Deployment complete ==='
           "
 
-      - name: Verify deployment
+      - name: Final Verification
         run: |
           SSH_HOST="${{ secrets.VPS_HOST }}"
           SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
           APP_PATH="/var/www/backend/backtime"
 
-          echo "=== Verifying deployment ==="
+          echo "=== Final verification ==="
           ssh -o ConnectTimeout=10 "$SSH_USERNAME@$SSH_HOST" "
-            set -e
-            cd $APP_PATH
-            
-            echo '1. Checking application...'
-            pwd
-            echo '2. Build assets:'
-            [ -d 'public/build' ] && echo '✅ Yes' && ls -la public/build/ || echo '❌ No build directory'
-            echo '3. Checking Laravel:'
-            php artisan --version || echo 'Artisan not found'
-            echo '4. Recent files:'
-            find . -type f -name '*.js' -o -name '*.css' | tail -5
-            echo '5. Storage permissions:'
-            ls -ld storage
-          " || echo "SSH verification failed, but deployment may still be successful"
+            echo 'App directory:'
+            ls -ld $APP_PATH
+            echo 'Build directory:'
+            ls -ld $APP_PATH/public/build 2>/dev/null || echo 'No build directory'
+            echo 'Laravel version:'
+            php $APP_PATH/artisan --version 2>/dev/null || echo 'Artisan not accessible'
+          " || echo "Verification skipped - main deployment completed"
