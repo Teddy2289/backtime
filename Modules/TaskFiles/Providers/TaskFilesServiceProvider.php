@@ -5,7 +5,6 @@ namespace Modules\TaskFiles\Providers;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Modules\Task\Application\Services\TaskService;
-use Modules\Task\Domain\Entities\Task;
 use Modules\TaskFiles\Application\Services\TaskFileService;
 use Modules\TaskFiles\Domain\Interfaces\TaskFileRepositoryInterface;
 use Modules\TaskFiles\Infrastructure\Repositories\TaskFileRepository;
@@ -13,7 +12,7 @@ use Modules\TaskFiles\Presentation\Controllers\TaskFilesController;
 
 class TaskFilesServiceProvider extends ServiceProvider
 {
-    protected $moduleName = 'Taskfiles';
+    protected $moduleName = 'TaskFiles';
     protected $moduleNameLower = 'taskfiles';
 
 
@@ -177,4 +176,3 @@ class TaskFilesServiceProvider extends ServiceProvider
         return $paths;
     }
 }
-
