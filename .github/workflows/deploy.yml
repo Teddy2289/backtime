@@ -7,7 +7,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: VPS_HOST
+    environment: VPS_HOST_BACK
 
     steps:
       - name: Checkout code
