@@ -2,9 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Response;
 use Illuminate\Http\Request;
-use Modules\Taskfiles\Presentation\Controllers\TaskfilesController;
+use Modules\TaskFiles\Presentation\Controllers\TaskFilesController;
 
 // Route POUR TOUS les fichiers storage (avec CORS)
 Route::middleware(['cors'])->prefix('files')->group(function () {

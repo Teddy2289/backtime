@@ -81,8 +81,8 @@ Route::middleware(['api'])->group(
             require base_path('Modules/Project/Presentation/Routes/api.php');
         }
 
-        if (file_exists(base_path('Modules/Projectsteams/Presentation/Routes/api.php'))) {
-            require base_path('Modules/Projectsteams/Presentation/Routes/api.php');
+        if (file_exists(base_path('Modules/ProjectsTeams/Presentation/Routes/api.php'))) {
+            require base_path('Modules/ProjectsTeams/Presentation/Routes/api.php');
         }
 
 
