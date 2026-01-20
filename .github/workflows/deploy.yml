@@ -133,11 +133,29 @@ jobs:
 
           echo "=== Deploying to $SSH_USERNAME@$SSH_HOST ==="
 
-          # 1. Déployer le backend Laravel
-          echo "1. Deploying Laravel backend..."
-          ssh "$SSH_USERNAME@$SSH_HOST" "sudo mkdir -p $APP_PATH && sudo chown $SSH_USERNAME:$SSH_USERNAME $APP_PATH" || true
+          # 0. Préparer les permissions avant le déploiement
+          echo "0. Preparing permissions on VPS..."
+          ssh "$SSH_USERNAME@$SSH_HOST" "
+            set -e
+            echo '0.1 Temporarily fixing permissions for deployment...'
+            if [ -d '$APP_PATH' ]; then
+              echo 'Fixing existing permissions in $APP_PATH'
+              sudo chown -R $SSH_USERNAME:$SSH_USERNAME $APP_PATH 2>/dev/null || true
+              sudo chmod -R 755 $APP_PATH 2>/dev/null || true
+            fi
+            
+            # Créer les répertoires si nécessaire
+            sudo mkdir -p $APP_PATH $VUE_ADMIN_PATH
+            sudo chown $SSH_USERNAME:$SSH_USERNAME $APP_PATH
+            sudo chown www-data:www-data $VUE_ADMIN_PATH
+          "
 
+          # 1. Déployer le backend Laravel avec rsync en mode sudo
+          echo "1. Deploying Laravel backend..."
+
+          # Utiliser rsync avec --rsync-path pour sudo
           rsync -avz --delete \
+            --rsync-path="sudo rsync" \
             --no-perms --no-owner --no-group \
             --exclude='.env' \
             --exclude='.git' \
@@ -154,19 +172,20 @@ jobs:
           echo "2. Deploying Laravel assets..."
           if [ -d "public/build" ] && [ "$(ls -A public/build 2>/dev/null)" ]; then
             rsync -avz \
+              --rsync-path="sudo rsync" \
               --no-perms --no-owner --no-group \
               public/build/ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/public/build/"
           else
             echo "⚠️ No Laravel assets to deploy"
-            ssh "$SSH_USERNAME@$SSH_HOST" "mkdir -p $APP_PATH/public/build" || true
+            ssh "$SSH_USERNAME@$SSH_HOST" "sudo mkdir -p $APP_PATH/public/build" || true
           fi
 
           # 3. Déployer l'admin Vue.js
           echo "3. Deploying Vue.js admin..."
-          ssh "$SSH_USERNAME@$SSH_HOST" "sudo mkdir -p $VUE_ADMIN_PATH && sudo chown www-data:www-data $VUE_ADMIN_PATH" || true
 
-          # Copier le build admin
+          # Copier le build admin avec sudo
           rsync -avz \
+            --rsync-path="sudo rsync" \
             --no-perms --no-owner --no-group \
             --delete \
             dist-admin/ "$SSH_USERNAME@$SSH_HOST:$VUE_ADMIN_PATH/"
@@ -178,18 +197,30 @@ jobs:
             
             echo '4.1 Setting Laravel permissions...'
             cd $APP_PATH
-            sudo chown -R $SSH_USERNAME:www-data .
+            
+            # Définir le propriétaire correct (www-data pour web, ubuntu pour CLI)
+            sudo chown -R www-data:www-data .
+            sudo chown -R $SSH_USERNAME:$SSH_USERNAME storage bootstrap/cache
+            
+            # Définir les permissions
             sudo find . -type d -exec chmod 755 {} \;
             sudo find . -type f -exec chmod 644 {} \;
+            
+            # Permissions spéciales pour Laravel
             sudo chmod -R 775 storage bootstrap/cache
-            sudo chmod -R 777 storage/framework/views
+            sudo chmod -R 777 storage/framework/views storage/framework/cache storage/logs
+            
+            # Permettre à l'utilisateur de travailler avec les fichiers
+            sudo setfacl -R -m u:$SSH_USERNAME:rwX $APP_PATH 2>/dev/null || true
+            sudo setfacl -R -d -m u:$SSH_USERNAME:rwX $APP_PATH 2>/dev/null || true
             
             echo '4.2 Installing Composer dependencies...'
-            composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts 2>/dev/null || echo 'Composer install completed'
+            sudo -u www-data composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts 2>/dev/null || echo 'Composer install completed'
             
             echo '4.3 Optimizing Laravel...'
-            php artisan config:clear 2>/dev/null || true
-            php artisan config:cache 2>/dev/null || true
+            sudo -u www-data php artisan config:clear 2>/dev/null || true
+            sudo -u www-data php artisan config:cache 2>/dev/null || true
+            sudo -u www-data php artisan route:clear 2>/dev/null || true
             
             echo '4.4 Setting Vue.js admin permissions...'
             sudo chown -R www-data:www-data $VUE_ADMIN_PATH
@@ -197,10 +228,10 @@ jobs:
             sudo find $VUE_ADMIN_PATH -type f -exec chmod 644 {} \;
             
             echo '4.5 Verifying deployment...'
-            echo 'Laravel path:'
+            echo 'Laravel path owner:'
             ls -ld $APP_PATH
-            echo 'Vue.js admin path:'
-            ls -ld $VUE_ADMIN_PATH
+            echo 'Storage writable by www-data?'
+            sudo -u www-data touch $APP_PATH/storage/test.txt 2>/dev/null && echo '✅ Yes' && sudo rm $APP_PATH/storage/test.txt || echo '❌ No'
             echo 'Vue.js admin files:'
             ls -la $VUE_ADMIN_PATH/ | head -5
             
@@ -218,12 +249,17 @@ jobs:
           ssh -o ConnectTimeout=10 "$SSH_USERNAME@$SSH_HOST" "
             echo '1. Laravel app directory:'
             ls -ld $APP_PATH
-            echo '2. Laravel build directory (if exists):'
+            echo '2. Storage permissions:'
+            ls -ld $APP_PATH/storage/
+            echo '3. Laravel build directory (if exists):'
             ls -ld $APP_PATH/public/build/ 2>/dev/null || echo 'No Laravel build directory'
-            echo '3. Vue.js admin directory:'
+            echo '4. Vue.js admin directory:'
             ls -ld $VUE_ADMIN_PATH/
-            echo '4. Vue.js admin index file:'
-            ls -la $VUE_ADMIN_PATH/index.html 2>/dev/null || echo 'No index.html found'
-            echo '5. Nginx config check:'
-            sudo nginx -t 2>&1 | grep -i 'successful' || echo 'Nginx test completed'
+            echo '5. Vue.js admin index file exists:'
+            [ -f '$VUE_ADMIN_PATH/index.html' ] && echo '✅ Yes' || echo '❌ No'
+            echo '6. Nginx config check:'
+            sudo nginx -t 2>&1 | tail -1
+            echo '7. Restarting services...'
+            sudo systemctl reload nginx 2>/dev/null || echo 'Nginx reloaded'
+            sudo systemctl restart php8.3-fpm 2>/dev/null || echo 'PHP-FPM restarted'
           " || echo "Verification completed"
