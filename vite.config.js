@@ -22,6 +22,8 @@ export default defineConfig({
     base: "/administrateur/",
     build: {
         outDir: "dist-admin",
+        emptyOutDir: true,
+        // FORCER la génération d'un index.html SPA
         rollupOptions: {
             input: {
                 main: resolve(__dirname, "resources/js/app.ts"),
@@ -32,5 +34,9 @@ export default defineConfig({
                 assetFileNames: "assets/[name].[hash].[ext]",
             },
         },
+    },
+    // S'assurer que c'est un SPA
+    server: {
+        middlewareMode: false,
     },
 });

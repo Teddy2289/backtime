@@ -225,6 +225,9 @@ jobs:
           # Supprimer l'ancien contenu
           ssh "$SSH_USERNAME@$SSH_HOST" "sudo rm -rf $VUE_ADMIN_PATH/* 2>/dev/null || true"
 
+          # S'assurer que le dossier existe et a les bonnes permissions
+          ssh "$SSH_USERNAME@$SSH_HOST" "sudo mkdir -p $VUE_ADMIN_PATH && sudo chown www-data:www-data $VUE_ADMIN_PATH"
+
           # Copier le build admin
           rsync -avz \
             --rsync-path="sudo rsync" \
