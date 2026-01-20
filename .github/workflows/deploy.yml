@@ -30,17 +30,17 @@ jobs:
       - name: Build Vue.js Admin SPA
         run: |
           echo "=== Building Vue.js Admin SPA ==="
-          
+
           # Nettoyer avant le build
           rm -rf dist-admin
-          
+
           # Build avec le script npm
           npm run build:admin
-          
+
           echo "✅ Vue.js admin build terminé"
           echo "=== Contenu de dist-admin/ ==="
           ls -la dist-admin/
-          
+
           # Vérification et RENOMMAGE si nécessaire
           if [ -f "dist-admin/admin-spa.html" ]; then
             echo "✅ admin-spa.html trouvé, renommage en index.html"
@@ -53,20 +53,20 @@ jobs:
             find dist-admin -type f
             echo "Création d'un index.html minimal..."
             cat > dist-admin/index.html << HTML
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vue.js Admin</title>
-</head>
-<body>
-    <div id="app"></div>
-</body>
-</html>
-HTML
+            <!DOCTYPE html>
+            <html lang="fr">
+              <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <title>Vue.js Admin</title>
+              </head>
+              <body>
+            <div id="app"></div>
+            </body>
+            </html>
+            HTML
           fi
-          
+
           # Afficher le résultat final
           echo "=== Résultat final dans dist-admin/ ==="
           ls -la dist-admin/
@@ -151,18 +151,18 @@ HTML
             if [ ! -f '$VUE_ADMIN_PATH/index.html' ]; then
               echo '⚠️ index.html manquant, création...'
               sudo cat > '$VUE_ADMIN_PATH/index.html' << 'HTML'
-<!DOCTYPE html>
-<html lang=\"fr\">
-<head>
-    <meta charset=\"UTF-8\">
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-    <title>Vue.js Admin</title>
-</head>
-<body>
-    <div id=\"app\"></div>
-</body>
-</html>
-HTML
+            <!DOCTYPE html>
+            <html lang=\"fr\">
+            <head>
+                <meta charset=\"UTF-8\">
+                <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+                <title>Vue.js Admin</title>
+            </head>
+            <body>
+                <div id=\"app\"></div>
+            </body>
+            </html>
+            HTML
             else
               echo '✅ index.html présent'
               echo 'Type de fichier:'
