@@ -34,18 +34,22 @@ jobs:
           # Nettoyer avant le build
           rm -rf dist-admin
 
-          # Créer un fichier HTML d'entrée SPA
-          cat > admin-spa.html << 'HTML'
+          # FIX: marqueur HTML aligné à gauche
+          cat > dist-admin/index.html << HTML
           <!DOCTYPE html>
           <html lang="fr">
           <head>
-              <meta charset="UTF-8">
+            <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Vue.js Admin</title>
+                <title>Vue.js Admin</title>
+              <style>
+              body, html { margin: 0; padding: 0; height: 100%; }
+                 #app { height: 100vh; }
+              </style>
           </head>
           <body>
             <div id="app"></div>
-          <script type="module" src="./resources/js/app.ts"></script>
+           <script type="module" src="/administrateur/$JS_REL"></script>
           </body>
           </html>
           HTML
