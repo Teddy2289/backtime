@@ -34,116 +34,32 @@ jobs:
           # Nettoyer avant le build
           rm -rf dist-admin
 
-          # FIX: marqueur HTML aligné à gauche
-          cat > dist-admin/index.html << HTML
-          <!DOCTYPE html>
-          <html lang="fr">
-          <head>
-            <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Vue.js Admin</title>
-              <style>
-              body, html { margin: 0; padding: 0; height: 100%; }
-                 #app { height: 100vh; }
-              </style>
-          </head>
-          <body>
-            <div id="app"></div>
-           <script type="module" src="/administrateur/$JS_REL"></script>
-          </body>
-          </html>
-          HTML
+          # Build avec le script npm (utilise admin-spa.html qui existe déjà)
+          npm run build:admin
 
-          # Créer la configuration Vite corrigée
-          cat > vite.config.admin.js << 'EOF'
-          import { defineConfig } from "vite";
-          import vue from "@vitejs/plugin-vue";
-          import { resolve } from "path";
-
-          export default defineConfig({
-            plugins: [vue()],
-            root: ".",
-            publicDir: false, // IMPORTANT: désactive la copie du dossier public
-            resolve: {
-              alias: {
-                "@": resolve(__dirname, "resources/js"),
-                vue: "vue/dist/vue.esm-bundler.js",
-              },
-            },
-            base: '/administrateur/',
-            build: {
-              outDir: 'dist-admin',
-              emptyOutDir: true,
-              rollupOptions: {
-                input: resolve(__dirname, 'admin-spa.html'), // Fichier HTML d'entrée
-              },
-              assetsInlineLimit: 0,
-              copyPublicDir: false,
-            },
-          });
-          EOF
-
-          # Build l'admin SPA
-          npx vite build --config vite.config.admin.js
-
-          echo "✅ Vue.js admin assets built in dist-admin/"
+          echo "✅ Vue.js admin build terminé"
+          echo "=== Contenu de dist-admin/ ==="
           ls -la dist-admin/
 
-          # VÉRIFICATION CRITIQUE - Supprimer tout index.php
-          echo "=== Suppression des fichiers PHP ==="
-          find dist-admin -name "*.php" -type f -delete
-
-          # Vérifier que index.html existe
-          if [ ! -f "dist-admin/index.html" ]; then
-            echo "❌ ERREUR : index.html non trouvé dans dist-admin/"
-            echo "Création d'un index.html de secours..."
-            
-            # Trouver le fichier JS principal
-            JS_FILE=$(find dist-admin -name "*.js" -type f | head -1)
-            if [ -n "$JS_FILE" ]; then
-              JS_REL="${JS_FILE#dist-admin/}"
-            else
-              JS_REL="assets/main.js"
-            fi
-            
-            cat > dist-admin/index.html << HTML
-            <!DOCTYPE html>
-            <html lang="fr">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Vue.js Admin</title>
-                <style>
-                  body, html { margin: 0; padding: 0; height: 100%; }
-                  #app { height: 100vh; }
-                </style>
-            </head>
-            <body>
-                <div id="app"></div>
-                <script type="module" src="/administrateur/$JS_REL"></script>
-            </body>
-            </html>
-            HTML
+          # Vérification rapide
+          if [ -f "dist-admin/index.html" ]; then
+            echo "✅ index.html présent"
           else
-            echo "✅ index.html trouvé dans dist-admin/"
-            echo "Aperçu :"
-            head -20 dist-admin/index.html
+            echo "⚠️ Attention: index.html non trouvé dans dist-admin/"
+            echo "Listing fichiers HTML:"
+            find dist-admin -name "*.html" -type f
           fi
 
       - name: Build Laravel assets
         run: |
           echo "=== Building Laravel assets ==="
-          # Pour le build Laravel, on utilise la config normale
-          npx vite build 2>/dev/null || echo "⚠️ Build Laravel échoué ou ignoré"
+          npm run build 2>/dev/null || echo "⚠️ Build Laravel ignoré (optionnel)"
 
-          # Vérifier si le build Laravel existe
           if [ -d "public/build" ]; then
-            echo "✅ Laravel assets built successfully in public/build/"
-            ls -la public/build/
+            echo "✅ Laravel assets built"
           else
-            echo "⚠️ WARNING: Laravel assets not found, continuing anyway..."
-            # Créer un dossier vide pour éviter l'erreur
-            mkdir -p public/build
+            echo "⚠️ Pas de build Laravel"
+            mkdir -p public/build 2>/dev/null || true
           fi
 
       - name: Setup PHP
@@ -162,20 +78,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.VPS_SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-
-          # Add known hosts
           ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
-
-          # Configure SSH
-          cat > ~/.ssh/config << EOF
-          Host *
-            ServerAliveInterval 60
-            ServerAliveCountMax 5
-            TCPKeepAlive yes
-            ConnectTimeout 30
-            StrictHostKeyChecking no
-          EOF
-          chmod 600 ~/.ssh/config
 
       - name: Test SSH Connection
         run: |
@@ -189,193 +92,86 @@ jobs:
           APP_PATH="/var/www/backend/backtime"
           VUE_ADMIN_PATH="/var/www/vue-admin"
 
-          echo "=== Deploying to $SSH_USERNAME@$SSH_HOST ==="
+          echo "=== Déploiement sur VPS ==="
 
-          # 0. Préparer les permissions avant le déploiement
-          echo "0. Preparing permissions on VPS..."
+          # 1. Préparer le VPS
           ssh "$SSH_USERNAME@$SSH_HOST" "
-            set -e
-            echo '0.1 Temporarily fixing permissions for deployment...'
-            if [ -d '$APP_PATH' ]; then
-              echo 'Fixing existing permissions in $APP_PATH'
-              sudo chown -R $SSH_USERNAME:$SSH_USERNAME $APP_PATH 2>/dev/null || true
-              sudo chmod -R 755 $APP_PATH 2>/dev/null || true
-            fi
-            
-            # Créer les répertoires si nécessaire
-            sudo mkdir -p $APP_PATH $VUE_ADMIN_PATH
-            sudo chown $SSH_USERNAME:$SSH_USERNAME $APP_PATH
+            echo 'Préparation des dossiers...'
+            sudo mkdir -p $VUE_ADMIN_PATH
             sudo chown www-data:www-data $VUE_ADMIN_PATH
           "
 
-          # 1. Déployer le backend Laravel avec rsync en mode sudo
-          echo "1. Deploying Laravel backend..."
+          # 2. Déployer Vue.js Admin
+          echo "Déploiement Vue.js Admin..."
+          if [ -d "dist-admin" ]; then
+            echo "Contenu à déployer:"
+            ls -la dist-admin/
+            
+            rsync -avz \
+              --rsync-path="sudo rsync" \
+              dist-admin/ "$SSH_USERNAME@$SSH_HOST:$VUE_ADMIN_PATH/"
+            
+            echo "✅ Vue.js Admin déployé"
+          else
+            echo "❌ ERREUR: dist-admin/ n'existe pas!"
+            exit 1
+          fi
 
-          # Utiliser rsync avec --rsync-path pour sudo
+          # 3. Déployer Laravel
+          echo "Déploiement Laravel..."
           rsync -avz --delete \
             --rsync-path="sudo rsync" \
-            --no-perms --no-owner --no-group \
             --exclude='.env' \
             --exclude='.git' \
             --exclude='storage' \
             --exclude='node_modules' \
             --exclude='vendor' \
-            --exclude='.idea' \
-            --exclude='*.log' \
             --exclude='dist-admin' \
-            --exclude='public/build' \
-            --exclude='admin-spa.html' \
             ./ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/"
 
-          # 2. Déployer les assets Laravel (s'ils existent)
-          echo "2. Deploying Laravel assets..."
-          if [ -d "public/build" ] && [ "$(ls -A public/build 2>/dev/null)" ]; then
-            rsync -avz \
-              --rsync-path="sudo rsync" \
-              --no-perms --no-owner --no-group \
-              public/build/ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/public/build/"
-          else
-            echo "⚠️ No Laravel assets to deploy"
-            ssh "$SSH_USERNAME@$SSH_HOST" "sudo mkdir -p $APP_PATH/public/build" || true
-          fi
-
-          # 3. Déployer l'admin Vue.js SPA
-          echo "3. Deploying Vue.js admin SPA..."
-
-          # Supprimer l'ancien contenu
-          ssh "$SSH_USERNAME@$SSH_HOST" "sudo rm -rf $VUE_ADMIN_PATH/* 2>/dev/null || true"
-
-          # S'assurer que le dossier existe et a les bonnes permissions
-          ssh "$SSH_USERNAME@$SSH_HOST" "sudo mkdir -p $VUE_ADMIN_PATH && sudo chown www-data:www-data $VUE_ADMIN_PATH"
-
-          # Copier le build admin SPA
-          if [ -d "dist-admin" ] && [ "$(ls -A dist-admin 2>/dev/null)" ]; then
-            echo "✅ dist-admin existe avec du contenu"
-            ls -la dist-admin/
-            
-            rsync -avz \
-              --rsync-path="sudo rsync" \
-              --no-perms --no-owner --no-group \
-              dist-admin/ "$SSH_USERNAME@$SSH_HOST:$VUE_ADMIN_PATH/"
-          else
-            echo "❌ ERREUR: dist-admin/ n'existe pas ou est vide!"
-            exit 1
-          fi
-
-          # Vérifier que index.html existe
+          # 4. Configurer les permissions
           ssh "$SSH_USERNAME@$SSH_HOST" "
-            echo '=== Vérification Vue.js SPA ==='
-            # S'assurer que index.html existe
-            if [ -f '$VUE_ADMIN_PATH/index.html' ]; then
-              echo '✅ Vue.js admin index.html found'
-              echo 'Type de fichier:'
-              file '$VUE_ADMIN_PATH/index.html'
-              echo 'Premières lignes:'
-              head -5 '$VUE_ADMIN_PATH/index.html'
-            else
-              echo '❌ ERREUR: index.html not found in Vue.js admin!'
-              echo 'Contents of $VUE_ADMIN_PATH:'
-              ls -la '$VUE_ADMIN_PATH/'
-              echo 'Création d\'urgence...'
-              sudo cat > '$VUE_ADMIN_PATH/index.html' << 'HTML'
-              <!DOCTYPE html>
-              <html lang=\"fr\">
-              <head>
-                  <meta charset=\"UTF-8\">
-                  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-                  <title>Vue.js Admin</title>
-              </head>
-              <body>
-                  <div id=\"app\"></div>
-                  <script type=\"module\" src=\"/administrateur/assets/main.js\"></script>
-              </body>
-              </html>
-              HTML
-            fi
-          "
-
-          # 4. Configurer les permissions et optimiser
-          echo "4. Configuring permissions and optimizing..."
-          ssh "$SSH_USERNAME@$SSH_HOST" "
-            set -e
+            echo 'Configuration des permissions...'
             
-            echo '4.1 Setting Laravel permissions...'
+            # Permissions Laravel
             cd $APP_PATH
-            
-            # Définir le propriétaire correct (www-data pour web, ubuntu pour CLI)
             sudo chown -R www-data:www-data .
             sudo chown -R $SSH_USERNAME:$SSH_USERNAME storage bootstrap/cache
-            
-            # Définir les permissions
-            sudo find . -type d -exec chmod 755 {} \;
-            sudo find . -type f -exec chmod 644 {} \;
-            
-            # Permissions spéciales pour Laravel
             sudo chmod -R 775 storage bootstrap/cache
-            sudo chmod -R 777 storage/framework/views storage/framework/cache storage/logs
             
-            # Permettre à l'utilisateur de travailler avec les fichiers
-            sudo setfacl -R -m u:$SSH_USERNAME:rwX $APP_PATH 2>/dev/null || true
-            sudo setfacl -R -d -m u:$SSH_USERNAME:rwX $APP_PATH 2>/dev/null || true
-            
-            echo '4.2 Installing Composer dependencies...'
-            sudo -u www-data composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts 2>/dev/null || echo 'Composer install completed'
-            
-            echo '4.3 Optimizing Laravel...'
-            sudo -u www-data php artisan config:clear 2>/dev/null || true
-            sudo -u www-data php artisan config:cache 2>/dev/null || true
-            sudo -u www-data php artisan route:clear 2>/dev/null || true
-            
-            echo '4.4 Setting Vue.js admin permissions...'
+            # Permissions Vue.js Admin
             sudo chown -R www-data:www-data $VUE_ADMIN_PATH
-            sudo find $VUE_ADMIN_PATH -type d -exec chmod 755 {} \;
-            sudo find $VUE_ADMIN_PATH -type f -exec chmod 644 {} \;
+            sudo chmod -R 755 $VUE_ADMIN_PATH
             
-            echo '4.5 Verifying deployment...'
-            echo 'Laravel path owner:'
-            ls -ld $APP_PATH
-            echo 'Storage writable by www-data?'
-            sudo -u www-data touch $APP_PATH/storage/test.txt 2>/dev/null && echo '✅ Yes' && sudo rm $APP_PATH/storage/test.txt || echo '❌ No'
-            echo 'Vue.js admin files:'
+            # Optimisation Laravel
+            sudo -u www-data composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts 2>/dev/null || true
+            sudo -u www-data php artisan config:clear 2>/dev/null || true
+            
+            echo '=== Vérification ==='
+            echo 'Vue.js Admin:'
             ls -la $VUE_ADMIN_PATH/ | head -5
-            echo 'Vue.js admin contient index.html?'
-            [ -f '$VUE_ADMIN_PATH/index.html' ] && echo '✅ Yes' || echo '❌ No'
+            [ -f '$VUE_ADMIN_PATH/index.html' ] && echo '✅ index.html présent' || echo '⚠️ index.html manquant'
             
-            echo '=== ✅ Deployment complete ==='
+            echo '=== ✅ Déploiement terminé ==='
           "
 
       - name: Final Verification
         run: |
           SSH_HOST="${{ secrets.VPS_HOST }}"
           SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
-          APP_PATH="/var/www/backend/backtime"
           VUE_ADMIN_PATH="/var/www/vue-admin"
 
-          echo "=== Final verification ==="
-          ssh -o ConnectTimeout=10 "$SSH_USERNAME@$SSH_HOST" "
-            echo '1. Laravel app directory:'
-            ls -ld $APP_PATH
-            echo '2. Storage permissions:'
-            ls -ld $APP_PATH/storage/
-            echo '3. Laravel build directory (if exists):'
-            ls -ld $APP_PATH/public/build/ 2>/dev/null || echo 'No Laravel build directory'
-            echo '4. Vue.js admin directory:'
-            ls -ld $VUE_ADMIN_PATH/
-            echo '5. Vue.js admin index file exists:'
-            if [ -f '$VUE_ADMIN_PATH/index.html' ]; then
-              echo '✅ Yes - index.html exists'
-              echo 'File type:'
-              file '$VUE_ADMIN_PATH/index.html'
-              echo 'First 3 lines:'
-              head -3 '$VUE_ADMIN_PATH/index.html'
-            else
-              echo '❌ No index.html found!'
-              echo 'Listing files:'
-              ls -la '$VUE_ADMIN_PATH/'
-            fi
-            echo '6. Nginx config check:'
-            sudo nginx -t 2>&1 | tail -1
-            echo '7. Restarting services...'
-            sudo systemctl reload nginx 2>/dev/null || echo 'Nginx reloaded'
-            sudo systemctl restart php8.3-fpm 2>/dev/null || echo 'PHP-FPM restarted'
-          " || echo "Verification completed"
+          echo "=== Vérification finale ==="
+          ssh "$SSH_USERNAME@$SSH_HOST" "
+            echo '1. Vue.js Admin:'
+            ls -la $VUE_ADMIN_PATH/
+            echo ''
+            echo '2. index.html:'
+            [ -f '$VUE_ADMIN_PATH/index.html' ] && head -3 '$VUE_ADMIN_PATH/index.html' || echo 'Non trouvé'
+            echo ''
+            echo '3. Nginx:'
+            sudo nginx -t && echo '✅ Nginx config OK' || echo '❌ Nginx config error'
+            sudo systemctl reload nginx 2>/dev/null || true
+            echo ''
+            echo '✅ Déploiement vérifié'
+          "
