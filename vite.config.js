@@ -1,14 +1,9 @@
 import { defineConfig } from "vite";
-import laravel from "laravel-vite-plugin";
 import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
 
 export default defineConfig({
     plugins: [
-        laravel({
-            input: ["resources/css/app.css", "resources/js/app.ts"],
-            refresh: true,
-        }),
         vue({
             template: {
                 transformAssetUrls: {
@@ -24,10 +19,18 @@ export default defineConfig({
             vue: "vue/dist/vue.esm-bundler.js",
         },
     },
-    server: {
-        host: "localhost",
-        hmr: {
-            host: "localhost",
+    base: "/administrateur/",
+    build: {
+        outDir: "dist-admin",
+        rollupOptions: {
+            input: {
+                main: resolve(__dirname, "resources/js/app.ts"),
+            },
+            output: {
+                entryFileNames: "assets/[name].[hash].js",
+                chunkFileNames: "assets/[name].[hash].js",
+                assetFileNames: "assets/[name].[hash].[ext]",
+            },
         },
     },
 });

@@ -4,7 +4,7 @@ import { authGuard } from "./guards/auth";
 import type { RouteLocationNormalized } from "vue-router";
 
 const router = createRouter({
-    history: createWebHistory(),
+    history: createWebHistory("/administrateur/"),
     routes,
     scrollBehavior(_to, _from, savedPosition) {
         if (savedPosition) {

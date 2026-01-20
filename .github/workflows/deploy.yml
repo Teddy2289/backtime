@@ -29,7 +29,6 @@ jobs:
             # Check if @vitejs/plugin-vue is in dependencies
             if grep -q '@vitejs/plugin-vue' package.json && grep -q '"dependencies"' package.json; then
               echo "Moving @vitejs/plugin-vue to devDependencies..."
-              # Use npm directly instead of jq
               npm uninstall @vitejs/plugin-vue
               npm install @vitejs/plugin-vue@^5.2.4 --save-dev --legacy-peer-deps
             fi
@@ -37,17 +36,76 @@ jobs:
 
           npm install --legacy-peer-deps --no-audit
 
-      - name: Build assets
+      - name: Build Vue.js assets for admin
         run: |
-          echo "=== Building Vue.js assets ==="
-          npm run build
+          echo "=== Building Vue.js admin assets ==="
+          # Créer un fichier de configuration temporaire pour le build avec base path
+          cat > vite.config.admin.js << 'EOF'
+          import { defineConfig } from "vite";
+          import vue from "@vitejs/plugin-vue";
+          import { resolve } from "path";
+
+          export default defineConfig({
+            plugins: [
+              vue({
+                template: {
+                  transformAssetUrls: {
+                    base: null,
+                    includeAbsolute: false,
+                  },
+                },
+              }),
+            ],
+            resolve: {
+              alias: {
+                "@": resolve(__dirname, "resources/js"),
+                vue: "vue/dist/vue.esm-bundler.js",
+              },
+            },
+            base: '/administrateur/',
+            build: {
+              outDir: 'dist-admin',
+              rollupOptions: {
+                input: {
+                  main: resolve(__dirname, 'resources/js/app.ts'),
+                },
+                output: {
+                  entryFileNames: 'assets/[name].[hash].js',
+                  chunkFileNames: 'assets/[name].[hash].js',
+                  assetFileNames: 'assets/[name].[hash].[ext]',
+                },
+              },
+            },
+          });
+          EOF
+
+          # Modifier temporairement le router pour utiliser le bon base path
+          if [ -f "resources/js/router/index.ts" ]; then
+            cp resources/js/router/index.ts resources/js/router/index.ts.backup
+            sed -i "s|createWebHistory()|createWebHistory('/administrateur/')|g" resources/js/router/index.ts
+          fi
+
+          # Build avec la configuration temporaire
+          npx vite build --config vite.config.admin.js
+
+          # Restaurer le router original
+          if [ -f "resources/js/router/index.ts.backup" ]; then
+            mv resources/js/router/index.ts.backup resources/js/router/index.ts
+          fi
+
+          echo "✅ Vue.js admin assets built in dist-admin/"
+          ls -la dist-admin/
+
+      - name: Build Laravel assets
+        run: |
+          echo "=== Building Laravel assets ==="
+          npx vite build
 
           if [ -d "public/build" ]; then
-            echo "✅ Assets built successfully in public/build/"
+            echo "✅ Laravel assets built successfully in public/build/"
             ls -la public/build/
           else
             echo "❌ ERROR: public/build directory not found!"
-            npx vite build
             exit 1
           fi
 
@@ -82,32 +140,24 @@ jobs:
           EOF
           chmod 600 ~/.ssh/config
 
-          # Test SSH key format
-          echo "=== Testing SSH key ==="
-          head -1 ~/.ssh/id_rsa
-          echo "Key lines: $(wc -l < ~/.ssh/id_rsa)"
-
       - name: Test SSH Connection
         run: |
           echo "=== Testing SSH connection ==="
-          ssh -v -o BatchMode=yes "${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}" "echo 'SSH connection successful!'"
-
-          # Alternative test with shorter timeout
-          timeout 10 ssh -o ConnectTimeout=5 "${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}" "echo 'Connection test passed'" || echo "SSH test completed"
+          ssh -o ConnectTimeout=5 "${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}" "echo 'SSH connection successful!'"
 
       - name: Deploy to VPS
         run: |
           SSH_HOST="${{ secrets.VPS_HOST }}"
           SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
           APP_PATH="/var/www/backend/backtime"
+          VUE_ADMIN_PATH="/var/www/vue-admin"
 
-          echo "=== Deploying to $SSH_USERNAME@$SSH_HOST:$APP_PATH ==="
+          echo "=== Deploying to $SSH_USERNAME@$SSH_HOST ==="
 
-          # Create directory if it doesn't exist
-          ssh -o ConnectTimeout=10 "$SSH_USERNAME@$SSH_HOST" "sudo mkdir -p $APP_PATH && sudo chown $SSH_USERNAME:$SSH_USERNAME $APP_PATH" || true
+          # 1. Déployer le backend Laravel
+          echo "1. Deploying Laravel backend..."
+          ssh "$SSH_USERNAME@$SSH_HOST" "sudo mkdir -p $APP_PATH && sudo chown $SSH_USERNAME:$SSH_USERNAME $APP_PATH" || true
 
-          # 1. Sync base code
-          echo "Syncing base code..."
           rsync -avz --delete \
             --no-perms --no-owner --no-group \
             --exclude='.env' \
@@ -117,41 +167,63 @@ jobs:
             --exclude='vendor' \
             --exclude='.idea' \
             --exclude='*.log' \
-            --exclude='public/build' \
+            --exclude='dist-admin' \
             ./ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/"
 
-          # 2. Sync built assets
-          echo "Syncing built assets..."
+          # 2. Déployer les assets Laravel
+          echo "2. Deploying Laravel assets..."
           rsync -avz \
             --no-perms --no-owner --no-group \
             public/build/ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/public/build/"
 
-          # 3. Run setup commands
-          echo "Running setup commands on VPS..."
-          ssh -o ConnectTimeout=30 "$SSH_USERNAME@$SSH_HOST" "
+          # 3. Déployer l'admin Vue.js
+          echo "3. Deploying Vue.js admin..."
+          ssh "$SSH_USERNAME@$SSH_HOST" "sudo mkdir -p $VUE_ADMIN_PATH && sudo chown www-data:www-data $VUE_ADMIN_PATH" || true
+
+          # Copier le build admin
+          rsync -avz \
+            --no-perms --no-owner --no-group \
+            --delete \
+            dist-admin/ "$SSH_USERNAME@$SSH_HOST:$VUE_ADMIN_PATH/"
+
+          # 4. Configurer les permissions et optimiser
+          echo "4. Configuring permissions and optimizing..."
+          ssh "$SSH_USERNAME@$SSH_HOST" "
             set -e
+            
+            echo '4.1 Setting Laravel permissions...'
             cd $APP_PATH
+            sudo chown -R $SSH_USERNAME:www-data .
+            sudo chmod -R 755 .
+            sudo chmod -R 775 storage bootstrap/cache
+            sudo chmod -R 777 storage/framework/views
             
-            echo '1. Setting permissions...'
-            sudo chown -R $SSH_USERNAME:www-data . 2>/dev/null || true
-            sudo chmod -R 755 . 2>/dev/null || true
+            echo '4.2 Installing Composer dependencies...'
+            composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
             
-            echo '2. Installing Composer dependencies...'
-            composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts 2>/dev/null || echo 'Composer install completed'
+            echo '4.3 Optimizing Laravel...'
+            php artisan config:clear
+            php artisan config:cache
             
-            echo '3. Setting up storage...'
-            sudo chmod -R 775 storage bootstrap/cache 2>/dev/null || true
-            sudo chmod -R 777 storage/framework/views 2>/dev/null || true
+            echo '4.4 Setting Vue.js admin permissions...'
+            sudo chown -R www-data:www-data $VUE_ADMIN_PATH
+            sudo chmod -R 755 $VUE_ADMIN_PATH
             
-            echo '4. Optimizing Laravel...'
-            php artisan config:clear 2>/dev/null || true
-            php artisan config:cache 2>/dev/null || true
-            
-            echo '5. Verifying...'
-            echo 'Build assets:'
-            [ -d 'public/build' ] && echo '✅ Present' || echo '❌ Missing'
-            echo 'Storage:'
-            [ -w 'storage' ] && echo '✅ Writable' || echo '❌ Not writable'
+            echo '4.5 Creating index.html redirect if needed...'
+            if [ ! -f '$VUE_ADMIN_PATH/index.html' ]; then
+              echo 'Creating fallback index.html...'
+              sudo cat > '$VUE_ADMIN_PATH/index.html' << 'EOF'
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <meta http-equiv="refresh" content="0; url=/administrateur/">
+              </head>
+              <body>
+                <p>Redirecting to admin panel...</p>
+              </body>
+              </html>
+              EOF
+            fi
             
             echo '=== ✅ Deployment complete ==='
           "
@@ -161,13 +233,20 @@ jobs:
           SSH_HOST="${{ secrets.VPS_HOST }}"
           SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
           APP_PATH="/var/www/backend/backtime"
+          VUE_ADMIN_PATH="/var/www/vue-admin"
 
           echo "=== Final verification ==="
           ssh -o ConnectTimeout=10 "$SSH_USERNAME@$SSH_HOST" "
-            echo 'App directory:'
+            echo '1. Laravel app directory:'
             ls -ld $APP_PATH
-            echo 'Build directory:'
-            ls -ld $APP_PATH/public/build 2>/dev/null || echo 'No build directory'
-            echo 'Laravel version:'
+            echo '2. Laravel build directory:'
+            ls -ld $APP_PATH/public/build/ 2>/dev/null || echo 'No Laravel build directory'
+            echo '3. Vue.js admin directory:'
+            ls -ld $VUE_ADMIN_PATH/
+            echo '4. Vue.js admin files:'
+            ls -la $VUE_ADMIN_PATH/ | head -10
+            echo '5. Nginx config check:'
+            sudo nginx -t 2>&1 || echo 'Nginx test failed'
+            echo '6. Laravel version:'
             php $APP_PATH/artisan --version 2>/dev/null || echo 'Artisan not accessible'
-          " || echo "Verification skipped - main deployment completed"
+          "
