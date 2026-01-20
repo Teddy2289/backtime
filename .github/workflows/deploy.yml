@@ -30,10 +30,10 @@ jobs:
       - name: Build Vue.js Admin SPA
         run: |
           echo "=== Building Vue.js Admin SPA ==="
-          
+
           # Nettoyer avant le build
           rm -rf dist-admin
-          
+
           # Créer un fichier HTML d'entrée SPA
           cat > admin-spa.html << 'HTML'
           <!DOCTYPE html>
@@ -48,47 +48,47 @@ jobs:
           <script type="module" src="./resources/js/app.ts"></script>
           </body>
           </html>
-        HTML
-          
+          HTML
+
           # Créer la configuration Vite corrigée
           cat > vite.config.admin.js << 'EOF'
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
-import { resolve } from "path";
+          import { defineConfig } from "vite";
+          import vue from "@vitejs/plugin-vue";
+          import { resolve } from "path";
 
-export default defineConfig({
-  plugins: [vue()],
-  root: ".",
-  publicDir: false, // IMPORTANT: désactive la copie du dossier public
-  resolve: {
-    alias: {
-      "@": resolve(__dirname, "resources/js"),
-      vue: "vue/dist/vue.esm-bundler.js",
-    },
-  },
-  base: '/administrateur/',
-  build: {
-    outDir: 'dist-admin',
-    emptyOutDir: true,
-    rollupOptions: {
-      input: resolve(__dirname, 'admin-spa.html'), // Fichier HTML d'entrée
-    },
-    assetsInlineLimit: 0,
-    copyPublicDir: false,
-  },
-});
-EOF
-          
+          export default defineConfig({
+            plugins: [vue()],
+            root: ".",
+            publicDir: false, // IMPORTANT: désactive la copie du dossier public
+            resolve: {
+              alias: {
+                "@": resolve(__dirname, "resources/js"),
+                vue: "vue/dist/vue.esm-bundler.js",
+              },
+            },
+            base: '/administrateur/',
+            build: {
+              outDir: 'dist-admin',
+              emptyOutDir: true,
+              rollupOptions: {
+                input: resolve(__dirname, 'admin-spa.html'), // Fichier HTML d'entrée
+              },
+              assetsInlineLimit: 0,
+              copyPublicDir: false,
+            },
+          });
+          EOF
+
           # Build l'admin SPA
           npx vite build --config vite.config.admin.js
-          
+
           echo "✅ Vue.js admin assets built in dist-admin/"
           ls -la dist-admin/
-          
+
           # VÉRIFICATION CRITIQUE - Supprimer tout index.php
           echo "=== Suppression des fichiers PHP ==="
           find dist-admin -name "*.php" -type f -delete
-          
+
           # Vérifier que index.html existe
           if [ ! -f "dist-admin/index.html" ]; then
             echo "❌ ERREUR : index.html non trouvé dans dist-admin/"
@@ -103,23 +103,23 @@ EOF
             fi
             
             cat > dist-admin/index.html << HTML
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vue.js Admin</title>
-    <style>
-      body, html { margin: 0; padding: 0; height: 100%; }
-      #app { height: 100vh; }
-    </style>
-</head>
-<body>
-    <div id="app"></div>
-    <script type="module" src="/administrateur/$JS_REL"></script>
-</body>
-</html>
-HTML
+            <!DOCTYPE html>
+            <html lang="fr">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Vue.js Admin</title>
+                <style>
+                  body, html { margin: 0; padding: 0; height: 100%; }
+                  #app { height: 100vh; }
+                </style>
+            </head>
+            <body>
+                <div id="app"></div>
+                <script type="module" src="/administrateur/$JS_REL"></script>
+            </body>
+            </html>
+            HTML
           else
             echo "✅ index.html trouvé dans dist-admin/"
             echo "Aperçu :"
@@ -131,7 +131,7 @@ HTML
           echo "=== Building Laravel assets ==="
           # Pour le build Laravel, on utilise la config normale
           npx vite build 2>/dev/null || echo "⚠️ Build Laravel échoué ou ignoré"
-          
+
           # Vérifier si le build Laravel existe
           if [ -d "public/build" ]; then
             echo "✅ Laravel assets built successfully in public/build/"
@@ -274,19 +274,19 @@ HTML
               ls -la '$VUE_ADMIN_PATH/'
               echo 'Création d\'urgence...'
               sudo cat > '$VUE_ADMIN_PATH/index.html' << 'HTML'
-<!DOCTYPE html>
-<html lang=\"fr\">
-<head>
-    <meta charset=\"UTF-8\">
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-    <title>Vue.js Admin</title>
-</head>
-<body>
-    <div id=\"app\"></div>
-    <script type=\"module\" src=\"/administrateur/assets/main.js\"></script>
-</body>
-</html>
-HTML
+              <!DOCTYPE html>
+              <html lang=\"fr\">
+              <head>
+                  <meta charset=\"UTF-8\">
+                  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+                  <title>Vue.js Admin</title>
+              </head>
+              <body>
+                  <div id=\"app\"></div>
+                  <script type=\"module\" src=\"/administrateur/assets/main.js\"></script>
+              </body>
+              </html>
+              HTML
             fi
           "
 
