@@ -180,15 +180,29 @@ jobs:
             ssh "$SSH_USERNAME@$SSH_HOST" "sudo mkdir -p $APP_PATH/public/build" || true
           fi
 
-          # 3. Déployer l'admin Vue.js
+          # 3. Déployer l'admin Vue.js - CORRECTION
           echo "3. Deploying Vue.js admin..."
 
-          # Copier le build admin avec sudo
+          # Supprimer l'ancien contenu
+          ssh "$SSH_USERNAME@$SSH_HOST" "sudo rm -rf $VUE_ADMIN_PATH/* 2>/dev/null || true"
+
+          # Copier le build admin
           rsync -avz \
             --rsync-path="sudo rsync" \
             --no-perms --no-owner --no-group \
-            --delete \
             dist-admin/ "$SSH_USERNAME@$SSH_HOST:$VUE_ADMIN_PATH/"
+
+          # Vérifier que index.html existe
+          ssh "$SSH_USERNAME@$SSH_HOST" "
+            # S'assurer que index.html existe
+            if [ ! -f '$VUE_ADMIN_PATH/index.html' ]; then
+              echo '⚠️ WARNING: index.html not found in Vue.js admin!'
+              echo 'Contents of $VUE_ADMIN_PATH:'
+              ls -la $VUE_ADMIN_PATH/
+            else
+              echo '✅ Vue.js admin index.html found'
+            fi
+          "
 
           # 4. Configurer les permissions et optimiser
           echo "4. Configuring permissions and optimizing..."
