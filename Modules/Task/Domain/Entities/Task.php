@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Modules\ProjectsTeams\Domain\Entities\ProjectsTeams;
 use Modules\TaskComment\Domain\Entities\TaskComment;
-use Modules\Taskfiles\Domain\Entities\TaskFile;
+use Modules\TaskFiles\Domain\Entities\TaskFile;
 use Modules\TaskTimeLog\Domain\Entities\TaskTimeLog;
 use Modules\Team\Domain\Entities\Team;
 use Modules\User\Domain\Entities\User;
