@@ -1,9 +1,12 @@
+// vite.config.admin.js (version finale)
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
 
 export default defineConfig({
     plugins: [vue()],
+    root: ".",
+    publicDir: false, // IMPORTANT : désactive le dossier public
     resolve: {
         alias: {
             "@": resolve(__dirname, "resources/js"),
@@ -14,15 +17,10 @@ export default defineConfig({
     build: {
         outDir: "dist-admin",
         emptyOutDir: true,
-        // CRITIQUE : Ne pas copier index.php
         rollupOptions: {
-            input: resolve(__dirname, "resources/js/app.ts"),
-            // Exclure explicitement index.php
-            external: [],
+            input: resolve(__dirname, "admin-spa.html"), // Votre fichier HTML
         },
-        // Empêcher la copie automatique de index.php
-        assetsInlineLimit: 4096,
-        copyPublicDir: false, // ← IMPORTANT : Ne pas copier les fichiers publics
+        assetsInlineLimit: 0,
+        copyPublicDir: false,
     },
-    publicDir: false, // ← TRÈS IMPORTANT : Pas de dossier public
 });

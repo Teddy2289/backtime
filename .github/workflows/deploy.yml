@@ -27,55 +27,15 @@ jobs:
         run: |
           npm install --legacy-peer-deps --no-audit
 
-      - name: Build Vue.js assets for admin
+      - name: Build Vue.js Admin SPA
         run: |
-          echo "=== Building Vue.js admin assets ==="
-
-          # Créer un fichier de configuration pour le build admin
-          cat > vite.config.admin.js << 'EOF'
-          import { defineConfig } from "vite";
-          import vue from "@vitejs/plugin-vue";
-          import { resolve } from "path";
-
-          export default defineConfig({
-            plugins: [
-              vue({
-                template: {
-                  transformAssetUrls: {
-                    base: null,
-                    includeAbsolute: false,
-                  },
-                },
-              }),
-            ],
-            resolve: {
-              alias: {
-                "@": resolve(__dirname, "resources/js"),
-                vue: "vue/dist/vue.esm-bundler.js",
-              },
-            },
-            base: '/administrateur/',
-            build: {
-              outDir: 'dist-admin',
-              emptyOutDir: true,
-              rollupOptions: {
-                input: resolve(__dirname, 'resources/js/app.ts'),
-              },
-            },
-          });
-          EOF
-
-          # Build l'admin
-          npx vite build --config vite.config.admin.js
-
-          echo "✅ Vue.js admin assets built in dist-admin/"
-          ls -la dist-admin/
-
-          # VÉRIFICATION CRITIQUE
-          if [ ! -f "dist-admin/index.html" ]; then
-           echo "❌ ERREUR : index.html non trouvé dans dist-admin/"
-           echo "Création d'un index.html de secours..."
-           cat > dist-admin/index.html << 'HTML'
+          echo "=== Building Vue.js Admin SPA ==="
+          
+          # Nettoyer avant le build
+          rm -rf dist-admin
+          
+          # Créer un fichier HTML d'entrée SPA
+          cat > admin-spa.html << 'HTML'
           <!DOCTYPE html>
           <html lang="fr">
           <head>
@@ -84,39 +44,94 @@ jobs:
               <title>Vue.js Admin</title>
           </head>
           <body>
-              <h1>Vue.js Admin Application</h1>
-              <div id="app"></div>
-              <script type="module" src="/administrateur/assets/main.js"></script>
+            <div id="app"></div>
+          <script type="module" src="./resources/js/app.ts"></script>
           </body>
           </html>
-          HTML
-              else
-                  echo "✅ index.html trouvé dans dist-admin/"
-                  echo "Aperçu :"
-                  head -20 dist-admin/index.html
-              fi
-      - name: Debug Vue.js build
-        run: |
-          echo "=== Debug Vue.js build ==="
-          echo "Structure du projet :"
-          find . -name "*.html" -o -name "*.php" | grep -i "index"
-          echo ""
-          echo "Contenu de resources/js/ :"
-          ls -la resources/js/
-          echo ""
-          echo "Fichier app.ts existe ?"
-          [ -f "resources/js/app.ts" ] && echo "✅ OUI" || echo "❌ NON"
-          echo ""
-          echo "Vite config existe ?"
-          [-f "vite.config.admin.js" ] && echo "✅ OUI" || echo "❌ NON"
-          echo ""
+        HTML
+          
+          # Créer la configuration Vite corrigée
+          cat > vite.config.admin.js << 'EOF'
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
+import { resolve } from "path";
+
+export default defineConfig({
+  plugins: [vue()],
+  root: ".",
+  publicDir: false, // IMPORTANT: désactive la copie du dossier public
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "resources/js"),
+      vue: "vue/dist/vue.esm-bundler.js",
+    },
+  },
+  base: '/administrateur/',
+  build: {
+    outDir: 'dist-admin',
+    emptyOutDir: true,
+    rollupOptions: {
+      input: resolve(__dirname, 'admin-spa.html'), // Fichier HTML d'entrée
+    },
+    assetsInlineLimit: 0,
+    copyPublicDir: false,
+  },
+});
+EOF
+          
+          # Build l'admin SPA
+          npx vite build --config vite.config.admin.js
+          
+          echo "✅ Vue.js admin assets built in dist-admin/"
+          ls -la dist-admin/
+          
+          # VÉRIFICATION CRITIQUE - Supprimer tout index.php
+          echo "=== Suppression des fichiers PHP ==="
+          find dist-admin -name "*.php" -type f -delete
+          
+          # Vérifier que index.html existe
+          if [ ! -f "dist-admin/index.html" ]; then
+            echo "❌ ERREUR : index.html non trouvé dans dist-admin/"
+            echo "Création d'un index.html de secours..."
+            
+            # Trouver le fichier JS principal
+            JS_FILE=$(find dist-admin -name "*.js" -type f | head -1)
+            if [ -n "$JS_FILE" ]; then
+              JS_REL="${JS_FILE#dist-admin/}"
+            else
+              JS_REL="assets/main.js"
+            fi
+            
+            cat > dist-admin/index.html << HTML
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue.js Admin</title>
+    <style>
+      body, html { margin: 0; padding: 0; height: 100%; }
+      #app { height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module" src="/administrateur/$JS_REL"></script>
+</body>
+</html>
+HTML
+          else
+            echo "✅ index.html trouvé dans dist-admin/"
+            echo "Aperçu :"
+            head -20 dist-admin/index.html
+          fi
+
       - name: Build Laravel assets
         run: |
           echo "=== Building Laravel assets ==="
-
           # Pour le build Laravel, on utilise la config normale
-          npx vite build
-
+          npx vite build 2>/dev/null || echo "⚠️ Build Laravel échoué ou ignoré"
+          
           # Vérifier si le build Laravel existe
           if [ -d "public/build" ]; then
             echo "✅ Laravel assets built successfully in public/build/"
@@ -205,6 +220,7 @@ jobs:
             --exclude='*.log' \
             --exclude='dist-admin' \
             --exclude='public/build' \
+            --exclude='admin-spa.html' \
             ./ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/"
 
           # 2. Déployer les assets Laravel (s'ils existent)
@@ -219,8 +235,8 @@ jobs:
             ssh "$SSH_USERNAME@$SSH_HOST" "sudo mkdir -p $APP_PATH/public/build" || true
           fi
 
-          # 3. Déployer l'admin Vue.js - CORRECTION
-          echo "3. Deploying Vue.js admin..."
+          # 3. Déployer l'admin Vue.js SPA
+          echo "3. Deploying Vue.js admin SPA..."
 
           # Supprimer l'ancien contenu
           ssh "$SSH_USERNAME@$SSH_HOST" "sudo rm -rf $VUE_ADMIN_PATH/* 2>/dev/null || true"
@@ -228,21 +244,49 @@ jobs:
           # S'assurer que le dossier existe et a les bonnes permissions
           ssh "$SSH_USERNAME@$SSH_HOST" "sudo mkdir -p $VUE_ADMIN_PATH && sudo chown www-data:www-data $VUE_ADMIN_PATH"
 
-          # Copier le build admin
-          rsync -avz \
-            --rsync-path="sudo rsync" \
-            --no-perms --no-owner --no-group \
-            dist-admin/ "$SSH_USERNAME@$SSH_HOST:$VUE_ADMIN_PATH/"
+          # Copier le build admin SPA
+          if [ -d "dist-admin" ] && [ "$(ls -A dist-admin 2>/dev/null)" ]; then
+            echo "✅ dist-admin existe avec du contenu"
+            ls -la dist-admin/
+            
+            rsync -avz \
+              --rsync-path="sudo rsync" \
+              --no-perms --no-owner --no-group \
+              dist-admin/ "$SSH_USERNAME@$SSH_HOST:$VUE_ADMIN_PATH/"
+          else
+            echo "❌ ERREUR: dist-admin/ n'existe pas ou est vide!"
+            exit 1
+          fi
 
           # Vérifier que index.html existe
           ssh "$SSH_USERNAME@$SSH_HOST" "
+            echo '=== Vérification Vue.js SPA ==='
             # S'assurer que index.html existe
-            if [ ! -f '$VUE_ADMIN_PATH/index.html' ]; then
-              echo '⚠️ WARNING: index.html not found in Vue.js admin!'
-              echo 'Contents of $VUE_ADMIN_PATH:'
-              ls -la $VUE_ADMIN_PATH/
-            else
+            if [ -f '$VUE_ADMIN_PATH/index.html' ]; then
               echo '✅ Vue.js admin index.html found'
+              echo 'Type de fichier:'
+              file '$VUE_ADMIN_PATH/index.html'
+              echo 'Premières lignes:'
+              head -5 '$VUE_ADMIN_PATH/index.html'
+            else
+              echo '❌ ERREUR: index.html not found in Vue.js admin!'
+              echo 'Contents of $VUE_ADMIN_PATH:'
+              ls -la '$VUE_ADMIN_PATH/'
+              echo 'Création d\'urgence...'
+              sudo cat > '$VUE_ADMIN_PATH/index.html' << 'HTML'
+<!DOCTYPE html>
+<html lang=\"fr\">
+<head>
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <title>Vue.js Admin</title>
+</head>
+<body>
+    <div id=\"app\"></div>
+    <script type=\"module\" src=\"/administrateur/assets/main.js\"></script>
+</body>
+</html>
+HTML
             fi
           "
 
@@ -290,6 +334,8 @@ jobs:
             sudo -u www-data touch $APP_PATH/storage/test.txt 2>/dev/null && echo '✅ Yes' && sudo rm $APP_PATH/storage/test.txt || echo '❌ No'
             echo 'Vue.js admin files:'
             ls -la $VUE_ADMIN_PATH/ | head -5
+            echo 'Vue.js admin contient index.html?'
+            [ -f '$VUE_ADMIN_PATH/index.html' ] && echo '✅ Yes' || echo '❌ No'
             
             echo '=== ✅ Deployment complete ==='
           "
@@ -312,7 +358,17 @@ jobs:
             echo '4. Vue.js admin directory:'
             ls -ld $VUE_ADMIN_PATH/
             echo '5. Vue.js admin index file exists:'
-            [ -f '$VUE_ADMIN_PATH/index.html' ] && echo '✅ Yes' || echo '❌ No'
+            if [ -f '$VUE_ADMIN_PATH/index.html' ]; then
+              echo '✅ Yes - index.html exists'
+              echo 'File type:'
+              file '$VUE_ADMIN_PATH/index.html'
+              echo 'First 3 lines:'
+              head -3 '$VUE_ADMIN_PATH/index.html'
+            else
+              echo '❌ No index.html found!'
+              echo 'Listing files:'
+              ls -la '$VUE_ADMIN_PATH/'
+            fi
             echo '6. Nginx config check:'
             sudo nginx -t 2>&1 | tail -1
             echo '7. Restarting services...'

@@ -5,7 +5,7 @@
     "scripts": {
         "dev": "vite",
         "build": "vue-tsc --noEmit && vite build",
-        "build:admin": "vite build --config vite.config.admin.js",
+        "build:admin": "rm -rf dist-admin && npx vite build --config vite.config.admin.js",
         "preview": "vite preview"
     },
     "devDependencies": {
