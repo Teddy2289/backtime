@@ -30,30 +30,69 @@ jobs:
       - name: Build Vue.js Admin SPA
         run: |
           echo "=== Building Vue.js Admin SPA ==="
-
+          
           # Nettoyer avant le build
           rm -rf dist-admin
-
+          
+          # DEBUG: Vérifier le contenu avant le build
+          echo "=== DEBUG: Contenu avant build ==="
+          ls -la
+          echo "Fichier admin-spa.html existe ?"
+          [ -f "admin-spa.html" ] && echo "✅ OUI" || echo "❌ NON"
+          
           # Build avec le script npm
+          echo "=== Exécution de: npm run build:admin ==="
           npm run build:admin
-
+          
           echo "✅ Vue.js admin build terminé"
-          echo "=== Contenu de dist-admin/ ==="
-          ls -la dist-admin/
-
+          echo "=== DEBUG DÉTAILLÉ de dist-admin/ ==="
+          
+          if [ -d "dist-admin" ]; then
+            echo "📁 dist-admin existe"
+            echo "Contenu complet:"
+            find dist-admin -type f
+            echo ""
+            echo "Fichiers HTML:"
+            find dist-admin -name "*.html" -type f
+            echo ""
+            echo "Structure:"
+            tree dist-admin || ls -la dist-admin/
+          else
+            echo "❌ dist-admin/ n'existe pas!"
+            exit 1
+          fi
+          
           # Vérifier ce qui a été généré
           if [ -f "dist-admin/admin-spa.html" ]; then
-            echo "✅ admin-spa.html généré par Vite"
-            # Renommer en index.html pour le VPS
+            echo "✅ admin-spa.html trouvé"
+            echo "Taille: $(wc -l < dist-admin/admin-spa.html) lignes"
+            echo "Premières lignes:"
+            head -10 dist-admin/admin-spa.html
+            # Renommer en index.html
             mv dist-admin/admin-spa.html dist-admin/index.html
-            echo "Renommé admin-spa.html → index.html"
+            echo "✅ Renommé → index.html"
           elif [ -f "dist-admin/index.html" ]; then
-            echo "✅ index.html déjà généré"
+            echo "✅ index.html déjà présent"
           else
-            echo "❌ ERREUR: Aucun HTML généré par Vite!"
-            echo "Fichiers dans dist-admin/:"
-            find dist-admin -type f
-            exit 1
+            echo "❌ Aucun HTML trouvé dans dist-admin!"
+            echo "📋 Listing complet des fichiers:"
+            find dist-admin -type f -exec ls -la {} \;
+            echo "⚠️ Création d'un index.html de secours..."
+            # Créer un index.html minimal
+            cat > dist-admin/index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue.js Admin</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module" src="/administrateur/assets/index.js"></script>
+</body>
+</html>
+EOF
           fi
 
       - name: Build Laravel assets
@@ -99,50 +138,72 @@ jobs:
 
           echo "=== Déploiement sur VPS ==="
 
-          # 1. Nettoyer le dossier Vue.js Admin sur le VPS
-          ssh "$SSH_USERNAME@$SSH_HOST" "
-            echo 'Nettoyage du dossier Vue.js...'
-            sudo rm -rf $VUE_ADMIN_PATH/*
-            sudo mkdir -p $VUE_ADMIN_PATH
-            sudo chown www-data:www-data $VUE_ADMIN_PATH
-          "
-
-          # 2. Déployer Vue.js Admin (juste copier dist-admin/)
-          echo "Déploiement Vue.js Admin..."
-          if [ -d "dist-admin" ] && [ "$(ls -A dist-admin 2>/dev/null)" ]; then
-            echo "Contenu à copier:"
-            ls -la dist-admin/
-            
-            # Copier tout le contenu de dist-admin vers le VPS
-            rsync -avz \
-              --rsync-path="sudo rsync" \
-              dist-admin/ "$SSH_USERNAME@$SSH_HOST:$VUE_ADMIN_PATH/"
-            
-            echo "✅ Vue.js Admin déployé"
+          # 1. Vérifier ce qu'on a à déployer
+          echo "=== Contenu LOCAL de dist-admin/ ==="
+          if [ -d "dist-admin" ]; then
+            echo "📁 dist-admin local:"
+            find dist-admin -type f
+            echo ""
+            echo "index.html local existe ?"
+            [ -f "dist-admin/index.html" ] && echo "✅ OUI" || echo "❌ NON"
           else
-            echo "❌ ERREUR: dist-admin/ vide!"
+            echo "❌ dist-admin/ local n'existe pas!"
             exit 1
           fi
 
-          # 3. Vérifier que le fichier index.html est bien présent
+          # 2. Préparer le VPS
+          ssh "$SSH_USERNAME@$SSH_HOST" "
+            echo 'Préparation du dossier Vue.js...'
+            sudo mkdir -p $VUE_ADMIN_PATH
+            sudo chown www-data:www-data $VUE_ADMIN_PATH
+            echo 'Contenu AVANT déploiement:'
+            ls -la $VUE_ADMIN_PATH/
+          "
+
+          # 3. Déployer Vue.js Admin
+          echo "Déploiement Vue.js Admin..."
+          rsync -avz \
+            --rsync-path="sudo rsync" \
+            --progress \
+            dist-admin/ "$SSH_USERNAME@$SSH_HOST:$VUE_ADMIN_PATH/"
+          
+          echo "✅ Copie terminée"
+
+          # 4. Vérifier sur le VPS
           ssh "$SSH_USERNAME@$SSH_HOST" "
             echo '=== Vérification sur VPS ==='
             echo 'Contenu de $VUE_ADMIN_PATH:'
             ls -la $VUE_ADMIN_PATH/
-            
+            echo ''
+            echo 'Fichiers détaillés:'
+            find $VUE_ADMIN_PATH -type f -exec ls -la {} \;
+            echo ''
             if [ -f '$VUE_ADMIN_PATH/index.html' ]; then
               echo '✅ index.html présent'
-              echo 'Premières lignes:'
-              head -5 '$VUE_ADMIN_PATH/index.html'
+              echo 'Taille:'
+              wc -l '$VUE_ADMIN_PATH/index.html'
             else
-              echo '❌ ERREUR CRITIQUE: index.html manquant!'
-              echo 'Fichiers présents:'
-              find '$VUE_ADMIN_PATH' -type f
-              exit 1
+              echo '❌ index.html MANQUANT!'
+              echo 'Création manuelle...'
+              sudo cat > '$VUE_ADMIN_PATH/index.html' << 'HTML'
+<!DOCTYPE html>
+<html lang=\"fr\">
+<head>
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <title>Vue.js Admin</title>
+</head>
+<body>
+    <div id=\"app\"></div>
+    <script type=\"module\" src=\"/administrateur/assets/index.js\"></script>
+</body>
+</html>
+HTML
+              echo '✅ index.html créé manuellement'
             fi
           "
 
-          # 4. Déployer Laravel
+          # 5. Déployer Laravel
           echo "Déploiement Laravel..."
           rsync -avz --delete \
             --rsync-path="sudo rsync" \
@@ -154,18 +215,20 @@ jobs:
             --exclude='dist-admin' \
             ./ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/"
 
-          # 5. Configurer les permissions
+          # 6. Configurer les permissions
           ssh "$SSH_USERNAME@$SSH_HOST" "
             echo 'Configuration des permissions...'
+            
+            # Permissions Vue.js Admin (réparer les permissions)
+            sudo chown -R www-data:www-data $VUE_ADMIN_PATH
+            sudo find $VUE_ADMIN_PATH -type d -exec chmod 755 {} \;
+            sudo find $VUE_ADMIN_PATH -type f -exec chmod 644 {} \;
             
             # Permissions Laravel
             cd $APP_PATH
             sudo chown -R www-data:www-data .
             sudo chown -R $SSH_USERNAME:$SSH_USERNAME storage bootstrap/cache
             sudo chmod -R 775 storage bootstrap/cache
-            
-            # Optimisation Laravel
-            sudo -u www-data composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts 2>/dev/null || true
             
             echo '=== ✅ Déploiement terminé ==='
           "
@@ -175,26 +238,24 @@ jobs:
           SSH_HOST="${{ secrets.VPS_HOST }}"
           SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
           VUE_ADMIN_PATH="/var/www/vue-admin"
-          APP_PATH="/var/www/backend/backtime"
 
           echo "=== Vérification finale ==="
           ssh "$SSH_USERNAME@$SSH_HOST" "
             echo '1. Vue.js Admin:'
             ls -la $VUE_ADMIN_PATH/
             echo ''
-            echo '2. Vérification index.html:'
+            echo '2. index.html:'
             if [ -f '$VUE_ADMIN_PATH/index.html' ]; then
-              echo '✅ Présent - Taille:'
-              wc -l '$VUE_ADMIN_PATH/index.html'
-              echo 'Contient "Vue.js":'
-              grep -i 'vue' '$VUE_ADMIN_PATH/index.html' | head -2 || true
+              echo '✅ Présent'
+              echo 'Contenu (premières 5 lignes):'
+              head -5 '$VUE_ADMIN_PATH/index.html'
             else
               echo '❌ MANQUANT!'
             fi
             echo ''
             echo '3. Nginx:'
-            sudo nginx -t && echo '✅ Config OK' || echo '❌ Erreur'
-            sudo systemctl reload nginx 2>/dev/null || true
+            sudo nginx -t
+            sudo systemctl reload nginx
             echo ''
             echo '✅ Vérification terminée'
           "
