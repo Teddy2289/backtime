@@ -30,23 +30,23 @@ jobs:
       - name: Build Vue.js Admin SPA
         run: |
           echo "=== Building Vue.js Admin SPA ==="
-          
+
           # Nettoyer avant le build
           rm -rf dist-admin
-          
+
           # DEBUG: Vérifier le contenu avant le build
           echo "=== DEBUG: Contenu avant build ==="
           ls -la
           echo "Fichier admin-spa.html existe ?"
           [ -f "admin-spa.html" ] && echo "✅ OUI" || echo "❌ NON"
-          
+
           # Build avec le script npm
           echo "=== Exécution de: npm run build:admin ==="
           npm run build:admin
-          
+
           echo "✅ Vue.js admin build terminé"
           echo "=== DEBUG DÉTAILLÉ de dist-admin/ ==="
-          
+
           if [ -d "dist-admin" ]; then
             echo "📁 dist-admin existe"
             echo "Contenu complet:"
@@ -61,7 +61,7 @@ jobs:
             echo "❌ dist-admin/ n'existe pas!"
             exit 1
           fi
-          
+
           # Vérifier ce qui a été généré
           if [ -f "dist-admin/admin-spa.html" ]; then
             echo "✅ admin-spa.html trouvé"
@@ -80,19 +80,19 @@ jobs:
             echo "⚠️ Création d'un index.html de secours..."
             # Créer un index.html minimal
             cat > dist-admin/index.html << 'EOF'
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vue.js Admin</title>
-</head>
-<body>
-    <div id="app"></div>
-    <script type="module" src="/administrateur/assets/index.js"></script>
-</body>
-</html>
-EOF
+          <!DOCTYPE html>
+          <html lang="fr">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Vue.js Admin</title>
+          </head>
+          <body>
+              <div id="app"></div>
+              <script type="module" src="/administrateur/assets/index.js"></script>
+          </body>
+          </html>
+          EOF
           fi
 
       - name: Build Laravel assets
@@ -166,7 +166,7 @@ EOF
             --rsync-path="sudo rsync" \
             --progress \
             dist-admin/ "$SSH_USERNAME@$SSH_HOST:$VUE_ADMIN_PATH/"
-          
+
           echo "✅ Copie terminée"
 
           # 4. Vérifier sur le VPS
@@ -186,19 +186,19 @@ EOF
               echo '❌ index.html MANQUANT!'
               echo 'Création manuelle...'
               sudo cat > '$VUE_ADMIN_PATH/index.html' << 'HTML'
-<!DOCTYPE html>
-<html lang=\"fr\">
-<head>
-    <meta charset=\"UTF-8\">
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-    <title>Vue.js Admin</title>
-</head>
-<body>
-    <div id=\"app\"></div>
-    <script type=\"module\" src=\"/administrateur/assets/index.js\"></script>
-</body>
-</html>
-HTML
+            <!DOCTYPE html>
+            <html lang=\"fr\">
+            <head>
+                <meta charset=\"UTF-8\">
+                <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+                <title>Vue.js Admin</title>
+            </head>
+            <body>
+                <div id=\"app\"></div>
+                <script type=\"module\" src=\"/administrateur/assets/index.js\"></script>
+            </body>
+            </html>
+            HTML
               echo '✅ index.html créé manuellement'
             fi
           "
