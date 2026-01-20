@@ -95,7 +95,21 @@ jobs:
                   echo "Aperçu :"
                   head -20 dist-admin/index.html
               fi
-
+      - name: Debug Vue.js build
+        run: |
+          echo "=== Debug Vue.js build ==="
+          echo "Structure du projet :"
+          find . -name "*.html" -o -name "*.php" | grep -i "index"
+          echo ""
+          echo "Contenu de resources/js/ :"
+          ls -la resources/js/
+          echo ""
+          echo "Fichier app.ts existe ?"
+          [ -f "resources/js/app.ts" ] && echo "✅ OUI" || echo "❌ NON"
+          echo ""
+          echo "Vite config existe ?"
+          [-f "vite.config.admin.js" ] && echo "✅ OUI" || echo "❌ NON"
+          echo ""
       - name: Build Laravel assets
         run: |
           echo "=== Building Laravel assets ==="
