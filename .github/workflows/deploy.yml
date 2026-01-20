@@ -71,6 +71,31 @@ jobs:
           echo "✅ Vue.js admin assets built in dist-admin/"
           ls -la dist-admin/
 
+          # VÉRIFICATION CRITIQUE
+          if [ ! -f "dist-admin/index.html" ]; then
+           echo "❌ ERREUR : index.html non trouvé dans dist-admin/"
+           echo "Création d'un index.html de secours..."
+           cat > dist-admin/index.html << 'HTML'
+          <!DOCTYPE html>
+          <html lang="fr">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Vue.js Admin</title>
+          </head>
+          <body>
+              <h1>Vue.js Admin Application</h1>
+              <div id="app"></div>
+              <script type="module" src="/administrateur/assets/main.js"></script>
+          </body>
+          </html>
+          HTML
+              else
+                  echo "✅ index.html trouvé dans dist-admin/"
+                  echo "Aperçu :"
+                  head -20 dist-admin/index.html
+              fi
+
       - name: Build Laravel assets
         run: |
           echo "=== Building Laravel assets ==="
