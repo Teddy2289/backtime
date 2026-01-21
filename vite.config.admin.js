@@ -6,7 +6,7 @@ import { resolve } from "path";
 export default defineConfig({
     plugins: [vue()],
     root: ".",
-    publicDir: false, // IMPORTANT : désactive le dossier public
+    publicDir: false,
     resolve: {
         alias: {
             "@": resolve(__dirname, "resources/js"),
@@ -18,7 +18,7 @@ export default defineConfig({
         outDir: "dist-admin",
         emptyOutDir: true,
         rollupOptions: {
-            input: resolve(__dirname, "index.html"), // Votre fichier HTML
+            input: resolve(__dirname, "index.html"),
         },
         assetsInlineLimit: 0,
         copyPublicDir: false,
