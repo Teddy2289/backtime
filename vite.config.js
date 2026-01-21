@@ -1,28 +1,25 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import { resolve } from "path";
+import laravel from "laravel-vite-plugin";
 
 export default defineConfig({
-    plugins: [vue()],
+    plugins: [
+        laravel({
+            input: ["resources/css/app.css", "resources/js/app.ts"],
+            refresh: true,
+        }),
+        vue({
+            template: {
+                transformAssetUrls: {
+                    base: null,
+                    includeAbsolute: false,
+                },
+            },
+        }),
+    ],
     resolve: {
         alias: {
-            "@": resolve(__dirname, "resources/js"),
-            vue: "vue/dist/vue.esm-bundler.js",
+            "@": "/resources/js",
         },
     },
-    base: "/administrateur/",
-    build: {
-        outDir: "dist-admin",
-        emptyOutDir: true,
-        // CRITIQUE : Ne pas copier index.php
-        rollupOptions: {
-            input: resolve(__dirname, "resources/js/app.ts"),
-            // Exclure explicitement index.php
-            external: [],
-        },
-        // Empêcher la copie automatique de index.php
-        assetsInlineLimit: 4096,
-        copyPublicDir: false, // ← IMPORTANT : Ne pas copier les fichiers publics
-    },
-    publicDir: false, // ← TRÈS IMPORTANT : Pas de dossier public
 });
