@@ -2,22 +2,27 @@
 
 use Illuminate\Support\Facades\Route;
 
-// Route pour les assets (CSS/JS) - ils doivent être accessibles
+// Route pour les assets Vue.js
 Route::get('/build/{path}', function ($path) {
-    $filePath = public_path("build/{$path}");
+    $file = public_path("build/{$path}");
 
-    if (file_exists($filePath)) {
-        return response()->file($filePath);
+    if (file_exists($file)) {
+        return response()->file($file);
     }
 
     abort(404);
 })->where('path', '.*');
 
-// Route catch-all pour Vue.js SPA sous /admin
+// Routes API sont déjà dans api.php
 Route::prefix('admin')->group(function () {
-    Route::get('/{any}', function () {
+    Route::get('/{any?}', function () {
         return view('app');
-    })->where('any', '^(?!api|storage).*$');
+    })->where('any', '.*')->name('admin.spa');
+});
+
+// Route racine (optionnel)
+Route::get('/', function () {
+    return redirect('/admin');
 });
 
 // Si vous voulez aussi une page d'accueil Laravel (optionnel)

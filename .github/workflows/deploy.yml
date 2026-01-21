@@ -27,19 +27,16 @@ jobs:
         run: |
           npm install --legacy-peer-deps --no-audit
 
-      - name: Build Vue.js SPA (Laravel intégré)
+      - name: Build Vue.js SPA
         run: |
-          echo "=== Building Vue.js SPA intégrée dans Laravel ==="
-
-          # Build Vite pour Laravel
+          echo "=== Building Vue.js SPA ==="
           npm run build
 
-          # Vérifier que les assets sont générés
           if [ -d "public/build" ]; then
-            echo "✅ Assets Vue.js générés dans public/build"
+            echo "✅ Assets générés"
             ls -la public/build/
           else
-            echo "❌ public/build non trouvé!"
+            echo "❌ Build échoué"
             exit 1
           fi
 
@@ -66,16 +63,23 @@ jobs:
           echo "=== Testing SSH connection ==="
           ssh -o ConnectTimeout=5 "${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}" "echo 'SSH connection successful!'"
 
-      - name: Deploy Laravel Vue SPA to VPS
+      - name: Deploy to VPS
         run: |
           SSH_HOST="${{ secrets.VPS_HOST }}"
           SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
-          APP_PATH="/var/www/backtime"
+          # CORRECTION ICI : Utilisez le même chemin que Nginx
+          APP_PATH="/var/www/backend/backtime"
 
-          echo "=== Déploiement Laravel + Vue SPA ==="
+          echo "=== Déploiement vers $APP_PATH ==="
 
-          # 1. Copier tout le projet Laravel
-          echo "=== Copie de Laravel avec Vue intégré ==="
+          # 1. Créer le dossier si nécessaire
+          ssh "$SSH_USERNAME@$SSH_HOST" "
+            sudo mkdir -p $APP_PATH
+            sudo chown -R $SSH_USERNAME:www-data $APP_PATH
+          "
+
+          # 2. Copier le code
+          echo "=== Copie des fichiers ==="
           rsync -avz --delete \
             --rsync-path="sudo rsync" \
             --exclude='.env' \
@@ -87,131 +91,34 @@ jobs:
             --exclude='*.log' \
             ./ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/"
 
-          # 2. Copier le fichier .env si existe en local (optionnel)
-          echo "=== Copie du fichier .env (si existant) ==="
-          if [ -f ".env.production" ]; then
-            echo "Copie de .env.production"
-            scp .env.production "$SSH_USERNAME@$SSH_HOST:$APP_PATH/.env"
-          elif [ -f ".env" ]; then
-            echo "Copie de .env"
-            scp .env "$SSH_USERNAME@$SSH_HOST:$APP_PATH/.env"
-          fi
-
-          # 3. Exécuter les commandes Laravel sur le serveur
-          echo "=== Configuration Laravel sur le serveur ==="
+          # 3. Configurer Laravel
+          echo "=== Configuration Laravel ==="
           ssh "$SSH_USERNAME@$SSH_HOST" "
             cd '$APP_PATH'
             
             echo '1. Permissions...'
             sudo chown -R www-data:www-data .
-            sudo chown -R $SSH_USERNAME:$SSH_USERNAME storage bootstrap/cache
+            sudo chown -R $SSH_USERNAME:www-data storage bootstrap/cache
             sudo chmod -R 775 storage bootstrap/cache
             
-            echo '2. Mise à jour des dépendances...'
-            if [ -f composer.lock ]; then
-              sudo -u www-data composer install --no-dev --optimize-autoloader --no-interaction
+            echo '2. Fichier .env...'
+            if [ ! -f '.env' ]; then
+              if [ -f '.env.example' ]; then
+                cp .env.example .env
+                sudo -u www-data php artisan key:generate
+              fi
             fi
             
-            echo '3. Configuration...'
-            if [ -f .env ]; then
-              sudo -u www-data php artisan config:cache
-              sudo -u www-data php artisan route:cache
-              sudo -u www-data php artisan view:cache
-              sudo -u www-data php artisan optimize
-            else
-              echo '⚠️ .env non trouvé, création d un exemple...'
-              cp .env.example .env
-              sudo -u www-data php artisan key:generate
-            fi
+            echo '3. Dépendances Composer...'
+            sudo -u www-data composer install --no-dev --optimize-autoloader --no-interaction
             
-            echo '4. Migration de la base de données...'
-            if [ -f .env ]; then
-              sudo -u www-data php artisan migrate --force
-            fi
+            echo '4. Cache Laravel...'
+            sudo -u www-data php artisan config:cache
+            sudo -u www-data php artisan route:cache
+            sudo -u www-data php artisan view:cache
             
-            echo '5. Vérification des assets Vue.js...'
-            if [ -d 'public/build' ]; then
-              echo '✅ Assets Vue.js présents:'
-              ls -la public/build/
-            else
-              echo '⚠️ public/build non trouvé'
-            fi
+            echo '5. Migration...'
+            sudo -u www-data php artisan migrate --force
             
             echo '✅ Déploiement terminé'
-          "
-
-      - name: Final Verification
-        run: |
-          SSH_HOST="${{ secrets.VPS_HOST }}"
-          SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
-          APP_PATH="/var/www/backtime"
-
-          echo "=== Vérification finale ==="
-          ssh "$SSH_USERNAME@$SSH_HOST" "
-            echo 'Contenu du répertoire:'
-            cd '$APP_PATH' && ls -la
-            
-            echo ''
-            echo 'Contenu de public/:'
-            ls -la '$APP_PATH/public/'
-            
-            echo ''
-            echo 'Contenu de public/build:'
-            if [ -d '$APP_PATH/public/build' ]; then
-              ls -la '$APP_PATH/public/build/'
-              echo ''
-              echo 'Vérification app.blade.php:'
-              if [ -f '$APP_PATH/resources/views/app.blade.php' ]; then
-                echo '✅ app.blade.php présent'
-                echo 'Premières lignes:'
-                head -10 '$APP_PATH/resources/views/app.blade.php'
-              else
-                echo '❌ app.blade.php manquant!'
-              fi
-            else
-              echo '❌ public/build manquant!'
-            fi
-            
-            echo ''
-            echo 'Vérification route web.php:'
-            if [ -f '$APP_PATH/routes/web.php' ]; then
-              cat '$APP_PATH/routes/web.php'
-            else
-              echo '❌ routes/web.php manquant!'
-            fi
-            
-            echo ''
-            echo 'Test de l application:'
-            curl -I http://localhost/ 2>/dev/null | head -5 || echo 'Application non accessible'
-          "
-
-      - name: Clear Laravel cache (optional)
-        if: always()
-        run: |
-          SSH_HOST="${{ secrets.VPS_HOST }}"
-          SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
-          APP_PATH="/var/www/backtime"
-
-          ssh "$SSH_USERNAME@$SSH_HOST" "
-            cd '$APP_PATH'
-            sudo -u www-data php artisan cache:clear 2>/dev/null || true
-            sudo -u www-data php artisan config:clear 2>/dev/null || true
-            sudo -u www-data php artisan route:clear 2>/dev/null || true
-            sudo -u www-data php artisan view:clear 2>/dev/null || true
-            echo '✅ Caches nettoyés'
-          "
-
-      - name: Restart PHP-FPM (optional)
-        if: always()
-        run: |
-          SSH_HOST="${{ secrets.VPS_HOST }}"
-          SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
-
-          ssh "$SSH_USERNAME@$SSH_HOST" "
-            sudo systemctl restart php8.3-fpm 2>/dev/null || \
-            sudo systemctl restart php8.2-fpm 2>/dev/null || \
-            sudo systemctl restart php8.1-fpm 2>/dev/null || \
-            sudo systemctl restart php-fpm 2>/dev/null || \
-            echo '⚠️ PHP-FPM restart non effectué'
-            echo '✅ PHP-FPM redémarré'
           "

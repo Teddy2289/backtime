@@ -22,4 +22,14 @@ export default defineConfig({
             "@": "/resources/js",
         },
     },
+    // IMPORTANT: Ajoutez cela
+    build: {
+        manifest: true,
+        outDir: "public/build",
+        rollupOptions: {
+            input: {
+                app: "resources/js/app.ts",
+            },
+        },
+    },
 });
