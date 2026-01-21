@@ -18,7 +18,7 @@ export default defineConfig({
         outDir: "dist-admin",
         emptyOutDir: true,
         rollupOptions: {
-            input: resolve(__dirname, "admin-spa.html"), // Votre fichier HTML
+            input: resolve(__dirname, "index.html"), // Votre fichier HTML
         },
         assetsInlineLimit: 0,
         copyPublicDir: false,
