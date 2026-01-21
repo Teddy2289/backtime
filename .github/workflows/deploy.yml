@@ -30,13 +30,45 @@ jobs:
       - name: Build Vue.js SPA
         run: |
           echo "=== Building Vue.js SPA ==="
+
+          # Nettoyer l'ancien build
+          rm -rf public/build
+
+          # Build
           npm run build
 
+          # Vérification DÉTAILLÉE du build
+          echo "=== Vérification du build ==="
           if [ -d "public/build" ]; then
-            echo "✅ Assets générés"
+            echo "✅ Dossier public/build créé"
+            echo "Contenu:"
             ls -la public/build/
+            
+            echo ""
+            echo "=== Assets générés ==="
+            ls -la public/build/assets/ | head -20
+            
+            echo ""
+            echo "=== Fichiers principaux ==="
+            echo "Fichier JS principal:"
+            ls -la public/build/assets/app-*.js 2>/dev/null || echo "Aucun app-*.js trouvé"
+            echo ""
+            echo "Fichier CSS principal:"
+            ls -la public/build/assets/app-*.css 2>/dev/null || echo "Aucun app-*.css trouvé"
+            
+            echo ""
+            echo "=== Manifest ==="
+            if [ -f "public/build/.vite/manifest.json" ]; then
+              echo "Manifest trouvé dans .vite/"
+              cat public/build/.vite/manifest.json | head -20
+            elif [ -f "public/build/manifest.json" ]; then
+              echo "Manifest trouvé dans build/"
+              cat public/build/manifest.json | head -20
+            else
+              echo "❌ Aucun manifest.json trouvé"
+            fi
           else
-            echo "❌ Build échoué"
+            echo "❌ Build échoué - public/build non créé"
             exit 1
           fi
 
@@ -67,20 +99,21 @@ jobs:
         run: |
           SSH_HOST="${{ secrets.VPS_HOST }}"
           SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
-          # CORRECTION ICI : Utilisez le même chemin que Nginx
           APP_PATH="/var/www/backend/backtime"
 
           echo "=== Déploiement vers $APP_PATH ==="
 
-          # 1. Créer le dossier si nécessaire
+          # 1. Créer le dossier de destination
           ssh "$SSH_USERNAME@$SSH_HOST" "
+            echo '📁 Préparation du dossier $APP_PATH'
             sudo mkdir -p $APP_PATH
             sudo chown -R $SSH_USERNAME:www-data $APP_PATH
+            sudo chmod -R 755 $APP_PATH
           "
 
-          # 2. Copier le code
-          echo "=== Copie des fichiers ==="
-          rsync -avz --delete \
+          # 2. Copier le code Laravel (sans exclure public/build)
+          echo "=== Copie des fichiers Laravel ==="
+          rsync -avz \
             --rsync-path="sudo rsync" \
             --exclude='.env' \
             --exclude='.git' \
@@ -91,34 +124,143 @@ jobs:
             --exclude='*.log' \
             ./ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/"
 
-          # 3. Configurer Laravel
+          # 3. Copier SPÉCIALEMENT le dossier public/build pour s'assurer qu'il est complet
+          echo "=== Copie spécifique du build Vue.js ==="
+          if [ -d "public/build" ]; then
+            echo "📦 Copie de public/build"
+            rsync -avz \
+              --rsync-path="sudo rsync" \
+              public/build/ "$SSH_USERNAME@$SSH_HOST:$APP_PATH/public/build/"
+          else
+            echo "❌ public/build manquant localement"
+            exit 1
+          fi
+
+          # 4. Configurer Laravel sur le VPS
           echo "=== Configuration Laravel ==="
           ssh "$SSH_USERNAME@$SSH_HOST" "
             cd '$APP_PATH'
             
-            echo '1. Permissions...'
+            echo '1. Vérification des fichiers copiés...'
+            echo 'Structure:'
+            ls -la
+            echo ''
+            echo 'Build Vue.js:'
+            if [ -d 'public/build' ]; then
+              echo '✅ public/build présent'
+              ls -la public/build/
+              echo ''
+              echo 'Assets:'
+              ls -la public/build/assets/ | head -10
+              echo ''
+              echo 'Fichiers JS/CSS:'
+              find public/build/assets -name 'app-*' -type f | head -5
+            else
+              echo '❌ public/build manquant'
+              exit 1
+            fi
+            
+            echo ''
+            echo '2. Gestion du fichier .env...'
+            if [ -f '.env' ]; then
+              echo '✅ .env existant préservé'
+            elif [ -f '.env.example' ]; then
+              echo '📝 Création .env depuis .env.example'
+              cp .env.example .env
+              sudo -u www-data php artisan key:generate
+            else
+              echo '⚠️ Aucun fichier .env ou .env.example trouvé'
+            fi
+            
+            echo ''
+            echo '3. Permissions...'
             sudo chown -R www-data:www-data .
             sudo chown -R $SSH_USERNAME:www-data storage bootstrap/cache
             sudo chmod -R 775 storage bootstrap/cache
+            sudo chmod -R 755 public/build
             
-            echo '2. Fichier .env...'
-            if [ ! -f '.env' ]; then
-              if [ -f '.env.example' ]; then
-                cp .env.example .env
-                sudo -u www-data php artisan key:generate
-              fi
-            fi
-            
-            echo '3. Dépendances Composer...'
+            echo ''
+            echo '4. Dépendances Composer...'
             sudo -u www-data composer install --no-dev --optimize-autoloader --no-interaction
             
-            echo '4. Cache Laravel...'
+            echo ''
+            echo '5. Nettoyage cache...'
+            sudo -u www-data php artisan config:clear
+            sudo -u www-data php artisan route:clear
+            sudo -u www-data php artisan view:clear
+            sudo -u www-data php artisan cache:clear
+            
+            echo ''
+            echo '6. Optimisation...'
             sudo -u www-data php artisan config:cache
             sudo -u www-data php artisan route:cache
             sudo -u www-data php artisan view:cache
             
-            echo '5. Migration...'
+            echo ''
+            echo '7. Migration...'
             sudo -u www-data php artisan migrate --force
             
+            echo ''
             echo '✅ Déploiement terminé'
+          "
+
+      - name: Verify Deployment
+        run: |
+          SSH_HOST="${{ secrets.VPS_HOST }}"
+          SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
+          APP_PATH="/var/www/backend/backtime"
+
+          echo "=== Vérification finale ==="
+          ssh "$SSH_USERNAME@$SSH_HOST" "
+            echo '=== Test des assets Vue.js ==='
+            
+            # Test 1: Les fichiers existent
+            echo '1. Existence des fichiers:'
+            if [ -f '$APP_PATH/public/build/assets/app-*.js' ]; then
+              echo '✅ Fichier JS principal trouvé'
+              ls -la '$APP_PATH/public/build/assets/app-*.js' | head -2
+            else
+              echo '❌ Fichier JS principal manquant'
+            fi
+            
+            if [ -f '$APP_PATH/public/build/assets/app-*.css' ]; then
+              echo '✅ Fichier CSS principal trouvé'
+              ls -la '$APP_PATH/public/build/assets/app-*.css' | head -2
+            else
+              echo '❌ Fichier CSS principal manquant'
+            fi
+            
+            # Test 2: Nginx peut servir les fichiers
+            echo ''
+            echo '2. Test d accès via Nginx:'
+            curl -s -I http://localhost/build/assets/app-*.js 2>/dev/null | head -1 || echo '⚠️ Impossible d accéder aux assets'
+            
+            # Test 3: Laravel route
+            echo ''
+            echo '3. Test route Laravel:'
+            curl -s http://localhost/admin 2>/dev/null | grep -E '(div id=\"app\"|@vite|Vue)' | head -3 || echo '⚠️ Route admin non accessible'
+            
+            # Test 4: Vérifier le HTML
+            echo ''
+            echo '4. HTML retourné:'
+            HTML=\$(curl -s http://localhost/admin 2>/dev/null | head -50)
+            if [[ \$HTML == *\"id=\\\"app\\\"\"* ]]; then
+              echo '✅ div#app trouvé dans le HTML'
+            else
+              echo '❌ div#app NON trouvé'
+              echo 'Premières lignes du HTML:'
+              echo \"\$HTML\" | head -10
+            fi
+          "
+
+      - name: Restart Services
+        run: |
+          SSH_HOST="${{ secrets.VPS_HOST }}"
+          SSH_USERNAME="${{ secrets.VPS_USERNAME }}"
+
+          ssh "$SSH_USERNAME@$SSH_HOST" "
+            echo '=== Redémarrage des services ==='
+            sudo systemctl reload nginx
+            sudo systemctl restart php8.3-fpm
+            echo '✅ Services redémarrés'
           "

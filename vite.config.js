@@ -22,13 +22,17 @@ export default defineConfig({
             "@": "/resources/js",
         },
     },
-    // IMPORTANT: Ajoutez cela
     build: {
-        manifest: true,
         outDir: "public/build",
+        manifest: true,
         rollupOptions: {
             input: {
                 app: "resources/js/app.ts",
+            },
+            output: {
+                assetFileNames: "assets/[name]-[hash][extname]",
+                chunkFileNames: "assets/[name]-[hash].js",
+                entryFileNames: "assets/[name]-[hash].js",
             },
         },
     },
