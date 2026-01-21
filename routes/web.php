@@ -3,10 +3,8 @@
 use Illuminate\Support\Facades\Route;
 
 // ============================================
-// IMPORTANT: TOUTES les routes /admin/* doivent être capturées
+// ROUTE POUR LES ASSETS VUE.JS
 // ============================================
-
-// Route pour servir les assets Vue.js (CSS/JS compilés)
 Route::get('/build/{path}', function ($path) {
     $file = public_path("build/{$path}");
 
@@ -18,19 +16,30 @@ Route::get('/build/{path}', function ($path) {
 })->where('path', '.*');
 
 // ============================================
-// ROUTE PRINCIPALE POUR VUE.JS SPA
+// ROUTE DE TEST
+// ============================================
+Route::get('/test', function () {
+    return response()->json(['status' => 'ok', 'message' => 'Laravel works']);
+});
+
+// ============================================
+// ROUTES SPA VUE.JS - CORRIGÉES
 // ============================================
 Route::prefix('admin')->group(function () {
-    // Cette route capture TOUTES les URLs sous /admin/
+    // ROUTE POUR /admin (SANS paramètre)
+    Route::get('/', function () {
+        return view('app');
+    });
+
+    // ROUTE POUR /admin/{anything}
     Route::get('/{any}', function () {
         return view('app');
     })->where('any', '.*');
 });
 
 // ============================================
-// ROUTE RACINE (redirection vers /admin)
+// ROUTE RACINE
 // ============================================
 Route::get('/', function () {
-    // Redirigez vers votre SPA Vue.js
     return redirect('/admin');
 });
