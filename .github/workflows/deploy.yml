@@ -28,6 +28,9 @@ jobs:
           npm install --legacy-peer-deps --no-audit
 
       - name: Build Vue.js SPA
+        env:
+          VITE_APP_URL: ${{ vars.VITE_APP_URL || 'https://mbl.wizi-learn.com' }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'https://mbl.wizi-learn.com/api' }}
         run: |
           echo "=== Building Vue.js SPA ==="
 
