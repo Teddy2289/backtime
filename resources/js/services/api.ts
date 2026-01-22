@@ -6,7 +6,9 @@ class ApiService {
 
     constructor() {
         this.axiosInstance = axios.create({
-            baseURL: "http://localhost:8000/api",
+            baseURL:
+                import.meta.env.VITE_API_BASE_URL ||
+                "http://localhost:8000/api",
             headers: {
                 "X-Requested-With": "XMLHttpRequest",
                 "Content-Type": "application/json",
@@ -29,7 +31,7 @@ class ApiService {
             },
             (error) => {
                 return Promise.reject(error);
-            }
+            },
         );
 
         // Intercepteur de réponse
@@ -47,7 +49,7 @@ class ApiService {
                     }
                 }
                 return Promise.reject(error);
-            }
+            },
         );
     }
 
@@ -61,7 +63,7 @@ class ApiService {
     public post<T = any>(
         url: string,
         data?: any,
-        config?: AxiosRequestConfig
+        config?: AxiosRequestConfig,
     ): Promise<T> {
         return this.axiosInstance
             .post<T>(url, data, config)
@@ -71,7 +73,7 @@ class ApiService {
     public put<T = any>(
         url: string,
         data?: any,
-        config?: AxiosRequestConfig
+        config?: AxiosRequestConfig,
     ): Promise<T> {
         return this.axiosInstance
             .put<T>(url, data, config)
@@ -80,7 +82,7 @@ class ApiService {
 
     public delete<T = any>(
         url: string,
-        config?: AxiosRequestConfig
+        config?: AxiosRequestConfig,
     ): Promise<T> {
         return this.axiosInstance
             .delete<T>(url, config)
@@ -90,7 +92,7 @@ class ApiService {
     public patch<T = any>(
         url: string,
         data?: any,
-        config?: AxiosRequestConfig
+        config?: AxiosRequestConfig,
     ): Promise<T> {
         return this.axiosInstance
             .patch<T>(url, data, config)
@@ -111,9 +113,8 @@ class ApiService {
     // Méthode pour mettre à jour le token
     public setToken(token: string): void {
         localStorage.setItem("token", token);
-        this.axiosInstance.defaults.headers.common[
-            "Authorization"
-        ] = `Bearer ${token}`;
+        this.axiosInstance.defaults.headers.common["Authorization"] =
+            `Bearer ${token}`;
     }
 
     // Méthode pour supprimer le token
