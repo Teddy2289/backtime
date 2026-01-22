@@ -28,6 +28,7 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 app: "resources/js/app.ts",
+                css: "resources/css/app.css",
             },
             output: {
                 assetFileNames: "assets/[name]-[hash][extname]",
