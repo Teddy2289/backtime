@@ -22,6 +22,9 @@ Route::middleware(['api'])->group(
                 Route::put('/', [AuthController::class, 'updateProfile']);
                 Route::post('/avatar', [AuthController::class, 'uploadAvatar']);
                 Route::delete('/avatar', [AuthController::class, 'removeAvatar']);
+                Route::post('change-password', [AuthController::class, 'changePassword'])->middleware('auth:api');
+                Route::get('work-statistics', [AuthController::class, 'getWorkStatistics'])->middleware('auth:api');
+                Route::get('work-sessions', [AuthController::class, 'getWorkSessions'])->middleware('auth:api');
             });
         });
 

@@ -54,12 +54,6 @@
                                     class="h-3.5 w-3.5"
                                 />
                                 <span>{{ item.name }}</span>
-                                <span
-                                    v-if="item.badge"
-                                    class="bg-red-100 text-red-600 text-[10px] px-1.5 py-0.5 rounded-full"
-                                >
-                                    {{ item.badge }}
-                                </span>
                             </router-link>
                         </div>
                     </div>
@@ -334,12 +328,6 @@
                             <component :is="item.icon" class="h-4 w-4" />
                             <span>{{ item.name }}</span>
                         </div>
-                        <span
-                            v-if="item.badge"
-                            class="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full"
-                        >
-                            {{ item.badge }}
-                        </span>
                     </router-link>
                 </div>
             </div>
@@ -429,13 +417,11 @@ const mainNavigation = [
         name: "Projets",
         to: { name: "projects" },
         icon: FolderIcon,
-        badge: 3,
     },
     {
         name: "Tâches",
         to: { name: "tasks" },
         icon: ClipboardDocumentListIcon,
-        badge: 12,
     },
     {
         name: "Équipes",

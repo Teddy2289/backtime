@@ -1,0 +1,28 @@
+/* Classes Tailwind personnalisées si nécessaire */
+:deep(.bg-primary) {
+    background-color: #31b6b8;
+}
+
+:deep(.bg-primary-dark) {
+    background-color: #289396;
+}
+
+:deep(.hover\:bg-primary-dark:hover) {
+    background-color: #289396;
+}
+
+:deep(.bg-secondary) {
+    background-color: #ab2283;
+}
+
+:deep(.text-primary) {
+    color: #31b6b8;
+}
+
+:deep(.text-secondary) {
+    color: #ab2283;
+}
+
+:deep(.focus\:ring-primary:focus) {
+    --tw-ring-color: rgba(49, 182, 184, 0.5);
+}
