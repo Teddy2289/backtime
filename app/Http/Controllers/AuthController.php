@@ -4,21 +4,26 @@ namespace App\Http\Controllers;
 
 use App\Traits\ApiResponser;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Modules\User\Domain\Entities\User;
 use Modules\User\Domain\Enums\UserRole;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 use App\Http\Requests\UpdateProfileRequest;
 use Carbon\Carbon;
 use Modules\Task\Domain\Entities\Task;
+use Modules\User\Application\Services\UserService;
+
 
 class AuthController extends Controller
 {
+
+    public function __construct(
+        protected UserService $userService
+    ) {}
+
     use ApiResponser;
 
     /**
@@ -260,41 +265,24 @@ class AuthController extends Controller
                 return $this->unauthorizedResponse();
             }
 
-            $validator = Validator::make($request->all(), [
-                'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:10240', // Corrigé: 10240 au lieu de 10102400
+            $request->validate([
+                'avatar' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
             ]);
 
-            if ($validator->fails()) {
-                return $this->validationErrorResponse($validator->errors());
-            }
-
-            // Supprimer l'ancien avatar si existe
-            if ($user->avatar) {
-                $oldAvatarPath = 'avatars/' . $user->avatar;
-                if (Storage::disk('public')->exists($oldAvatarPath)) {
-                    Storage::disk('public')->delete($oldAvatarPath);
-                }
-            }
-
-            // Upload le nouvel avatar
-            $avatar = $request->file('avatar');
-            $filename = 'avatar_' . $user->id . '_' . time() . '.' . $avatar->getClientOriginalExtension();
-
-            // Stocker dans storage/app/public/avatars
-            $path = $avatar->storeAs('avatars', $filename, 'public');
-
-            // Mettre à jour l'utilisateur
-            $user->avatar = $filename;
-            $user->save();
+            $updatedUser = $this->userService->uploadAvatar($user, $request->file('avatar'));
 
             return $this->successResponse(
                 [
-                    'avatar_url' => $user->avatar_url,
-                    'filename' => $filename,
+                    'avatar' => $updatedUser->avatar,
+                    'avatar_url' => $updatedUser->avatar_url,
                 ],
                 'Avatar uploaded successfully'
             );
-        } catch (Throwable $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->validationErrorResponse($e->errors());
+        } catch (\Exception $e) {
+            Log::error('Avatar upload error: ' . $e->getMessage());
+
             return $this->errorResponse(
                 'Failed to upload avatar',
                 config('app.debug') ? $e->getMessage() : null,
@@ -304,7 +292,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Remove user avatar.
+     * Remove user avatar using UserService.
      */
     public function removeAvatar()
     {
@@ -315,25 +303,18 @@ class AuthController extends Controller
                 return $this->unauthorizedResponse();
             }
 
-            if (!$user->avatar) {
-                return $this->errorResponse('No avatar to remove', null, 404);
-            }
-
-            // Supprimer le fichier
-            $avatarPath = 'avatars/' . $user->avatar;
-            if (Storage::disk('public')->exists($avatarPath)) {
-                Storage::disk('public')->delete($avatarPath);
-            }
-
-            // Mettre à jour l'utilisateur
-            $user->avatar = null;
-            $user->save();
+            $updatedUser = $this->userService->removeAvatar($user);
 
             return $this->successResponse(
-                null,
+                [
+                    'avatar' => null,
+                    'avatar_url' => null,
+                ],
                 'Avatar removed successfully'
             );
-        } catch (Throwable $e) {
+        } catch (\Exception $e) {
+            Log::error('Avatar removal error: ' . $e->getMessage());
+
             return $this->errorResponse(
                 'Failed to remove avatar',
                 config('app.debug') ? $e->getMessage() : null,
@@ -341,7 +322,6 @@ class AuthController extends Controller
             );
         }
     }
-
     /**
      * Get user profile with more details.
      */
